@@ -18,7 +18,7 @@ receivedPackets = {
     # Char server packets
     
     'char': {
-        0x065: ['identify', 'lllxxB', 'accountID', 'loginIDa', 'loginIDb', 'sex'],
+        0x065: ['identify', 'lLLxxB', 'accountID', 'loginIDa', 'loginIDb', 'sex'],
         0x066: ['selectChar', 'b', 'charNum'],
         0x067: ['createChar', '24s8BxBx', 'name', 'str', 'agi', 'vit', 'int', 'dex', 'luk', 'charNum', 'hairStyle', 'hairColor'],
         0x068: ['deleteChar', 'l40s', 'characterID', 'Email'],
@@ -79,7 +79,7 @@ sentPackets = {
     #------------------------------------------------------
     # Login server packets
     
-    0x069: ('hllll24shB?', ('packetLen', 'loginIDa', 'accountID', 'loginIDb', 0, '', 0, 'gender'), ('charServer',)), # Logged in / Char server listing
+    0x069: ('hLlLl24shB?', ('packetLen', 'loginIDa', 'accountID', 'loginIDb', 0, '', 0, 'gender'), ('charServer',)), # Logged in / Char server listing
     0x06a: ('B20s', ('type', 'message')), # Login failed
     
     #------------------------------------------------------
