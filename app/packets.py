@@ -205,8 +205,8 @@ def sendPacket(function, packetID, **kwargs):
     packet = generatePacket(packetID, **kwargs)
     if packet:
         function(packet)
-        print "Sending packet: "
-        print (packet, 100)
+        # print "Sending packet: "
+        # print (packet, 100)
         return True
     return False
 

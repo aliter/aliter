@@ -28,9 +28,8 @@ class LoginSession(Session):
             self.id = username
             self.log('Login from %s successful, sending char server details.' % self.transport.client[0], log.LOW)
             
-            accountID = 2000000
             loginIDa, loginIDb = random.randint(1, min(4294967295, sys.maxint)), random.randint(1, min(4294967295, sys.maxint))
-            setLoginID(accountID, loginIDa, loginIDb)
+            setLoginID(account.id, loginIDa, loginIDb)
             
             charServerPack = []
             for name, server in config['CharServer'].items():

@@ -24,6 +24,9 @@ class EventObject(object):
             and player.y - y < config['MapServer'][0]['visible'] \
             and player.y - y > -config['MapServer'][0]['visible']:
                 players.append(player)
+
+        print "Players in sight:"
+        print maps[map].players
         return players
     
     def _playersOnMap(self, map):
@@ -54,6 +57,7 @@ class EventObject(object):
             message=message+'\x00',
         )
         return True
+    
     def _gmRandomTile(self, map):
         # Warning: Possible lock-up
         while 1:
@@ -61,6 +65,7 @@ class EventObject(object):
             y = random.randint(1, map.height-2)
             if map.tiles[x][y] == 1:
                 return x, y
+    
     def _doGMCommand(self, actor, message):
         "If message is a GM command execute it"
         if message[0] == '@':
@@ -100,6 +105,7 @@ class EventObject(object):
         return False
     
     def sayChat(self, actor, message):
+        print actor
         if not self._doGMCommand(actor, message):
             self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
                 0x8e,
@@ -144,6 +150,7 @@ class EventObject(object):
         
         if actor.x == actor.toX and actor.y == actor.toY:
             log.map('Reached (%s, %s)' % (actor.x, actor.y), log.DEBUG, id=actor.name)
+    
     def move(self, actor, x, y):
         walkPath = maps[actor.map].pathfind(actor.x, actor.y, x, y)
         actor.walkPath = walkPath
@@ -177,4 +184,5 @@ class EventObject(object):
     
     def damage(self, target):
         pass
+
 Event = EventObject()

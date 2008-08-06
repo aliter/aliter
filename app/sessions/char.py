@@ -16,6 +16,7 @@ class CharSession(Session):
         
         # Verify login
         if not checkLoginID(self.accountID, loginIDa, loginIDb):
+            print loginIDa, loginIDb, getLoginIDa(self.accountID), getLoginIDb(self.accountID)
             self.log('Invalid login ID from %s, got %s/%s expecting %s/%s' % (self.transport.client[0], loginIDa, loginIDb, getLoginIDa(self.accountID), getLoginIDb(self.accountID)), log.HIGH)
             unsetLoginID(self.accountID)
             self.failed(0x6c) # Error getting characters
@@ -50,7 +51,7 @@ class CharSession(Session):
             raise IllegalPacket
         
         # Load character and keep in memory
-        char = Characters.get(account=self.accountID, charNum=charNum)
+        char = Characters.get(accountID=self.accountID, charNum=charNum)
         
         if not char: # Something went wrong
             self.sendPacket(
@@ -59,7 +60,7 @@ class CharSession(Session):
             )
             self.log('Character selection failed.', log.LOW)
             return
-        
+        print self.accountID
         self.log('Selected %s, sending map server details.' % char.name, log.LOW)
         self.sendPacket(
             0x71,
