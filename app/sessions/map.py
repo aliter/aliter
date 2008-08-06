@@ -45,7 +45,7 @@ class MapSession(Session):
         
         # Acknowledge login
         self.sendPacket(
-            'ack',
+            'map',
             accountID=self.accountID,
         )
         

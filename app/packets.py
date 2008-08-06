@@ -31,11 +31,11 @@ receivedPackets = {
     'map': {
         0x07d: [], # Map loading complete
         0x085: [None, '10x'], # Gets sent when talking to NPCs
-        0x089: ['keepAlive', 'xxxxxxxl', 'clientTick'],
-        0x08c: ['getActorName', 'xxxxxxl', 'actorID'], # Hover over actor
+        0x089: ['keepAlive', 'xxl', 'clientTick'],
+        0x08c: ['getActorName', 'xxl', 'actorID'], # Hover over actor
         0x090: ['npcActivate', 'lx', 'npcID'], # Activate NPC
         0x09b: ['identify', 'xxlxlxxxxLxxxxx', 'accountID', 'characterID', 'loginIDa'],
-        0x0a7: ['move', 'xxxxxxxxxx3s', 'position'], # Character movement
+        0x0a7: ['move', 'xxx3s', 'position'], # Character movement
         0x0b2: ['menuButton', 'B', 'type'], # Character select / Last save point menu button
         0x0b8: ['npcMenuSelect', 'lB', 'npcID', 'selection'], # Selected item from NPC menu (First=1)
         0x0b9: ['npcNext', 'l', 'npcID'], # Clicked the NPC next button
@@ -72,7 +72,8 @@ sentPackets = {
     #------------------------------------------------------
     # Special versions of packets
     
-    'ack':      ('l', ('accountID',)), # Acknowledge map server connection
+    'ack':      ('l', ('accountID',)), # Acknowledge login/char server connection
+    'map':      ('hl', (0x0187, 'accountID',)), # Acknowledge map server connection
     'viewNPC':  ('hlh6xh30x3s2Bxxx', (0x78, 'actorID', 200, 'sprite', 'position', 5, 5)), # Display NPC on map
     'viewWarp': ('hlh6xh30x3s2Bxxx', (0x78, 'actorID', 200, 45, 'position', 5, 5)), # Display warp on map
     
@@ -191,7 +192,7 @@ def generatePacket(packetID, **kwargs):
         arguments.insert(0, packetID)
     else:
         packetLayout = '='+packetLayout
-
+    
     if type(packetLenOffset) == int:
         # Warning: If this is after a "?" then things will screw up
         if type(packetID) == int:
@@ -204,6 +205,8 @@ def sendPacket(function, packetID, **kwargs):
     packet = generatePacket(packetID, **kwargs)
     if packet:
         function(packet)
+        print "Sending packet: "
+        print (packet, 100)
         return True
     return False
 

@@ -111,6 +111,8 @@ class Session(protocol.Protocol):
                     if not packet[0]:
                         continue # No method defined, skip
                     arguments = {}.fromkeys(packet[3])
+                    print thisPacket
+                    print unpack(thisPacket[1], thisPacket[2])[1:]
                     values    = unpack(thisPacket[1], thisPacket[2])[1:]
                     for index in range(packet[4]):
                         arguments[packet[3][index]] = values[index]

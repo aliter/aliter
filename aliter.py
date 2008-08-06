@@ -121,6 +121,7 @@ class Aliter(object):
                 for line in traceback.format_tb(sys.exc_info()[2]):
                     log.unbound(line[:-1], log.CRITICAL)
                 return False
+    
     def initServers(self):
         self.map   = self._initServer(Server(MapSession, log.map), config['MapServer'][0]['address']['port'])
         self.char  = None
