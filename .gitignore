@@ -4,3 +4,4 @@ cache/maps/*
 .eprj
 desktop.ini
 thumbs.db
+*.pyc

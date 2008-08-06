@@ -63,6 +63,6 @@ MySQL:
   address:
     host: localhost
     port: 3306
-  username: sidewinder
-  password: sidewinder
-  database: sidewinder
+  username: aliter
+  password: aliter
+  database: aliter
