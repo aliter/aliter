@@ -1,0 +1,68 @@
+#
+# Aliter configuration file
+#
+
+#------------------------------------------------------------------------------
+# Login server settings
+#
+LoginServer:
+  
+  # Server address
+  address:
+    host: 10.0.0.2
+    port: 6900
+
+#------------------------------------------------------------------------------
+# Character server settings
+#
+CharServer:
+  # Server name (20 character limit)
+  Aliter:
+    # Server address
+    address:
+      host: 10.0.0.2
+      port: 6121
+    
+    # Maintenance tag
+    # 0=Normal, 1=Under maintenance, 2=Over 18, 3=Paying, 4=P2P
+    maintenance: 0
+    
+    # New server prefix tag
+    new: 0
+
+  #2nd Server Example:
+  #  address:
+  #    host: 10.0.0.2
+  #    port: 6121
+  #  maintenance: 0
+  #  new: 0
+
+#------------------------------------------------------------------------------
+# Map server settings
+#
+MapServer:
+  - 
+    # Server address
+    address:
+      host: 10.0.0.2
+      port: 5121
+    
+    # Location of sdata.grf
+    sdata: __dev/sdata.grf
+    
+    # Location of map cache
+    mapCache: cache/maps
+    
+    # Character sight range
+    visible: 17
+
+#------------------------------------------------------------------------------
+# MySQL database backend settings
+#
+MySQL:
+  address:
+    host: localhost
+    port: 3306
+  username: sidewinder
+  password: sidewinder
+  database: sidewinder

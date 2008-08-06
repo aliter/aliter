@@ -1,0 +1,109 @@
+from app import db
+
+class Manager(object):
+    cache = {}
+    
+    def _rowToObject(self, schema, row):
+        object = {}
+        offset = 0
+        for field in row:
+            object[schema[offset]] = field
+            offset += 1
+        return self.modelClass(**object)
+    
+    def _generateWHERE(self, *args, **kwargs):
+        output = []
+        for field, value in kwargs.iteritems():
+            # Find condition
+            # TODO: LT, GT, LTE, GTE, etc.
+            condition = '='
+            
+            if field in self.schema:
+                # Seperate all values with an AND
+                if len(output):
+                    output.append(' AND ')
+                
+                # Determine type
+                if type(value) not in (int, float, long, complex):
+                    value = '"%s"' % value.replace('"', '\\"')
+                
+                output.append('`%s` %s %s' % (field, condition, value))
+        return ''.join(output)
+    
+    def get(self, id=None, cache=True, force=False, **kwargs):
+        # Already cached?
+        if not force and 'id' in kwargs and kwargs['id'] in self.cache:
+            return self.cache[kwargs['id']]
+        
+        # Generate WHERE clause
+        if id and 'id' not in kwargs:
+            kwargs['id'] = id
+        where = self._generateWHERE(**kwargs)
+        if not where:
+            return None
+        
+        row = db.getOne('SELECT * FROM `%s` WHERE %s LIMIT 1' % (self.table, where))
+        if not row:
+            return None
+        
+        model = self._rowToObject(self.schema, row)
+        if cache or force:
+            self.cache[model.id] = model
+        return model
+
+    def getAll(self, cache=True, **kwargs):
+        # Generate WHERE clause
+        where = self._generateWHERE(**kwargs)
+        if not where:
+            return []
+        
+        rows = db.getAll('SELECT * FROM `%s` WHERE %s' % (self.table, where))
+        if not rows:
+            return []
+        
+        models = []
+        for row in rows:
+            model = self._rowToObject(self.schema, row)
+            if cache:
+                self.cache[model.id] = model
+            models.append(model)
+        return models
+
+    def create(self, cache=True, **kwargs):
+        #try:
+        object = self.modelClass(**kwargs)
+        if cache:
+            self.cache[object.id] = object
+        return self.save(object)
+        #except:
+        #    return False
+        return True
+
+    def save(self, object):
+        data   = object.getForSave()
+        keys   = []
+        values = []
+        for key, value in data.iteritems():
+            keys.append('`%s` = %%s' % key)
+            values.append(value)
+        cursor = db.cursor()
+        if object.id:
+            query = 'UPDATE `%s` SET %s WHERE `id` = %%s' % (self.table, ', '.join(keys))
+            values.append(data['id'])
+            cursor.execute(query, values)
+            return object
+        else:
+            query = 'INSERT INTO `%s` SET %s' % (self.table, ', '.join(keys))
+            cursor.execute(query, values)
+            object.id = cursor.lastrowid
+            return object
+
+    def delete(self, id):
+        # TODO: Remove from cache
+        try:
+            cursor = db.cursor()
+            cursor.execute('DELETE FROM `%s` WHERE `id` = %%s' % self.table, id)
+        except:
+            return False
+        return True
+

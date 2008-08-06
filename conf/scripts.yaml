@@ -1,0 +1,7 @@
+#
+# Aliter script configuration file
+# Defines which scripts to load and in what order (Top to bottom)
+#
+
+- test
+- guides/prontera

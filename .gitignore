@@ -1,0 +1,6 @@
+.DS_Store
+._*
+cache/maps/*
+.eprj
+desktop.ini
+thumbs.db

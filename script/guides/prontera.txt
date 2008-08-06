@@ -1,0 +1,212 @@
+#--------------------------------------
+# Prontera guides
+#--------------------------------------
+
+npc <prtGuide> "Guide" [prontera,154,187,4] 105
+    name "Prontera Guide"
+    cutin prt_soldier 2
+    
+    say
+        Welcome to Prontera,
+        the beautiful capital of the
+        Rune-Midgarts Kingdom. If
+        you have questions or need
+        help finding something in the
+        city, don't hesitate to ask.
+    
+    .loop1 = 1
+    while .loop1
+        next
+        switch select "City Guide." "Remove Marks from Mini-Map" "Notice" "Cancel"
+            case 1
+                say
+                    Please select
+                    a location from
+                    the following menu.
+                
+                if not .compass_check
+                    message
+                        Would you like me
+                        to mark locations
+                        on your Mini-Map?
+                    next
+                    if {select "Yes" "No"} == 1
+                        .compass_check = 1
+                
+                .loop2 = 1
+                while .loop2
+                    next
+                    switch select "Swordman Association" "^0000FFSanctuary^000000" "Prontera Chivalry" "Weapon Shop" "Tool Shop" "Inn" "Trading Post" "Pub" "Library" "Job Agency" "Prontera Castle" "City Hall" "Cancel"
+                        case 1
+                            say
+                                The Swordman Association,
+                                which handles Job Changes
+                                to the Swordman class, has
+                                moved to Izlude. This facility
+                                is just an empty building now.
+                            if .compass_check
+                                markMap 4 [237,41] <0,255,0>
+                            break
+                        case 2
+                            say
+                                The Prontera Sanctuary
+                                handles Job Changes to
+                                the Acolyte class, and can
+                                be found in the northeast
+                                corner of Prontera.
+                            if .compass_check
+                                markMap 5 [236,316] <255,0,0>
+                            break
+                        case 3
+                            say
+                                The Prontera Chivralry,
+                                which is responsible for
+                                the safety of our capital, is
+                                in Prontera's northwest corner.
+                            if .compass_check
+                                markMap 6 [46,345] <0,255,0>
+                            break
+                        case 4
+                            say
+                                The Weapon Shop
+                                is located northeast
+                                of the central fountain.
+                            if .compass_check
+                                markMap 7 [175,220] <255,0,255>
+                            break
+                        case 5
+                            say
+                                The Tool Shop
+                                is located northwest
+                                of the central fountain.
+                            if .compass_check
+                                markMap 8 [134,221] <255,0,255>
+                            break
+                        case 6
+                            say
+                                The Inns in Prontera are
+                                located both to the east
+                                and west of Prontera's
+                                central fountain area.
+                            if .compass_check
+                                markMap 9 [204,191] <255,0,255>
+                                markMap 10 [107,192] <255,0,255>
+                            break
+                        case 7
+                            say
+                                The Trading Post
+                                can be found southeast
+                                from the central fountain.
+                            if .compass_check
+                                markMap 11 [179,184] <0,255,0>
+                            break
+                        case 8
+                            say
+                                The Pub is located
+                                southeast of the fountain,
+                                behind the Trading Post.
+                            if .compass_check
+                                markMap 12 [208,154] <0,255,0>
+                            break
+                        case 9
+                            say
+                                If you head north from
+                                the central fountain, you'll
+                                find an empty area in which
+                                both branches of the Prontera
+                                Library can be accessed if you
+                                head towards the east or west.
+                            if .compass_check
+                                markMap 13 [120,267] <0,255,0>
+                                markMap 14 [192,267] <0,255,0>
+                            break
+                        case 10
+                            say
+                                The Job Agency is
+                                just southwest of the
+                                central fountain area.
+                            if .compass_check
+                                markMap 15 [133,183] <0,255,0>
+                            break
+                        case 11
+                            say
+                                The Prontera Castle is
+                                located at the northern
+                                sector of this city. You can
+                                go to the fields that are north
+                                of Prontera by going through
+                                the castle's rear exit.
+                            if .compass_check
+                                markMap 16 [156,360] <0,255,0>
+                            break
+                        case 12
+                            say
+                                The City Hall
+                                is located in the
+                                southwest corner
+                                in our city of Prontera.
+                            if .compass_check
+                                markMap 17 [75,91] <0,255,0>
+                            break
+                        case 13
+                            say
+                                Please ask me to "Remove
+                                Marks from Mini-Map" if you
+                                no longer wish to have the
+                                location marks displayed
+                                on your Mini-Map.
+                            .loop2 = 0
+                break
+            case 2
+                removeMark 4
+                removeMark 5
+                removeMark 6
+                removeMark 7
+                removeMark 8
+                removeMark 9
+                removeMark 10
+                removeMark 11
+                removeMark 12
+                removeMark 13
+                removeMark 14
+                removeMark 15
+                removeMark 16
+                removeMark 17
+                .compass_check = 0
+                break
+            case 3
+                say
+                    Advances in sorcery and
+                    technology have allowed
+                    us to update our information
+                    system, enabling up to mark
+                    locations on your Mini-Map
+                    for easier navigation.
+                    
+                    Your Mini-Map is located
+                    in the upper right corner
+                    of the screen. If you can't
+                    see it, press the Ctrl + Tab
+                    keys or click the "Map" button in your Basic Info Window.
+                    
+                    On your Mini-Map,
+                    click on the "+" and "-"
+                    symbols to zoom in and
+                    our of your Mini-Map. We
+                    hope you enjoy your travels
+                    here in the city of Prontera.
+                break
+            case 4
+                say
+                    Well, adventurer...
+                    I hope your journeys
+                    through Rune-Midgard
+                    are both fun and safe.
+                close2
+                .loop1 = 0
+    hideCutin
+
+duplicate <prtGuide> "East Gate-Guide" [prontera,282,208,2]
+duplicate <prtGuide> "West Gate-Guide" [prontera,29,200,6]
+duplicate <prtGuide> "South Gate-Guide" [prontera,160,29,0]
+duplicate <prtGuide> "North Gate-Guide" [prontera,151,330,4]
