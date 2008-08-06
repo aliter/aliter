@@ -60,7 +60,7 @@ class CharSession(Session):
             )
             self.log('Character selection failed.', log.LOW)
             return
-        print self.accountID
+        
         self.log('Selected %s, sending map server details.' % char.name, log.LOW)
         self.sendPacket(
             0x71,

@@ -25,8 +25,6 @@ class EventObject(object):
             and player.y - y > -config['MapServer'][0]['visible']:
                 players.append(player)
 
-        print "Players in sight:"
-        print maps[map].players
         return players
     
     def _playersOnMap(self, map):
@@ -42,6 +40,11 @@ class EventObject(object):
     def _sendToPlayersInSight(self, map, x, y, packet):
         for player in self._playersInSight(map, x, y):
             player.session.sendRaw(packet)
+    
+    def _sendToOtherPlayersInSight(self, actor, map, x, y, packet):
+        for player in self._playersInSight(map, x, y):
+            if player.id != actor.id:
+                player.session.sendRaw(packet)
     
     def _sendToPlayersOnMap(self, map, packet):
         for player in self._playersOnMap(map):
@@ -105,12 +108,17 @@ class EventObject(object):
         return False
     
     def sayChat(self, actor, message):
-        print actor
         if not self._doGMCommand(actor, message):
-            self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
-                0x8e,
+            self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
+                0x8d,
+                actorID=actor.id,
                 message='%s : %s' % (actor.name, message+'\x00'),
             ))
+            
+            actor.session.sendPacket(
+                0x8e,
+                message='%s : %s' % (actor.name, message+'\x00'),
+            )
     
     def sayParty(self, actor, message):
         pass
