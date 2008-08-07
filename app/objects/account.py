@@ -1,4 +1,4 @@
-from app.utils import hashcompat
+from app.utils.hashcompat import sha_constructor
 
 from model import Model
 from manager import Manager
