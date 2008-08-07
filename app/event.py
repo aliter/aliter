@@ -71,7 +71,9 @@ class EventObject(object):
                 return x, y
     
     def _doGMCommand(self, actor, message):
-        "If message is a GM command execute it"
+        """
+        Executes a command if the given message is a GM command.
+        """
         if message[0] == '@':
             command    = splitCommand(message)
             command[0] = command[0][1:]
