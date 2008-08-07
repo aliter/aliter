@@ -1,6 +1,10 @@
-import os, sys, time, termios, traceback
-from struct import unpack
+import os
+import sys
+import time
+import termios
+import traceback
 
+from struct import unpack
 from twisted.internet import reactor
 
 from app import log

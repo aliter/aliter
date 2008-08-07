@@ -1,4 +1,5 @@
-import random, sys
+import random
+import sys
 from socket import inet_aton
 
 from app import log

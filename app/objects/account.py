@@ -1,4 +1,4 @@
-import sha
+from app.utils import hashcompat
 
 from model import Model
 from manager import Manager
@@ -19,7 +19,7 @@ class Account(Model):
     ]
     
     def hashPassword(self, password):
-        return sha.new(password).hexdigest()
+        return sha_constructor(password).hexdigest()
     
     def verifyPassword(self, password):
         if not self.password or not password:

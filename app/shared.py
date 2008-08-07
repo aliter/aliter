@@ -1,5 +1,6 @@
 from lib import yaml
 
+
 file = open('conf/config.yaml')
 config = yaml.load(file.read())
 file.close()

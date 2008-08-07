@@ -1,4 +1,7 @@
-import sha, time
+import time
+
+from app.utils import hashcompat
+
 from struct import pack, unpack, calcsize
 from threading import Timer
 
