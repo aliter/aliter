@@ -2,6 +2,7 @@ from datetime import datetime
 
 from constants import *
 
+
 # Priority status
 DEBUG, LOW, NORMAL, HIGH, CRITICAL = 10, 20, 30, 40, 50
 

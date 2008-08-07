@@ -11,6 +11,7 @@ from objects import Character
 from packets import generatePacket as _, encodePositionMove, encodePosition
 from misc import getTick, splitCommand
 
+
 class EventObject(object):
     #--------------------------------------------------
     # Player finding

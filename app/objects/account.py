@@ -3,6 +3,7 @@ import sha
 from model import Model
 from manager import Manager
 
+
 class Account(Model):
     required = [
         'username', 'password', 'Email',

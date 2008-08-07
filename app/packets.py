@@ -3,6 +3,7 @@ from struct import pack, unpack, calcsize
 
 from misc import expandStruct
 
+
 # Custom struct codes:
 # ! = Variable length string (Only works with words and must be first argument)
 # Dict format: "packetNum: (method, struct[, arguments]*)"

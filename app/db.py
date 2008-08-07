@@ -2,6 +2,7 @@ import MySQLdb
 
 from shared import config
 
+
 try:
     db = MySQLdb.connect(
         host=config['MySQL']['address']['host'],

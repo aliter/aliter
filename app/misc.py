@@ -3,8 +3,11 @@ import re, os, socket, string, sys, traceback, csv
 from twisted.internet import reactor
 from twisted.internet.error import CannotListenError
 
+
 def chunk(input, size):
-    "Chunk a list"
+    """
+    Chunk a list
+    """
     output  = []
     current = []
     for cell in input:
@@ -16,7 +19,9 @@ def chunk(input, size):
     return output
 
 def stringHex(string):
-    "Make hexadecimal human-readable digits"
+    """
+    Make hexadecimal human-readable digits
+    """
     # String representation
     list = []
     for char in string:
@@ -33,7 +38,9 @@ def stringHex(string):
     return ''.join(nibbles)
 
 def fixTermination(*args):
-    "Remove excess C-style string terminations"
+    """
+    Remove excess C-style string terminations
+    """
     out = []
     for arg in args:
         if type(arg) == str:
@@ -50,7 +57,9 @@ def fixTermination(*args):
 
 tick = 0
 def getTick():
-    "Temporary server tick count"
+    """
+    Temporary server tick count
+    """
     global tick
     tick += 1
     return tick
@@ -60,11 +69,16 @@ def _expandStruct(match):
         return match.group(1) + match.group(2)
     return match.group(2) * int(match.group(1))
 def expandStruct(string):
-    "Convert all number repetitions such as '4c' into their expanded form ('cccc')"
+    """
+    Convert all number repetitions such as '4c' into their expanded form
+    ('cccc').
+    """
     return re.sub('(\d+)(\w)', _expandStruct, string)
 
 def addContext(variable, params):
-    "Replace all script .variables with their appropriate value from params"
+    """
+    Replace all script .variables with their appropriate value from params.
+    """
     if type(variable) == str:
         scriptVariable = re.compile('\.[a-zA-Z0-9_]+')
         while 1:
@@ -89,7 +103,9 @@ def splitCommand(line, params=None):
     return words
 
 def ttysize():
-    "Determine the size of the user's TTY session"
+    """
+    Determine the size of the user's TTY session.
+    """
     fp = os.popen('stty -a', 'r')
     ln1 = fp.readline()
     fp.close()

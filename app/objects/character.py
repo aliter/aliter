@@ -1,6 +1,7 @@
 from actor import Actor
 from manager import Manager
 
+
 class Character(Actor):
     required = [
         'accountID', 'charNum',

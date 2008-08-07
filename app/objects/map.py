@@ -3,6 +3,7 @@ from struct import unpack
 
 from app.shared import config
 
+
 class Map(object):
     def __init__(self, name):
         # Open and validate

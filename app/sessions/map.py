@@ -10,6 +10,7 @@ from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from app.event import Event
 from app.script import Scripts
 
+
 class MapSession(Session):
     def __init__(self):
         Session.__init__(self, receivedPackets['map'], log.map)

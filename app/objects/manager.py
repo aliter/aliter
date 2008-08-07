@@ -1,5 +1,6 @@
 from app import db
 
+
 class Manager(object):
     cache = {}
     

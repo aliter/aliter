@@ -7,6 +7,7 @@ from app.objects import Session, Accounts, Characters
 from app.packets import receivedPackets, sendPacket
 from app.inter import setLoginID
 
+
 class LoginSession(Session):
     def __init__(self):
         Session.__init__(self, receivedPackets['login'], log.login)

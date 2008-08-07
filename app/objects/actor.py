@@ -3,6 +3,7 @@ from twisted.internet import reactor
 from model import Model
 from app import log
 
+
 class Actor(Model):
     required = [
         'name',

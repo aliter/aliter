@@ -1,4 +1,4 @@
-# Sidewinder related
+# Aliter related
 MAP_CACHE_VERSION = 3
 AREA_SERVER, AREA_MAP, AREA_VISIBLE = range(3)
 

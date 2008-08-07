@@ -7,6 +7,7 @@ from app.exceptions import IllegalPacket
 from app.packets import receivedPackets, sendPacket
 from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 
+
 class CharSession(Session):
     def __init__(self):
         Session.__init__(self, receivedPackets['char'], log.char)

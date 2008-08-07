@@ -8,6 +8,7 @@ from app.exceptions import IllegalPacket
 from app.packets import receivedPackets, sendPacket
 from app.misc import expandStruct, stringHex, fixTermination
 
+
 class Server(protocol.ServerFactory):
     def __init__(self, protocol, logMethod, **kwargs):
         self.protocol, self.log = protocol, logMethod

@@ -6,6 +6,7 @@ from shared import maps
 from objects import NPC, Warp
 from misc import splitCommand, addContext
 
+
 class ScriptObject(object):
     files     = {}
     nextNPCID = 5000000
@@ -23,10 +24,13 @@ class ScriptObject(object):
             return '_eval '+line
         return line
     
-    # Loads a script into memory and compiles it
-    #    Line format: [fileLine, indent, line, command]
-    # Command format: [firstWord, wordsNoFirst, stringNoFirst]
     def load(self, filename):
+        """
+        Loads a script into memory and compiles it.
+        
+        Line format: [fileLine, indent, line, command]
+        Command format: [firstWord, wordsNoFirst, stringNoFirst]
+        """
         self.labels   = {}
         self.commands = {}
         self.commandsOffset = 0

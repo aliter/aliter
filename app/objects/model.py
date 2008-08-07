@@ -2,6 +2,7 @@ import sha, time
 from struct import pack, unpack, calcsize
 from threading import Timer
 
+
 class Model(object):
     required = []
     optional = []
