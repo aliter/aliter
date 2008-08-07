@@ -3,7 +3,7 @@ from socket import inet_aton
 
 from app import log
 from app.shared import config
-from app.objects import Session, Accounts
+from app.objects import Session, Accounts, Characters
 from app.packets import receivedPackets, sendPacket
 from app.inter import setLoginID
 
@@ -40,6 +40,7 @@ class LoginSession(Session):
                     'maintenance': server['maintenance'],
                     'new': server['new'],
                 })
+            
             self.sendPacket(
                 0x69,
                 loginIDa=loginIDa,

@@ -112,6 +112,8 @@ sentPackets = {
     0x0b6: ('l', ('actorID',)), # NPC close button
     0x0b7: ('hl!', ('packetLen', 'actorID', 'items')), # NPC menu (Items seperated by ":")
     0x0c0: ('lB', ('actorID', 'emotion')), # Display emotion with ID
+    0x001d7: ('llx5sx1sx41x3s3s1sx', ('accountID', 'junk1', 'junk2', 'junk3', 'junk4', 'position', 'junk4')),
+    #0x0d7: ('l55x3s4x', ('accountID', 'position')), # Player has spawned, TODO: See what that data is in the 55x
     0x142: ('l', ('actorID',)), # NPC numerical input
     0x144: ('4l4Bx', ('actorID', 'type', 'x', 'y', 'pointID', 'red', 'green', 'blue')), # Mark the minimap (Type 2 = Remove)
     0x14e: ('l', ('type',)), # Guild page response

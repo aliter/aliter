@@ -8,7 +8,7 @@ import log
 from shared import config, maps
 from constants import *
 from objects import Character
-from packets import generatePacket as _, encodePositionMove
+from packets import generatePacket as _, encodePositionMove, encodePosition
 from misc import getTick, splitCommand
 
 class EventObject(object):
@@ -24,7 +24,7 @@ class EventObject(object):
             and player.y - y < config['MapServer'][0]['visible'] \
             and player.y - y > -config['MapServer'][0]['visible']:
                 players.append(player)
-
+        
         return players
     
     def _playersOnMap(self, map):
@@ -184,6 +184,19 @@ class EventObject(object):
             x=actor.x,
             y=actor.y,
         )
+        
+        # self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
+        #     0x01d7,
+        #     accountID=actor.accountID,
+        #     junk1=0x02,
+        #     junk2='\x2b\x02\x81\x84\x1e',
+        #     junk3='\x96',
+        #     junk4='\x01\x30\x09',
+        #     position=encodePosition(actor.x, actor.y),
+        #     junk5='\x01'
+        # ))
+        self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, "\xD7\x01\x81\x84\x1E\x00\x02\x00\x00\x00\x00\x2B\x02\x81\x84\x1E\x00\x96\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x27\x0B\xF0\x05\x05\x01\x00")
+        print "Sending 'HAY!' packet to characters in sight."
         # TODO: Send warp effect to other players in sight
     
     #--------------------------------------------------
