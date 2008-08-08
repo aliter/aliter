@@ -70,7 +70,7 @@ class EventObject(object):
                     gender = 0
         
                 actor.session.sendRaw(_(
-                	0x22b,
+                	0x22c,
                 	accountID=player.accountID,
                 	speed=150, # TODO: Make this real.
                 	opt1=0, # TODO: Make this real.
@@ -81,6 +81,7 @@ class EventObject(object):
                 	weapon=player.viewWeapon,
                 	shield=player.viewShield,
                 	lowhead=player.viewHeadBottom,
+                	tick=getTick(),
                 	tophead=player.viewHeadTop,
                 	midhead=player.viewHeadMiddle,
                 	hcolor=player.hairColor,
@@ -92,9 +93,8 @@ class EventObject(object):
                 	effect=0, # TODO: Make this real.
                 	karma=0, # TODO: Make this real.
                 	sex=gender,
-                	position=encodePosition(player.x, player.y),
-                	fives=0x0505,
-                	blevel=player.baseLevel
+                	position=encodePosition(player.x, player.y) + "\x88\x05\x05",
+                	blevel=player.baseLevel,
                 ))
     
     def _registerActorView(self, actor):
@@ -136,9 +136,8 @@ class EventObject(object):
         	effect=0, # TODO: Make this real.
         	karma=0, # TODO: Make this real.
         	sex=gender,
-        	position=encodePosition(actor.x, actor.y),
-        	fives=0x0505,
-        	blevel=actor.baseLevel
+        	position=encodePosition(actor.x, actor.y) + "\x05\x05",
+        	blevel=actor.baseLevel,
         ))
     
     #--------------------------------------------------
@@ -172,8 +171,8 @@ class EventObject(object):
                         if len(command) > 3:
                             x, y = int(command[2]), int(command[3])
                             if x < 0 or y < 0 \
-                            or x >= maps[actor.map].width or y >= maps[actor.map].height \
-                            or maps[actor.map].tiles[x][y] != 1:
+                            or x >= maps[command[1]].width or y >= maps[command[1]].height \
+                            or maps[command[1]].tiles[x][y] != 1:
                                 return self._gmCommandError(actor, 'Unwalkable tile')
                         else:
                             x, y = self._gmRandomTile(maps[command[1]])
@@ -202,7 +201,7 @@ class EventObject(object):
         if not self._doGMCommand(actor, message):
             self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
                 0x8d,
-                actorID=actor.id,
+                actorID=actor.gameID,
                 message='%s : %s' % (actor.name, message+'\x00'),
             ))
             
@@ -243,7 +242,11 @@ class EventObject(object):
                     player.session.sendPacket(
                         0x86,
                         actorID=actor.gameID,
-                        position=encodePositionMove(actor.x, actor.y, actor.toX, actor.toY),
+                        position=encodePositionMove(actor.x, actor.y, actor.toX, actor.toY) + "\x88",
+                        tick=getTick(),
+                    )
+                    player.session.sendPacket(
+                        0x7f,
                         tick=getTick(),
                     )
                     print 'Sending movement packet to %s' % player # TODO: Do that.
@@ -262,9 +265,10 @@ class EventObject(object):
         actor.walkPath = walkPath
         actor.walkPathOffset = 0
         
-        if actor.gameID in self._movement:
+        if actor.gameID in self._movement and self._movement[actor.gameID].running:
             # Stop actor if already moving
             self._movement[actor.gameID].stop()
+        
         self._movement[actor.gameID] = LoopingCall(self._moveLoop, actor, walkPath)
         self._movement[actor.gameID].start(actor.moveDelay, now=True)
     
@@ -286,6 +290,7 @@ class EventObject(object):
         )
         
         self._registerActorView(actor)
+        self._showActors(actor)
         # TODO: Send warp effect to other players in sight
     
     #--------------------------------------------------

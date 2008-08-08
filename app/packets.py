@@ -3,6 +3,8 @@ from struct import pack, unpack, calcsize
 
 from misc import expandStruct
 
+from exceptions import MissingArgument
+
 
 # Custom struct codes:
 # ! = Variable length string (Only works with words and must be first argument)
@@ -126,7 +128,8 @@ sentPackets = {
     0x1d4: ('l', ('actorID',)), # NPC string input
     0x1d7: ('lbhh', ('accountID', 'equip', 'w1', 'w2')),
     # This beast handles a few times when a user should show up for other people. [Alex]
-    0x22b: ('l4h2x10hl3h2x2b3s2h', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'fives', 'blevel')),
+    0x22b: ('l4h2x10hl3h2x2b5sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),
+    0x22c: ('xl4h2x5hL5hl3h2x2b8sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tick', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),
 }
 
 def generatePacket(packetID, **kwargs):

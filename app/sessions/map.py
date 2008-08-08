@@ -4,7 +4,7 @@ from app import log
 from app.shared import config, maps
 from app.objects import Session, Accounts, Characters
 from app.exceptions import IllegalPacket
-from app.packets import receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
+from app.packets import generatePacket as _, receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
 from app.misc import getTick
 from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from app.event import Event
@@ -194,6 +194,13 @@ class MapSession(Session):
             # Save character state
             Characters.save(self.character)
             
+            # Tell others that this user has signed out, style 3 ("teleport")
+            Event._sendToOtherPlayersInSight(self.character, self.character.map, self.character.x, self.character.y, _(
+                0x80,
+                actorID=self.character.gameID,
+                style=3
+            ))
+            
             # Character select screen
             self.accountID   = 0
             self.characterID = 0
@@ -242,6 +249,13 @@ class MapSession(Session):
         
         # Save character state
         Characters.save(self.character)
+            
+        # Tell others that this user has signed out, style 3 ("teleport")
+        Event._sendToOtherPlayersInSight(self.character, self.character.map, self.character.x, self.character.y, _(
+            0x80,
+            actorID=self.character.gameID,
+            style=3
+        ))
         
         unsetLoginID(self.accountID)
         self.accountID   = 0
@@ -267,8 +281,8 @@ class MapSession(Session):
         if not self.character:
             raise IllegalPacket
         
-        self.sendPacket(
+        Event._sendToPlayersInSight(self.character.map, self.character.x, self.character.y, _(
             0xc0,
             actorID=self.character.gameID,
             emotion=emotion,
-        )
+        ))
