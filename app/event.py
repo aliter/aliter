@@ -7,8 +7,8 @@ from twisted.internet.task import LoopingCall
 import log
 from shared import config, maps
 from constants import *
-from objects import Character
-from packets import generatePacket as _, encodePositionMove, encodePosition
+from objects import Character, Accounts
+from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition
 from misc import getTick, splitCommand
 
 
@@ -51,6 +51,96 @@ class EventObject(object):
         for player in self._playersOnMap(map):
             player.session.sendRaw(packet)
     
+    def _showActors(self, actor):
+        for player in self._playersInSight(actor.map, actor.x, actor.y):
+            if player.id != actor.id:
+                actor.session.sendRaw(_(
+                	0x1d7,
+                	accountID=player.accountID,
+                	equip=2,
+                	w1=player.viewWeapon,
+                	w2=player.viewShield
+                ))
+        
+                account = Accounts.get(player.accountID)
+                
+                if account.gender == 1:
+                    gender = 1
+                else:
+                    gender = 0
+        
+                actor.session.sendRaw(_(
+                	0x22b,
+                	accountID=player.accountID,
+                	speed=150, # TODO: Make this real.
+                	opt1=0, # TODO: Make this real.
+                	opt2=0, # TODO: Make this real.
+                	opt3=0, # TODO: Make this real.
+                	job=player.job,
+                	hstyle=player.hairStyle,
+                	weapon=player.viewWeapon,
+                	shield=player.viewShield,
+                	lowhead=player.viewHeadBottom,
+                	tophead=player.viewHeadTop,
+                	midhead=player.viewHeadMiddle,
+                	hcolor=player.hairColor,
+                	ccolor=player.clothesColor,
+                	headdir=0, # FIXME: How can this be tested?
+                	guildID=player.guildID,
+                	guildEmblem=0, # TODO: Make this real.
+                	manner=0, # TODO: Make this real.
+                	effect=0, # TODO: Make this real.
+                	karma=0, # TODO: Make this real.
+                	sex=gender,
+                	position=encodePosition(player.x, player.y),
+                	fives=0x0505,
+                	blevel=player.baseLevel
+                ))
+    
+    def _registerActorView(self, actor):
+        self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
+        	0x1d7,
+        	accountID=actor.accountID,
+        	equip=2,
+        	w1=actor.viewWeapon,
+        	w2=actor.viewShield
+        ))
+        
+        account = Accounts.get(actor.accountID)
+        
+        if account.gender == 1:
+            gender = 1
+        else:
+            gender = 0
+        
+        self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
+        	0x22b,
+        	accountID=actor.accountID,
+        	speed=150, # TODO: Make this real.
+        	opt1=0, # TODO: Make this real.
+        	opt2=0, # TODO: Make this real.
+        	opt3=0, # TODO: Make this real.
+        	job=actor.job,
+        	hstyle=actor.hairStyle,
+        	weapon=actor.viewWeapon,
+        	shield=actor.viewShield,
+        	lowhead=actor.viewHeadBottom,
+        	tophead=actor.viewHeadTop,
+        	midhead=actor.viewHeadMiddle,
+        	hcolor=actor.hairColor,
+        	ccolor=actor.clothesColor,
+        	headdir=0, # FIXME: How can this be tested?
+        	guildID=actor.guildID,
+        	guildEmblem=0, # TODO: Make this real.
+        	manner=0, # TODO: Make this real.
+        	effect=0, # TODO: Make this real.
+        	karma=0, # TODO: Make this real.
+        	sex=gender,
+        	position=encodePosition(actor.x, actor.y),
+        	fives=0x0505,
+        	blevel=actor.baseLevel
+        ))
+    
     #--------------------------------------------------
     # Chat
     #--------------------------------------------------
@@ -71,9 +161,7 @@ class EventObject(object):
                 return x, y
     
     def _doGMCommand(self, actor, message):
-        """
-        Executes a command if the given message is a GM command.
-        """
+        "If message is a GM command execute it"
         if message[0] == '@':
             command    = splitCommand(message)
             command[0] = command[0][1:]
@@ -152,7 +240,14 @@ class EventObject(object):
                         tick=getTick(),
                     )
                 else:
-                    print 'Sending movement packet to %s' % player
+                    player.session.sendPacket(
+                        0x86,
+                        actorID=actor.gameID,
+                        position=encodePositionMove(actor.x, actor.y, actor.toX, actor.toY),
+                        tick=getTick(),
+                    )
+                    print 'Sending movement packet to %s' % player # TODO: Do that.
+                    
         
         # Is this the last one?
         if actor.walkPathOffset >= len(walkPath):
@@ -180,7 +275,9 @@ class EventObject(object):
             del maps[actor.map].players[actor.gameID]
             actor.map = map
             maps[actor.map].players[actor.gameID] = actor
+        
         actor.x, actor.y = x, y
+        
         actor.session.sendPacket(
             0x91,
             map=actor.map+'.gat',
@@ -188,18 +285,7 @@ class EventObject(object):
             y=actor.y,
         )
         
-        # self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
-        #     0x01d7,
-        #     accountID=actor.accountID,
-        #     junk1=0x02,
-        #     junk2='\x2b\x02\x81\x84\x1e',
-        #     junk3='\x96',
-        #     junk4='\x01\x30\x09',
-        #     position=encodePosition(actor.x, actor.y),
-        #     junk5='\x01'
-        # ))
-        self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, "\xD7\x01\x81\x84\x1E\x00\x02\x00\x00\x00\x00\x2B\x02\x81\x84\x1E\x00\x96\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x27\x0B\xF0\x05\x05\x01\x00")
-        print "Sending 'HAY!' packet to characters in sight."
+        self._registerActorView(actor)
         # TODO: Send warp effect to other players in sight
     
     #--------------------------------------------------

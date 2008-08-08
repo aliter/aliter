@@ -64,8 +64,8 @@ sentPackets = {
     'character':  (
         '5l8s3l17h24s6Bhh',
         (
-            'id', 'baseExp', 'zeny', 'jobExp', 'jobLevel', '', 0, 0, 0, 'statusPoints', 'hp', 'maxHP', 'sp', 'maxSP', 'speed', 'job', 'hairColor',
-            'viewWeapon', 'baseLevel', 'skillPoints', 'viewHeadBottom', 'viewShield', 'viewHeadTop', 'viewHeadMiddle', 'hairStyle', 'clothesColor',
+            'id', 'baseExp', 'zeny', 'jobExp', 'jobLevel', '', 0, 0, 0, 'statusPoints', 'hp', 'maxHP', 'sp', 'maxSP', 'speed', 'job', 'hairStyle',
+            'viewWeapon', 'baseLevel', 'skillPoints', 'viewHeadBottom', 'viewShield', 'viewHeadTop', 'viewHeadMiddle', 'hairColor', 'clothesColor',
             'name', 'str', 'agi', 'vit', 'int', 'dex', 'luk', 'charNum', 1
         )
     ),
@@ -99,7 +99,9 @@ sentPackets = {
     # Map server packets
     
     0x073: ('l3sxx', ('tick', 'position')), # Login successful
+    0x07f: ('l', ('tick')), # Sync [Alex]
     0x080: ('lb', ('actorID', 'style')), # Actor vanished (0=off-screen, 1=died, 2=vanished, 3=teleport)
+    0x086: ('l6sl', ('actorID', 'position', 'tick')), # Actor display
     0x087: ('l6sl', ('actorID', 'position', 'tick')), # Actor movement
     0x08a: ('lllllhhBh', ('src', 'dst', 'tick', 'srcSpeed', 'dstSpeed', 'paramA', 'paramB', 'type', 'paramC')), # Physical attack
     0x08d: ('hl!', ('packetLen', 'actorID', 'message')), # Normal chat message with ID
@@ -113,7 +115,7 @@ sentPackets = {
     0x0b6: ('l', ('actorID',)), # NPC close button
     0x0b7: ('hl!', ('packetLen', 'actorID', 'items')), # NPC menu (Items seperated by ":")
     0x0c0: ('lB', ('actorID', 'emotion')), # Display emotion with ID
-    0x001d7: ('llx5sx1sx41x3s3s1sx', ('accountID', 'junk1', 'junk2', 'junk3', 'junk4', 'position', 'junk4')),
+    #0x001d7: ('llx5sx1sx41x3s3s1sx', ('accountID', 'junk1', 'junk2', 'junk3', 'junk4', 'position', 'junk4')),
     #0x0d7: ('l55x3s4x', ('accountID', 'position')), # Player has spawned, TODO: See what that data is in the 55x
     0x142: ('l', ('actorID',)), # NPC numerical input
     0x144: ('4l4Bx', ('actorID', 'type', 'x', 'y', 'pointID', 'red', 'green', 'blue')), # Mark the minimap (Type 2 = Remove)
@@ -122,6 +124,9 @@ sentPackets = {
     0x18b: ('l', ('failure',)), # Quit response
     0x1b3: ('64sB', ('filename', 'position')), # NPC cut-in image
     0x1d4: ('l', ('actorID',)), # NPC string input
+    0x1d7: ('lbhh', ('accountID', 'equip', 'w1', 'w2')),
+    # This beast handles a few times when a user should show up for other people. [Alex]
+    0x22b: ('l4h2x10hl3h2x2b3s2h', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'fives', 'blevel')),
 }
 
 def generatePacket(packetID, **kwargs):

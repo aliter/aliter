@@ -63,6 +63,9 @@ class MapSession(Session):
             message='Welcome to Aliter',
         )
         
+        Event._registerActorView(self.character)
+        Event._showActors(self.character)
+        
         # Display all actors on current map
         for npc in maps[self.character.map].npcs.values():
             self.sendPacket(
