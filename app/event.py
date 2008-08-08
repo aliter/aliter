@@ -7,7 +7,7 @@ from twisted.internet.task import LoopingCall
 import log
 from shared import config, maps
 from constants import *
-from objects import Character, Accounts
+from objects import Characters, Accounts
 from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition
 from misc import getTick, splitCommand
 
@@ -16,6 +16,12 @@ class EventObject(object):
     #--------------------------------------------------
     # Player finding
     #--------------------------------------------------
+    
+    def _getPlayer(self, match, value):
+        for map in maps:
+            for player in maps[map].players.itervalues():
+                if getattr(player, match) == value:
+                    return player
     
     def _playersInSight(self, map, x, y):
         players = []
@@ -161,39 +167,23 @@ class EventObject(object):
     
     def _doGMCommand(self, actor, message):
         "If message is a GM command execute it"
-        if message[0] == '@':
-            command    = splitCommand(message)
-            command[0] = command[0][1:]
-            
-            if command[0] == 'warp':
-                if len(command) > 1:
-                    if command[1] in maps:
-                        if len(command) > 3:
-                            x, y = int(command[2]), int(command[3])
-                            if x < 0 or y < 0 \
-                            or x >= maps[command[1]].width or y >= maps[command[1]].height \
-                            or maps[command[1]].tiles[x][y] != 1:
-                                return self._gmCommandError(actor, 'Unwalkable tile')
-                        else:
-                            x, y = self._gmRandomTile(maps[command[1]])
-                        self.warp(actor, x, y, command[1])
-                        return True
-                    else:
-                        return self._gmCommandError(actor, 'Invalid map')
-                else:
-                    return self._gmCommandError(actor, 'Format: @warp <map> [<x> <y>]')
-            
-            elif command[0] == 'jump':
-                if len(command) > 2:
-                    x, y = int(command[1]), int(command[2])
-                    if x < 0 or y < 0 \
-                    or x >= maps[actor.map].width or y >= maps[actor.map].height \
-                    or maps[actor.map].tiles[x][y] != 1:
-                        return self._gmCommandError(actor, 'Unwalkable tile')
-                else:
-                    x, y = self._gmRandomTile(maps[actor.map])
-                self.warp(actor, x, y)
-                return True
+        if message[0] != '@':
+            return False
+        
+        commands   = splitCommand(message)
+        arguments  = commands[1:]
+        command    = commands[0][1:]
+        
+        gm = GMCommand()
+        
+        if (hasattr(gm, command) == False):
+            return False
+        
+        attr = getattr(gm, command)
+        
+        if attr:
+            attr(actor, *arguments)
+            return True
         
         return False
     
@@ -249,7 +239,6 @@ class EventObject(object):
                         0x7f,
                         tick=getTick(),
                     )
-                    print 'Sending movement packet to %s' % player # TODO: Do that.
                     
         
         # Is this the last one?
@@ -301,3 +290,102 @@ class EventObject(object):
         pass
 
 Event = EventObject()
+
+
+
+class GMCommand(EventObject):
+    def warp(self, actor, map = None, x = 0, y = 0):
+        """
+        Warps the player to a specified map, x, and y corrdinate.
+        """
+        if map == None:
+            return self._gmCommandError(actor, "Usage: @warp <map> [<x> <y>]")
+        
+        if map not in maps:
+            return self._gmCommandError(actor, "Invalid map.")
+        
+        if x != 0 or y != 0:
+            x, y = int(x), int(y)
+            if x < 0 or y < 0 \
+            or x >= maps[map].width or y >= maps[map].height \
+            or maps[map].tiles[x][y] != 1:
+                return self._gmCommandError(actor, "Unwalkable tile.")
+        else:
+            x, y = self._gmRandomTile(maps[map])
+        
+        Event.warp(actor, x, y, map)
+    
+    def jump(self, actor, x = 0, y = 0):
+        """
+        Jumps the player to either a specified coordinate or a random position.
+        """
+        if x != 0 or y != 0:
+            x, y = int(x), int(y)
+            if x < 0 or y < 0 \
+            or x >= maps[actor.map].width or y >= maps[actor.map].height \
+            or maps[actor.map].tiles[x][y] != 1:
+                return self._gmCommandError(actor, "Unwalkable tile.")
+        else:
+            x, y = self._gmRandomTile(maps[actor.map])
+        
+        Event.warp(actor, x, y)
+    
+    def refresh(self, actor):
+        """
+        Refreshes the player's screen.
+        """
+        Event.warp(actor, actor.x, actor.y)
+    
+    def me(self, actor, *words):
+        """
+        Outputs what they say after @me as a pseudo-event message, a-la IRC.
+        """
+        
+        message = " ".join(words)
+        
+        if message.strip() == "":
+            return self._gmCommandError(actor, "Usage: @me <action>")
+        
+        self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
+            0x8d,
+            actorID=actor.gameID,
+            message='* %s %s' % (actor.name, message+'\x00'),
+        ))
+        
+        actor.session.sendPacket(
+            0x8e,
+            message='* %s %s' % (actor.name, message+'\x00'),
+        )
+
+    def kick(self, actor, name = None):
+        """
+        Kicks a user off, searches by their name.
+        """
+        if name == None:
+            return self._gmCommandError(actor, "Usage: @kick <name>")
+        
+        from app.inter import unsetLoginID
+        
+        log.map("Kicking user %s (%s)" % (name, actor.name), log.LOW)
+        
+        player = self._getPlayer("name", name)
+        
+        if not player:
+            return self._gmCommandError(actor, "User '%s' not found." % name)
+        
+        # Save character state
+        Characters.save(player)
+            
+        # Tell others that this user has signed out, style 3 ("teleport")
+        self._sendToOtherPlayersInSight(player, player.map, player.x, player.y, _(
+            0x80,
+            actorID=player.gameID,
+            style=3
+        ))
+        
+        unsetLoginID(player.accountID)
+        
+        player.session.sendPacket(
+            0x81,
+            type=15,
+        )

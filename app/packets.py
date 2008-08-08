@@ -90,7 +90,7 @@ sentPackets = {
     # Char server packets
     
     0x06b: ('h20s?', ('packetLen', ''), ('character',)), # List characters
-    0x06c: ('h', ('type',)), # Character selection failed
+    0x06c: ('h', ('type',)), # Character selection failed/character server error
     0x06d: ('?', None, ('character',)), # Create character
     0x06e: ('h', ('type',)), # Character creation failed
     0x06f: None, # Character deleted
@@ -101,8 +101,9 @@ sentPackets = {
     # Map server packets
     
     0x073: ('l3sxx', ('tick', 'position')), # Login successful
-    0x07f: ('l', ('tick')), # Sync [Alex]
+    0x07f: ('l', ('tick',)), # Sync [Alex]
     0x080: ('lb', ('actorID', 'style')), # Actor vanished (0=off-screen, 1=died, 2=vanished, 3=teleport)
+    0x081: ('b', ('type',)), # Error (0=server shut down, 1=server closed, 2=dual login prohibited, 3=out of sync, 4=server is jammed, 5=underaged, 6=pay to play, 8=server still recognizes you as connected, 9=internet cafe full, 10=payment expired, 15=kicked)
     0x086: ('l6sl', ('actorID', 'position', 'tick')), # Actor display
     0x087: ('l6sl', ('actorID', 'position', 'tick')), # Actor movement
     0x08a: ('lllllhhBh', ('src', 'dst', 'tick', 'srcSpeed', 'dstSpeed', 'paramA', 'paramB', 'type', 'paramC')), # Physical attack
@@ -154,7 +155,7 @@ def generatePacket(packetID, **kwargs):
                     packetLenOffset = offset
                     arguments.append(0)
                 else:
-                    print packetID, kwargs
+                    print packetID, kwargs, argument
                     raise MissingArgument
                 continue
             arguments.append(kwargs[argument])

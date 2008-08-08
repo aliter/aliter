@@ -117,6 +117,7 @@ class MapSession(Session):
                 halt     = True
             if halt:
                 break
+    
     def npcActivate(self, npcID):
         if not self.character:
             raise IllegalPacket
@@ -140,6 +141,7 @@ class MapSession(Session):
         }
         
         self._npcExecute()
+    
     def npcNext(self, npcID):
         if not self.character:
             raise IllegalPacket
@@ -150,6 +152,7 @@ class MapSession(Session):
             return
         
         self._npcExecute()
+    
     def npcClosed(self, npcID):
         if not self.character:
             raise IllegalPacket
@@ -163,6 +166,7 @@ class MapSession(Session):
             self.npc = None
         else:
             self._npcExecute()
+    
     def npcMenuSelect(self, npcID, selection):
         if not self.character:
             raise IllegalPacket

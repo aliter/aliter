@@ -150,3 +150,9 @@ class CharSession(Session):
         if kaAccountID != self.accountID:
             self.log('Keep-alive returned account %s, killing.' % (self.accountID, kaAccountID), log.LOW)
             self.process = False
+    
+    def failed(self, type):
+        self.sendPacket(
+            0x6c,
+            type=type
+        )
