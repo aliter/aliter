@@ -35,7 +35,7 @@ receivedPackets = {
         0x07d: [], # Map loading complete
         0x085: [None, '10x'], # Gets sent when talking to NPCs
         0x089: ['keepAlive', 'xxl', 'clientTick'],
-        0x08c: ['getActorName', 'xxl', 'actorID'], # Hover over actor
+        0x08c: ['getActorName', 'xxxxxl', 'actorID'], # Hover over actor
         0x090: ['npcActivate', 'lx', 'npcID'], # Activate NPC
         0x09b: ['identify', 'xxlxlxxxxLxxxxx', 'accountID', 'characterID', 'loginIDa'],
         0x0a7: ['move', 'xxx3s', 'position'], # Character movement

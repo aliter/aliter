@@ -99,6 +99,7 @@ class MapSession(Session):
                 actorID=actorID,
                 name=maps[self.character.map].npcs[actorID].name
             )
+        
         if actorID in maps[self.character.map].players:
             self.sendPacket(
                 0x95,
