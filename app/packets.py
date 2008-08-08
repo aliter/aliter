@@ -43,7 +43,7 @@ receivedPackets = {
         0x0b8: ['npcMenuSelect', 'lB', 'npcID', 'selection'], # Selected item from NPC menu (First=1)
         0x0b9: ['npcNext', 'l', 'npcID'], # Clicked the NPC next button
         0x0bf: ['emotion', 'B', 'emotion'], # Character emotion
-        0x0f3: ['speech', 'h!', 'packetLen', 'message'], # Character select / Last save point menu button
+        0x0f3: ['speech', 'h!', 'packetLen', 'message'], # Talking
         0x143: ['npcNumInput', 'l', 'npcID'], # NPC numerical input
         0x146: ['npcClosed', 'l', 'npcID'], # NPC close button was pressed
         0x14d: ['guildPage'], # Request guild page
@@ -118,8 +118,6 @@ sentPackets = {
     0x0b6: ('l', ('actorID',)), # NPC close button
     0x0b7: ('hl!', ('packetLen', 'actorID', 'items')), # NPC menu (Items seperated by ":")
     0x0c0: ('lB', ('actorID', 'emotion')), # Display emotion with ID
-    #0x001d7: ('llx5sx1sx41x3s3s1sx', ('accountID', 'junk1', 'junk2', 'junk3', 'junk4', 'position', 'junk4')),
-    #0x0d7: ('l55x3s4x', ('accountID', 'position')), # Player has spawned, TODO: See what that data is in the 55x
     0x142: ('l', ('actorID',)), # NPC numerical input
     0x144: ('4l4Bx', ('actorID', 'type', 'x', 'y', 'pointID', 'red', 'green', 'blue')), # Mark the minimap (Type 2 = Remove)
     0x14e: ('l', ('type',)), # Guild page response
@@ -127,7 +125,8 @@ sentPackets = {
     0x18b: ('l', ('failure',)), # Quit response
     0x1b3: ('64sB', ('filename', 'position')), # NPC cut-in image
     0x1d4: ('l', ('actorID',)), # NPC string input
-    0x1d7: ('lbhh', ('accountID', 'equip', 'w1', 'w2')),
+    0x1d7: ('lbhh', ('accountID', 'equip', 'w1', 'w2')), # Equip view grabbing
+    0x1f3: ('lh2x', ('accountID', 'effect')), # Effects
     # This beast handles a few times when a user should show up for other people. [Alex]
     0x22b: ('l4h2x10hl3h2x2b5sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),
     0x22c: ('xl4h2x5hL5hl3h2x2b8sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tick', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),

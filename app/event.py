@@ -166,7 +166,9 @@ class EventObject(object):
                 return x, y
     
     def _doGMCommand(self, actor, message):
-        "If message is a GM command execute it"
+        """
+        If message is a GM command (starts with @), try to execute it.
+        """
         if message[0] != '@':
             return False
         
@@ -357,16 +359,21 @@ class GMCommand(EventObject):
             message='* %s %s' % (actor.name, message+'\x00'),
         )
 
-    def kick(self, actor, name = None):
+    def kick(self, actor, name = None, *reason):
         """
         Kicks a user off, searches by their name.
         """
         if name == None:
-            return self._gmCommandError(actor, "Usage: @kick <name>")
+            return self._gmCommandError(actor, "Usage: @kick <name> [<reason>]")
         
         from app.inter import unsetLoginID
         
-        log.map("Kicking user %s (%s)" % (name, actor.name), log.LOW)
+        reason = " ".join(reason)
+        
+        if reason.strip() == "":
+            log.map("Kicking user %s (%s)" % (name, actor.name), log.LOW)
+        else:
+            log.map("Kicking user %s (%s - %s)" % (name, reason, actor.name), log.LOW)
         
         player = self._getPlayer("name", name)
         
@@ -389,3 +396,16 @@ class GMCommand(EventObject):
             0x81,
             type=15,
         )
+    
+    def effect(self, actor, id = None):
+        """
+        Shows a status effect to the client and characters in sight.
+        """
+        if id == None:
+            return self._gmCommandError(actor, "Usage: @effect <id>")
+        
+        self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
+            0x1f3,
+            accountID = actor.accountID,
+            effect = int(id)
+        ))
