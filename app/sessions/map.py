@@ -200,7 +200,7 @@ class MapSession(Session):
             Characters.save(self.character)
             
             # Tell others that this user has signed out, style 3 ("teleport")
-            Event._sendToOtherPlayersInSight(self.character, self.character.map, self.character.x, self.character.y, _(
+            Event._sendToOtherPlayersOnMap(self.character, self.character.map, _(
                 0x80,
                 actorID=self.character.gameID,
                 style=3
@@ -256,7 +256,7 @@ class MapSession(Session):
         Characters.save(self.character)
             
         # Tell others that this user has signed out, style 3 ("teleport")
-        Event._sendToOtherPlayersInSight(self.character, self.character.map, self.character.x, self.character.y, _(
+        Event._sendToOtherPlayersOnMap(self.character, self.character.map, _(
             0x80,
             actorID=self.character.gameID,
             style=3

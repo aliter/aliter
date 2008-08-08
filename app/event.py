@@ -57,6 +57,11 @@ class EventObject(object):
         for player in self._playersOnMap(map):
             player.session.sendRaw(packet)
     
+    def _sendToOtherPlayersOnMap(self, actor, map, packet):
+        for player in self._playersOnMap(map):
+            if player.id != actor.id:
+                player.session.sendRaw(packet)
+    
     def _showActors(self, actor):
         for player in self._playersInSight(actor.map, actor.x, actor.y):
             if player.id != actor.id:
@@ -75,6 +80,7 @@ class EventObject(object):
                 else:
                     gender = 0
         
+                # FIXME: Should this use _sendToOtherPlayersOnMap?
                 actor.session.sendRaw(_(
                 	0x22c,
                 	accountID=player.accountID,
@@ -119,6 +125,7 @@ class EventObject(object):
         else:
             gender = 0
         
+        # FIXME: Should this use _sendToOtherPlayersOnMap?
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
         	0x22b,
         	accountID=actor.accountID,
@@ -342,7 +349,6 @@ class GMCommand(EventObject):
         """
         Outputs what they say after @me as a pseudo-event message, a-la IRC.
         """
-        
         message = " ".join(words)
         
         if message.strip() == "":
@@ -384,7 +390,7 @@ class GMCommand(EventObject):
         Characters.save(player)
             
         # Tell others that this user has signed out, style 3 ("teleport")
-        self._sendToOtherPlayersInSight(player, player.map, player.x, player.y, _(
+        self._sendToOtherPlayersOnMap(player, player.map, _(
             0x80,
             actorID=player.gameID,
             style=3
@@ -404,6 +410,7 @@ class GMCommand(EventObject):
         if id == None:
             return self._gmCommandError(actor, "Usage: @effect <id>")
         
+        # FIXME: Should this use _sendToPlayersOnMap?
         self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
             0x1f3,
             accountID = actor.accountID,
@@ -416,7 +423,7 @@ class GMCommand(EventObject):
         """
         self.effect(actor, 450)
         
-        self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
+        self._sendToPlayersOnMap(actor.map, _(
             0x80,
             actorID = actor.gameID,
             style = 1
