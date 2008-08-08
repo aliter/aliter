@@ -111,7 +111,7 @@ sentPackets = {
     0x08e: ('h!', ('packetLen', 'message')), # Normal chat message
     0x091: ('16shh', ('map', 'x', 'y')), # Change map on same server
     0x095: ('l24s', ('actorID', 'name')), # Display actor name
-    0x0b0: ('wl', ('type', 'value')), # Update character stats
+    0x0b0: ('hl', ('type', 'value')), # Update character stats
     0x0b3: ('l', ('type',)), # Returned to character select screen
     0x0b4: ('hl!', ('packetLen', 'actorID', 'message')), # NPC message
     0x0b5: ('l', ('actorID',)), # NPC next button

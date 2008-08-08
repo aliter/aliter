@@ -421,3 +421,15 @@ class GMCommand(EventObject):
             actorID = actor.gameID,
             style = 1
         ))
+        
+        actor.session.sendPacket(
+            0xb0,
+            type = 5,
+            value = 0
+        )
+        
+        actor.session.sendPacket(
+            0xb0,
+            type = 7,
+            value = 0
+        )
