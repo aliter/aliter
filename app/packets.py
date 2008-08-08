@@ -225,6 +225,15 @@ def sendPacket(function, packetID, **kwargs):
     packet = generatePacket(packetID, **kwargs)
     
     if packet:
+        function(packet)
+        return True
+    
+    return False
+
+def sendThreaded(function, packetID, **kwargs):
+    packet = generatePacket(packetID, **kwargs)
+    
+    if packet:
         reactor.callFromThread(function, packet)
         return True
     

@@ -1,7 +1,7 @@
 import sys, traceback, re
 from struct import pack, unpack, calcsize
 
-from twisted.internet import protocol
+from twisted.internet import protocol, reactor
 
 from app import log, packets
 from app.exceptions import IllegalPacket
@@ -144,5 +144,11 @@ class Session(protocol.Protocol):
     def sendRaw(self, data):
         return self.transport.write(data)
     
+    def sendRawThreaded(self, data):
+        return reactor.callFromThread(self.transport.write, data)
+    
     def sendPacket(self, packetID, **kwargs):
         return packets.sendPacket(self.transport.write, packetID, **kwargs)
+    
+    def sendThreaded(self, packetID, **kwargs):
+        return packets.sendThreaded(self.transport.write, packetID, **kwargs)

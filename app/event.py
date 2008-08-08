@@ -45,23 +45,35 @@ class EventObject(object):
     # Packet sending
     #--------------------------------------------------
     
-    def _sendToPlayersInSight(self, map, x, y, packet):
+    def _sendToPlayersInSight(self, map, x, y, packet, threaded = False):
         for player in self._playersInSight(map, x, y):
-            player.session.sendRaw(packet)
-    
-    def _sendToOtherPlayersInSight(self, actor, map, x, y, packet):
-        for player in self._playersInSight(map, x, y):
-            if player.id != actor.id:
+            if threaded:
+                player.session.sendRawThreaded(packet)
+            else:
                 player.session.sendRaw(packet)
     
-    def _sendToPlayersOnMap(self, map, packet):
-        for player in self._playersOnMap(map):
-            player.session.sendRaw(packet)
+    def _sendToOtherPlayersInSight(self, actor, map, x, y, packet, threaded = False):
+        for player in self._playersInSight(map, x, y):
+            if player.id != actor.id:
+                if threaded:
+                    player.session.sendRawThreaded(packet)
+                else:
+                    player.session.sendRaw(packet)
     
-    def _sendToOtherPlayersOnMap(self, actor, map, packet):
+    def _sendToPlayersOnMap(self, map, packet, threaded = False):
+        for player in self._playersOnMap(map):
+            if threaded:
+                player.session.sendRawThreaded(packet)
+            else:
+                player.session.sendRaw(packet)
+    
+    def _sendToOtherPlayersOnMap(self, actor, map, packet, threaded = False):
         for player in self._playersOnMap(map):
             if player.id != actor.id:
-                player.session.sendRaw(packet)
+                if threaded:
+                    player.session.sendRawThreaded(packet)
+                else:
+                    player.session.sendRaw(packet)
     
     def _showActors(self, actor):
         for player in self._playersInSight(actor.map, actor.x, actor.y):
@@ -363,9 +375,9 @@ class GMCommand(EventObject):
             0x8d,
             actorID=actor.gameID,
             message='* %s %s' % (actor.name, message+'\x00'),
-        ))
+        ), True)
         
-        actor.session.sendPacket(
+        actor.session.sendThreaded(
             0x8e,
             message='* %s %s' % (actor.name, message+'\x00'),
         )
@@ -399,11 +411,11 @@ class GMCommand(EventObject):
             0x80,
             actorID=player.gameID,
             style=3
-        ))
+        ), True)
         
         unsetLoginID(player.accountID)
         
-        player.session.sendPacket(
+        player.session.sendThreaded(
             0x81,
             type=15,
         )
@@ -420,7 +432,7 @@ class GMCommand(EventObject):
             0x1f3,
             accountID = actor.accountID,
             effect = int(id)
-        ))
+        ), True)
     
     def die(self, actor):
         """
@@ -432,16 +444,47 @@ class GMCommand(EventObject):
             0x80,
             actorID = actor.gameID,
             style = 1
-        ))
+        ), True)
         
-        actor.session.sendPacket(
+        actor.session.sendThreaded(
             0xb0,
             type = 5,
             value = 0
         )
         
-        actor.session.sendPacket(
+        actor.session.sendThreaded(
             0xb0,
             type = 7,
             value = 0
         )
+    
+    def kill(self, actor, name = None):
+        """
+        Kills a user.
+        """
+        
+        player = self._getPlayer("name", name)
+        
+        if not player:
+            return self._gmCommandError(actor, "User '%s' not found." % name)
+        
+        self.effect(player, 450)
+        
+        self._sendToPlayersOnMap(actor.map, _(
+            0x80,
+            actorID = player.gameID,
+            style = 1
+        ), True)
+        
+        player.session.sendThreaded(
+            0xb0,
+            type = 5,
+            value = 0
+        )
+        
+        player.session.sendThreaded(
+            0xb0,
+            type = 7,
+            value = 0
+        )
+        
