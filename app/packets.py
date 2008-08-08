@@ -38,6 +38,7 @@ receivedPackets = {
         0x089: ['keepAlive', 'xxl', 'clientTick'],
         0x08c: ['getActorName', 'xxxxxl', 'actorID'], # Hover over actor
         0x090: ['npcActivate', 'lx', 'npcID'], # Activate NPC
+        0x099: ['announce', 'h!', 'packetLen', 'message'], # /b Message
         0x09b: ['identify', 'xxlxlxxxxLxxxxx', 'accountID', 'characterID', 'loginIDa'],
         0x0a7: ['move', 'xxx3s', 'position'], # Character movement
         0x0b2: ['menuButton', 'B', 'type'], # Character select / Last save point menu button
@@ -112,6 +113,7 @@ sentPackets = {
     0x08e: ('h!', ('packetLen', 'message')), # Normal chat message
     0x091: ('16shh', ('map', 'x', 'y')), # Change map on same server
     0x095: ('l24s', ('actorID', 'name')), # Display actor name
+    0x09a: ('h!', ('packetLen', 'message')), # /b Message
     0x0b0: ('hl', ('type', 'value')), # Update character stats
     0x0b3: ('l', ('type',)), # Returned to character select screen
     0x0b4: ('hl!', ('packetLen', 'actorID', 'message')), # NPC message

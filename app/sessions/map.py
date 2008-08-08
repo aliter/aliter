@@ -217,8 +217,23 @@ class MapSession(Session):
                 type=1,
             )
         else:
-            # TODO: Go to last save point (Revive)
-            pass
+            # Respawn
+            
+            # Set HP to 1
+            self.sendPacket(
+                0xb0,
+                type = 5,
+                value = 1 # FIXME: This should be configurable.
+            )
+            
+            # Set SP to 1
+            self.sendPacket(
+                0xb0,
+                type = 7,
+                value = 1 # FIXME: This should be configurable.
+            )
+        
+            self.character.load()
     
     def guildPage(self):
         if not self.character:
@@ -290,4 +305,10 @@ class MapSession(Session):
             0xc0,
             actorID=self.character.gameID,
             emotion=emotion,
+        ))
+    
+    def announce(self, message):
+        Event._sendToPlayers(_(
+            0x9a,
+            message = message
         ))

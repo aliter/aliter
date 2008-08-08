@@ -8,7 +8,7 @@ from twisted.internet.task import LoopingCall
 import log
 from shared import config, maps
 from constants import *
-from objects import Characters, Accounts
+from objects import Actor, Character, Characters, Accounts
 from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition
 from misc import getTick, splitCommand
 
@@ -44,6 +44,14 @@ class EventObject(object):
     #--------------------------------------------------
     # Packet sending
     #--------------------------------------------------
+    
+    def _sendToPlayers(self, packet, threaded = False):
+        for map in maps:
+            for player in maps[map].players.itervalues():
+                if threaded:
+                    player.session.sendRawThreaded(packet)
+                else:
+                    player.session.sendRaw(packet)
     
     def _sendToPlayersInSight(self, map, x, y, packet, threaded = False):
         for player in self._playersInSight(map, x, y):
@@ -288,7 +296,9 @@ class EventObject(object):
     def warp(self, actor, x, y, map=None):
         if map:
             if map not in maps:
+                log.map("%s tried to warp to invalid map: %s" % (actor.name, map), log.HIGH)
                 return False # TODO: Handle this properly
+            
             del maps[actor.map].players[actor.gameID]
             actor.map = map
             maps[actor.map].players[actor.gameID] = actor
@@ -297,9 +307,9 @@ class EventObject(object):
         
         actor.session.sendPacket(
             0x91,
-            map=actor.map+'.gat',
-            x=actor.x,
-            y=actor.y,
+            map = actor.map+'.gat',
+            x = actor.x,
+            y = actor.y,
         )
         
         self._registerActorView(actor)
@@ -314,8 +324,6 @@ class EventObject(object):
         pass
 
 Event = EventObject()
-
-
 
 class GMCommand(EventObject):
     loops = []
@@ -462,6 +470,8 @@ class GMCommand(EventObject):
         """
         Kills a user.
         """
+        if name == None:
+            return self._gmCommandError(actor, "Usage: @kill <name>")
         
         player = self._getPlayer("name", name)
         
@@ -470,7 +480,7 @@ class GMCommand(EventObject):
         
         self.effect(player, 450)
         
-        self._sendToPlayersOnMap(actor.map, _(
+        self._sendToPlayersOnMap(player.map, _(
             0x80,
             actorID = player.gameID,
             style = 1
@@ -487,4 +497,8 @@ class GMCommand(EventObject):
             type = 7,
             value = 0
         )
+    
+    def load(self, actor):
+        """docstring for load"""
+        actor.load()
         

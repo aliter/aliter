@@ -49,6 +49,17 @@ class Character(Actor):
         super(Character, self).__init__(**kwargs)
         
         self.gameID = self.accountID
+    
+    def load(self):
+        from app.event import Event
+        Event.warp(self, self.saveX, self.saveY, self.saveMap)
+    
+    def save(self, map, x, y):
+        from app.event import Event
+        self.saveMap = map
+        self.saveX = x
+        self.saveY = y
+        Characters.save(self)
 
 class CharacterManager(Manager):
     modelClass = Character
@@ -65,4 +76,5 @@ class CharacterManager(Manager):
         'x', 'y', 'saveMap', 'saveX', 'saveY', 'online',
         'fame',
     ]
+
 Characters = CharacterManager()
