@@ -137,7 +137,7 @@ class Session(protocol.Protocol):
                     self.log(line[:-1], log.CRITICAL)
                 #break
     
-    def log(self, message, priority=log.NORMAL, **kwargs):
+    def log(self, message, priority = log.NORMAL, **kwargs):
         kwargs['id'] = self.id
         self.logMethod(message, priority, **kwargs)
     

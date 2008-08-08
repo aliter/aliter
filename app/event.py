@@ -1,4 +1,5 @@
 import random
+import thread
 from datetime import datetime
 
 from twisted.internet import reactor
@@ -190,8 +191,10 @@ class EventObject(object):
         
         attr = getattr(gm, command)
         
+        arguments.insert(0, actor)
+        
         if attr:
-            attr(actor, *arguments)
+            thread.start_new_thread(attr, tuple(arguments))
             return True
         
         return False
@@ -303,6 +306,8 @@ Event = EventObject()
 
 
 class GMCommand(EventObject):
+    loops = []
+    
     def warp(self, actor, map = None, x = 0, y = 0):
         """
         Warps the player to a specified map, x, and y corrdinate.

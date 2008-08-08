@@ -1,5 +1,6 @@
 import re
 from struct import pack, unpack, calcsize
+from twisted.internet import reactor
 
 from misc import expandStruct
 
@@ -135,9 +136,12 @@ sentPackets = {
 def generatePacket(packetID, **kwargs):
     if packetID not in sentPackets:
         return False
+    
     schema = sentPackets[packetID]
+    
     if not schema: # Empty packet
         return pack('=h', packetID)
+    
     offset       = -1
     packetLayout = schema[0]
     packetLenOffset = None
@@ -154,9 +158,10 @@ def generatePacket(packetID, **kwargs):
                     packetLenOffset = offset
                     arguments.append(0)
                 else:
-                    print packetID, kwargs, argument
                     raise MissingArgument
+                
                 continue
+            
             arguments.append(kwargs[argument])
     
     # Append "?" subpackets
@@ -169,10 +174,13 @@ def generatePacket(packetID, **kwargs):
         while index > -1:
             if schema[2][subPacket] not in kwargs:
                 raise MissingArgument
+            
             subPacketArgsList = kwargs[schema[2][subPacket]]
             subPacketData     = []
+            
             for subPacketArgs in subPacketArgsList:
                 subPacketData.append(generatePacket(schema[2][subPacket], **subPacketArgs))
+            
             subPacketData = ''.join(subPacketData)
             subPackets.append(len(subPacketData))
             arguments.insert(index, subPacketData)
@@ -208,17 +216,18 @@ def generatePacket(packetID, **kwargs):
         # Warning: If this is after a "?" then things will screw up
         if type(packetID) == int:
             packetLenOffset += 1
+        
         arguments[packetLenOffset] = calcsize(packetLayout)
 
     return pack(packetLayout, *arguments)
 
 def sendPacket(function, packetID, **kwargs):
     packet = generatePacket(packetID, **kwargs)
+    
     if packet:
-        function(packet)
-        # print "Sending packet: "
-        # print (packet, 100)
+        reactor.callFromThread(function, packet)
         return True
+    
     return False
 
 def encodePosition(x, y, dir=0):
