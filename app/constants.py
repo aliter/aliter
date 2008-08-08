@@ -1,3 +1,8 @@
+import thread
+
+# Identify the current thread to determine whether packets in other threads should be sent as threaded with Twisted
+MAIN_THREAD = thread.get_ident()
+
 # Aliter related
 MAP_CACHE_VERSION = 3
 AREA_SERVER, AREA_MAP, AREA_VISIBLE = range(3)

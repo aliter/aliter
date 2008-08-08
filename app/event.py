@@ -45,43 +45,28 @@ class EventObject(object):
     # Packet sending
     #--------------------------------------------------
     
-    def _sendToPlayers(self, packet, threaded = False):
+    def _sendToPlayers(self, packet):
         for map in maps:
             for player in maps[map].players.itervalues():
-                if threaded:
-                    player.session.sendRawThreaded(packet)
-                else:
-                    player.session.sendRaw(packet)
-    
-    def _sendToPlayersInSight(self, map, x, y, packet, threaded = False):
-        for player in self._playersInSight(map, x, y):
-            if threaded:
-                player.session.sendRawThreaded(packet)
-            else:
                 player.session.sendRaw(packet)
     
-    def _sendToOtherPlayersInSight(self, actor, map, x, y, packet, threaded = False):
+    def _sendToPlayersInSight(self, map, x, y, packet):
+        for player in self._playersInSight(map, x, y):
+            player.session.sendRaw(packet)
+    
+    def _sendToOtherPlayersInSight(self, actor, map, x, y, packet):
         for player in self._playersInSight(map, x, y):
             if player.id != actor.id:
-                if threaded:
-                    player.session.sendRawThreaded(packet)
-                else:
-                    player.session.sendRaw(packet)
-    
-    def _sendToPlayersOnMap(self, map, packet, threaded = False):
-        for player in self._playersOnMap(map):
-            if threaded:
-                player.session.sendRawThreaded(packet)
-            else:
                 player.session.sendRaw(packet)
     
-    def _sendToOtherPlayersOnMap(self, actor, map, packet, threaded = False):
+    def _sendToPlayersOnMap(self, map, packet):
+        for player in self._playersOnMap(map):
+            player.session.sendRaw(packet)
+    
+    def _sendToOtherPlayersOnMap(self, actor, map, packet):
         for player in self._playersOnMap(map):
             if player.id != actor.id:
-                if threaded:
-                    player.session.sendRawThreaded(packet)
-                else:
-                    player.session.sendRaw(packet)
+                player.session.sendRaw(packet)
     
     def _showActors(self, actor):
         for player in self._playersInSight(actor.map, actor.x, actor.y):
@@ -383,9 +368,9 @@ class GMCommand(EventObject):
             0x8d,
             actorID=actor.gameID,
             message='* %s %s' % (actor.name, message+'\x00'),
-        ), True)
+        ))
         
-        actor.session.sendThreaded(
+        actor.session.sendPacket(
             0x8e,
             message='* %s %s' % (actor.name, message+'\x00'),
         )
@@ -419,11 +404,11 @@ class GMCommand(EventObject):
             0x80,
             actorID=player.gameID,
             style=3
-        ), True)
+        ))
         
         unsetLoginID(player.accountID)
         
-        player.session.sendThreaded(
+        player.session.sendPacket(
             0x81,
             type=15,
         )
@@ -440,7 +425,7 @@ class GMCommand(EventObject):
             0x1f3,
             accountID = actor.accountID,
             effect = int(id)
-        ), True)
+        ))
     
     def die(self, actor):
         """
@@ -452,15 +437,15 @@ class GMCommand(EventObject):
             0x80,
             actorID = actor.gameID,
             style = 1
-        ), True)
+        ))
         
-        actor.session.sendThreaded(
+        actor.session.sendPacket(
             0xb0,
             type = 5,
             value = 0
         )
         
-        actor.session.sendThreaded(
+        actor.session.sendPacket(
             0xb0,
             type = 7,
             value = 0
@@ -484,21 +469,52 @@ class GMCommand(EventObject):
             0x80,
             actorID = player.gameID,
             style = 1
-        ), True)
+        ))
         
-        player.session.sendThreaded(
+        player.session.sendPacket(
             0xb0,
             type = 5,
             value = 0
         )
         
-        player.session.sendThreaded(
+        player.session.sendPacket(
             0xb0,
             type = 7,
             value = 0
         )
     
     def load(self, actor):
-        """docstring for load"""
+        """
+        Loads the player to their save point.
+        """
         actor.load()
-        
+    
+    def save(self, actor):
+        """
+        Saves the player's current position.
+        """
+        actor.save(actor.map, actor.x, actor.y)
+        Characters.save(actor)
+    
+    # def threads(self, actor, start = 0):
+    #     from time import sleep
+    #     
+    #     if start == 0:
+    #         log.map("Running @test...")
+    #         if "test" not in self.loops:
+    #             self.loops.append("test")
+    #             log.map("Adding 'test' to the loops list.")
+    #         else:
+    #             log.map("Removing 'test' from the loops list.")
+    #             return self.loops.remove("test")
+    #     
+    #     if "test" not in self.loops or start >= 10:
+    #         return
+    #     
+    #     if start != 0:
+    #         sleep(1)
+    #     
+    #     log.map("Looping: %s" % start, log.HIGH)
+    #     self._gmCommandError(actor, "Looping: "+ str(start))
+    #     self.threads(actor, start + 1)
+

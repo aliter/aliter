@@ -1,4 +1,8 @@
 import re
+import thread
+
+from app.constants import MAIN_THREAD
+
 from struct import pack, unpack, calcsize
 from twisted.internet import reactor
 
@@ -227,16 +231,10 @@ def sendPacket(function, packetID, **kwargs):
     packet = generatePacket(packetID, **kwargs)
     
     if packet:
-        function(packet)
-        return True
-    
-    return False
-
-def sendThreaded(function, packetID, **kwargs):
-    packet = generatePacket(packetID, **kwargs)
-    
-    if packet:
-        reactor.callFromThread(function, packet)
+        if MAIN_THREAD != thread.get_ident(): # Are we in a thread?
+            reactor.callFromThread(function, packet)
+        else:
+            function(packet)
         return True
     
     return False

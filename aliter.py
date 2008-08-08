@@ -20,11 +20,14 @@ from app.tools import grf
 class Aliter(object):
     def main(self):
         self.header()
+        
         if not self.load():
             return 1
+        
         if not self.initServers():
             return 1
-        log.console('\nAliter ready.', color=ANSI_LIGHT_GREEN)
+        
+        log.console('\nAliter ready.', color = ANSI_LIGHT_GREEN)
         
         # Start scheduler
         reactor.run()
@@ -44,14 +47,14 @@ class Aliter(object):
         except:
             width = 80
         
-        print '\033[2J\033[0;0H' + ANSI_YELLOW + '  _________ __     ___             __             ___            '.center(width)
-        print ' /   _____/|__| __| _/______  _  _|__| ____    __| _/___________ '.center(width)
-        print ' \\_____  \\ |  |/ __ |/ __ \\ \\/ \\/ /  |/    \\  / __ |/ __ \\_  __ \\'.center(width)
-        print ' /        \\|  / /_/ \\  ___/\\     /|  |   |  \\/ /_/ \\  ___/|  | \\/'.center(width)
-        print '/_______  /|__\\____ |\\___  >\\/\\_/ |__|___|  /\\____ |\\___  >__|   '.center(width)
-        print '        \\/         \\/    \\/               \\/      \\/    \\/       '.center(width)
+        # print '\033[2J\033[0;0H' + ANSI_YELLOW + '  _________ __     ___             __             ___            '.center(width)
+        # print ' /   _____/|__| __| _/______  _  _|__| ____    __| _/___________ '.center(width)
+        # print ' \\_____  \\ |  |/ __ |/ __ \\ \\/ \\/ /  |/    \\  / __ |/ __ \\_  __ \\'.center(width)
+        # print ' /        \\|  / /_/ \\  ___/\\     /|  |   |  \\/ /_/ \\  ___/|  | \\/'.center(width)
+        # print '/_______  /|__\\____ |\\___  >\\/\\_/ |__|___|  /\\____ |\\___  >__|   '.center(width)
+        # print '        \\/         \\/    \\/               \\/      \\/    \\/       '.center(width)
         print ANSI_RED + '-' * width
-        print ANSI_WHITE + 'S I D E W I N D E R   R E V I S I O N   0 x x'.center(width)
+        print ANSI_WHITE + 'A L I T E R   R E V I S I O N   0 x x'.center(width)
         print ANSI_RED + '-' * width
         print ANSI_DEFAULT
     
@@ -67,6 +70,7 @@ class Aliter(object):
                     if header == 'MAP' and version == MAP_CACHE_VERSION:
                         cached = 1
                     break
+            
             if not cached:
                 # Delete all cache files first in case they are an older version
                 for file in os.listdir(config['MapServer'][0]['mapCache']):
@@ -88,20 +92,21 @@ class Aliter(object):
                         print ''
             print '\033[A\033[2KLoading maps... Done'
             
-            # Load scripts
-            print ''
-            for file in config['scripts']:
-                print '\033[A\033[2KLoading scripts... %s' % file
-                try:
-                    Scripts.load(file)
-                except IOError:
-                    print ANSI_LIGHT_RED + "\033[A\033[2KError loading script: %s [File doesn't exist]" % file + ANSI_DEFAULT
-                    print ''
-                except ScriptError, msg:
-                    #print ANSI_LIGHT_RED + '\033[A\033[2KError loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
-                    print ANSI_LIGHT_RED + 'Error loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
-                    print ''
-            print '\033[A\033[2KLoading scripts... Done'
+            # Load scripts [Disabled for now - Alex]
+            # print ''
+            # for file in config['scripts']:
+            #     print '\033[A\033[2KLoading scripts... %s' % file
+            #     try:
+            #         Scripts.load(file)
+            #     except IOError:
+            #         print ANSI_LIGHT_RED + "\033[A\033[2KError loading script: %s [File doesn't exist]" % file + ANSI_DEFAULT
+            #         print ''
+            #     except ScriptError, msg:
+            #         #print ANSI_LIGHT_RED + '\033[A\033[2KError loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
+            #         print ANSI_LIGHT_RED + 'Error loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
+            #         print ''
+            # 
+            # print '\033[A\033[2KLoading scripts... Done'
         except KeyboardInterrupt:
             print ANSI_YELLOW + 'Ctrl+C detected: Shutting down Aliter.' + ANSI_DEFAULT
             sys.exit(1)

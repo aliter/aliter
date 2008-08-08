@@ -1,9 +1,14 @@
-import sys, traceback, re
+import sys
+import traceback
+import re
+import thread
+
 from struct import pack, unpack, calcsize
 
 from twisted.internet import protocol, reactor
 
 from app import log, packets
+from app.constants import MAIN_THREAD
 from app.exceptions import IllegalPacket
 from app.packets import receivedPackets, sendPacket
 from app.misc import expandStruct, stringHex, fixTermination
@@ -142,13 +147,10 @@ class Session(protocol.Protocol):
         self.logMethod(message, priority, **kwargs)
     
     def sendRaw(self, data):
-        return self.transport.write(data)
-    
-    def sendRawThreaded(self, data):
-        return reactor.callFromThread(self.transport.write, data)
+        if MAIN_THREAD != thread.get_ident():
+            return reactor.callFromThread(self.transport.write, data)
+        else:
+            return self.transport.write(data)
     
     def sendPacket(self, packetID, **kwargs):
         return packets.sendPacket(self.transport.write, packetID, **kwargs)
-    
-    def sendThreaded(self, packetID, **kwargs):
-        return packets.sendThreaded(self.transport.write, packetID, **kwargs)
