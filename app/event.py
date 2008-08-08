@@ -409,3 +409,15 @@ class GMCommand(EventObject):
             accountID = actor.accountID,
             effect = int(id)
         ))
+    
+    def die(self, actor):
+        """
+        Kills yourself.
+        """
+        self.effect(actor, 450)
+        
+        self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
+            0x80,
+            actorID = actor.gameID,
+            style = 1
+        ))

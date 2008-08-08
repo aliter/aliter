@@ -217,7 +217,7 @@ class MapSession(Session):
                 type=1,
             )
         else:
-            # Go to last save point (Revive)
+            # TODO: Go to last save point (Revive)
             pass
     
     def guildPage(self):
