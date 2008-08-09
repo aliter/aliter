@@ -54,6 +54,15 @@ receivedPackets = {
         0x146: ['npcClosed', 'l', 'npcID'], # NPC close button was pressed
         0x14d: ['guildPage'], # Request guild page
         0x14f: ['guildInfo', 'l', 'page'], # Request guild information tab
+        0x151: ['guildEmblem', 'l', 'guildID'], # Request guild emblem
+        0x159: ['guildLeave', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'], # Leaving guild
+        0x15b: ['guildExpel', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'], # Expel from guild
+        0x165: ['guildCreate', 'l24s', 'accountID', 'guildName'], # Create guild
+        0x168: ['guildInvite', 'lll', 'accountID', 'inviterAccountID', 'characterID'], # Invite
+        0x16b: ['guildReject', 'll', 'guildID', 'type'], # Guild request response (type: 1 = accept, 0 = reject)
+        0x16e: ['guildSetAnnouncement', 'l60s120s', 'guildID', 'title', 'body'], # Set guild announcement
+        0x170: ['guildAllianceRequest', 'lll', 'accountID', 'sourceAccountID', 'characterID'], # Send guild alliance request (FIXME: The names of these arguments need to be verified.)
+        0x172: ['guildAllianceRespond', 'll', 'accountID', 'type'], # Respond to guild alliance request (type: 1 = accept, 0 = rejext)
         0x18a: ['quit', 'xx'],
         0x1d5: ['npcStrInput', 'wl!', 'packetLen', 'npcID', 'message'], # NPC string input (NUL terminated)
         0x21d: [None, 'l', 'disabled'], # Does user have /effect disabled?
@@ -125,10 +134,24 @@ sentPackets = {
     0x0b6: ('l', ('actorID',)), # NPC close button
     0x0b7: ('hl!', ('packetLen', 'actorID', 'items')), # NPC menu (Items seperated by ":")
     0x0c0: ('lB', ('actorID', 'emotion')), # Display emotion with ID
+    0x0cd: ('B', (0x81,)), # Player kicked.
     0x142: ('l', ('actorID',)), # NPC numerical input
     0x144: ('4l4Bx', ('actorID', 'type', 'x', 'y', 'pointID', 'red', 'green', 'blue')), # Mark the minimap (Type 2 = Remove)
     0x14e: ('l', ('type',)), # Guild page response
     0x150: ('11l24s24s16s', ('guildID', 'level', 0, 'capacity', 0, 'exp', 'nextExp', 'tax', 0, 0, 'members', 'name', 'master', '')), # Guild information response
+    0x152: ('hll!', ('packetLen', 'guildID', 'emblemID', 'emblem')), # Send guild emblem
+    0x154: ('h!', ('packetLen', 'info')), # Info: {<accID>.l <charactorID>.l <?>.w <?.w <?>.w <job>.w <lvl?>.w <?>.l <online>.l <Position>.l ?.50B <nick>.24B} [repeated for each character]
+    0x15a: ('24s40s', ('charName', 'message')), # Person left the guild
+    0x15c: ('24s40s24x', ('charName', 'message')), # Person expelled from guild
+    0x167: ('b', ('status',)), # Guild creation result (0 = success, 2 = name taken, 1 and 2 are probably "no emperium" and "invalid name", but I haven't checked (FIXME))
+    0x169: ('b', ('type',)), # Guild invitation denied
+    0x16a: ('l24s', ('guildID', 'name')), # Invited to guild (confirm dialogue)
+    0x16c: ('l24s', ('guildID', 'name')), # Guild information
+    0x16d: ('lll', ('guildID', 'characterID', 'online')), # Guild member has signed in
+    0x16f: ('60s120s', ('title', 'body')), # Guild announcement
+    0x171: ('l24s', ('sourceAccountID', 'name')), # Guild alliance invite
+    0x173: ('b', ('type',)), # Alliance invite response
+    0x17f: ('h!', ('packetLen', 'message')), # Guild chat message
     0x18b: ('l', ('failure',)), # Quit response
     0x1b3: ('64sB', ('filename', 'position')), # NPC cut-in image
     0x1d4: ('l', ('actorID',)), # NPC string input

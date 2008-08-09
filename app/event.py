@@ -163,12 +163,35 @@ class EventObject(object):
     # Chat
     #--------------------------------------------------
     
-    def _gmCommandError(self, actor, message):
+    def _gmCommandHelper(self, actor, message):
+        """
+        Display a help/usage message to the player, in light green.
+        """
         actor.session.sendPacket(
-            0x8e,
-            message=message+'\x00',
+            0x17f,
+            message = message + "\x00"
         )
         return True
+    
+    def _gmCommandError(self, actor, message):
+        """
+        Display an error message to the player, in red.
+        """
+        actor.session.sendPacket(
+            0x8e,
+            message = message + "\x00"
+        )
+        return False
+    
+    def _gmCommandSuccess(self, actor, message):
+        """
+        Display a success message to the player, in green.
+        """
+        actor.session.sendPacket(
+            0x8e,
+            message = message + "\x00"
+        )
+        return False
     
     def _gmRandomTile(self, map):
         # Warning: Possible lock-up
@@ -318,7 +341,7 @@ class GMCommand(EventObject):
         Warps the player to a specified map, x, and y corrdinate.
         """
         if map == None:
-            return self._gmCommandError(actor, "Usage: @warp <map> [<x> <y>]")
+            return self._gmCommandHelper(actor, "Usage: @warp <map> [<x> <y>]")
         
         if map not in maps:
             return self._gmCommandError(actor, "Invalid map.")
@@ -348,6 +371,7 @@ class GMCommand(EventObject):
             x, y = self._gmRandomTile(maps[actor.map])
         
         Event.warp(actor, x, y)
+        self._gmCommandSuccess(actor, "Jumped to %d %d." % (x, y))
     
     def refresh(self, actor):
         """
@@ -362,7 +386,7 @@ class GMCommand(EventObject):
         message = " ".join(words)
         
         if message.strip() == "":
-            return self._gmCommandError(actor, "Usage: @me <action>")
+            return self._gmCommandHelper(actor, "Usage: @me <action>")
         
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
             0x8d,
@@ -380,7 +404,7 @@ class GMCommand(EventObject):
         Kicks a user off, searches by their name.
         """
         if name == None:
-            return self._gmCommandError(actor, "Usage: @kick <name> [<reason>]")
+            return self._gmCommandHelper(actor, "Usage: @kick <name> [<reason>]")
         
         from app.inter import unsetLoginID
         
@@ -412,13 +436,15 @@ class GMCommand(EventObject):
             0x81,
             type=15,
         )
+        
+        actor.session.sendPacket(0xcd) # "User Killed/Disconnected"
     
     def effect(self, actor, id = None):
         """
         Shows a status effect to the client and characters in sight.
         """
         if id == None:
-            return self._gmCommandError(actor, "Usage: @effect <id>")
+            return self._gmCommandHelper(actor, "Usage: @effect <id>")
         
         # FIXME: Should this use _sendToPlayersOnMap?
         self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
@@ -450,13 +476,15 @@ class GMCommand(EventObject):
             type = 7,
             value = 0
         )
+        
+        self._gmCommandSuccess(actor, "You have died.")
     
     def kill(self, actor, name = None):
         """
         Kills a user.
         """
         if name == None:
-            return self._gmCommandError(actor, "Usage: @kill <name>")
+            return self._gmCommandHelper(actor, "Usage: @kill <name>")
         
         player = self._getPlayer("name", name)
         
@@ -482,6 +510,8 @@ class GMCommand(EventObject):
             type = 7,
             value = 0
         )
+        
+        self._gmCommandSuccess(actor, "Player '%s' killed." % player.name)
     
     def load(self, actor):
         """
@@ -495,6 +525,7 @@ class GMCommand(EventObject):
         """
         actor.save(actor.map, actor.x, actor.y)
         Characters.save(actor)
+        self._gmCommandSuccess(actor, "Current location set as save point.")
     
     # def threads(self, actor, start = 0):
     #     from time import sleep
