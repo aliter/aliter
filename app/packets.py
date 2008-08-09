@@ -1,6 +1,8 @@
 import re
 import thread
 
+import app.log
+
 from app.constants import MAIN_THREAD
 
 from struct import pack, unpack, calcsize
@@ -127,7 +129,8 @@ sentPackets = {
     0x091: ('16shh', ('map', 'x', 'y')), # Change map on same server
     0x095: ('l24s', ('actorID', 'name')), # Display actor name
     0x09a: ('h!', ('packetLen', 'message')), # /b Message
-    0x0b0: ('hl', ('type', 'value')), # Update character stats
+    0x0a0: ('hhhBBB4hhBB', ('location', 'amount', 'itemID', 'identified', 'broken', 'refine', 'card1', 'card2', 'card3', 'card4', 'equipType', 'type', 'fail')), # Item receiving
+    0x0b0: ('hl', ('type', 'value')), # Update character stats (type: 0 = speed (* 1000), 3 = ?, 4 = mute (seconds), 5 = HP, 6 = Max HP, 7 = SP, 8 = Max SP, 9 = status points, 11 = base level, 12 = skill points, 24 = weight, 25 = max weight, 41 = attack, 42 = attack bonus, 43 = matk max, 44 = matk min, 45 = defense, 46 = defense bonus, 47 = mdef, 48 = mdef bonus, 49 = hit, 50 = flee, 51 = flee bonus, 52 = critical, 53 = aspd, 53 = job level, 124 = ?)
     0x0b3: ('l', ('type',)), # Returned to character select screen
     0x0b4: ('hl!', ('packetLen', 'actorID', 'message')), # NPC message
     0x0b5: ('l', ('actorID',)), # NPC next button
@@ -258,7 +261,10 @@ def sendPacket(function, packetID, **kwargs):
             reactor.callFromThread(function, packet)
         else:
             function(packet)
+        
         return True
+    
+    log.console("Sending packet %d failed!" % int(packetID), log.HIGH)
     
     return False
 

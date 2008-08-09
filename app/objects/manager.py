@@ -14,7 +14,25 @@ class Manager(object):
     
     def _generateWHERE(self, *args, **kwargs):
         output = []
+        operator = " AND "
+        operators = {}
         for field, value in kwargs.iteritems():
+            checks = (len(output) + 1) / 2
+            
+            if field[:-1] == "op" and field[-1].isdigit(): # This is an operator setting.
+                place = int(field[-1])
+                
+                if place > checks: # Queue this operator up
+                    operators[place] = " %s " % value
+                elif place < checks: # It's already been processed; replace the operator after it
+                    output[place - 1] = " %s " % value
+                else: # Goodie, we can just set the operator
+                    operator = " %s " % value
+                
+                continue
+            elif checks in operators: # An operator has been queued for this
+                operator = operators[checks]
+                
             # Find condition
             # TODO: LT, GT, LTE, GTE, etc.
             condition = '='
@@ -22,14 +40,19 @@ class Manager(object):
             if field in self.schema:
                 # Seperate all values with an AND
                 if len(output):
-                    output.append(' AND ')
+                    output.append(operator)
                 
                 # Determine type
                 if type(value) not in (int, float, long, complex):
                     value = '"%s"' % value.replace('"', '\\"')
                 
                 output.append('`%s` %s %s' % (field, condition, value))
-        return ''.join(output)
+            
+            # Set the operator back to normal
+            if operator != " AND ":
+                operator = " AND "
+        
+        return "".join(output)
     
     def get(self, id=None, cache=True, force=False, **kwargs):
         # Already cached?
@@ -39,6 +62,7 @@ class Manager(object):
         # Generate WHERE clause
         if id and 'id' not in kwargs:
             kwargs['id'] = id
+        
         where = self._generateWHERE(**kwargs)
         if not where:
             return None
@@ -48,8 +72,10 @@ class Manager(object):
             return None
         
         model = self._rowToObject(self.schema, row)
+        
         if cache or force:
             self.cache[model.id] = model
+        
         return model
 
     def getAll(self, cache=True, **kwargs):
@@ -68,6 +94,7 @@ class Manager(object):
             if cache:
                 self.cache[model.id] = model
             models.append(model)
+        
         return models
 
     def create(self, cache=True, **kwargs):

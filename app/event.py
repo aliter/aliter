@@ -8,7 +8,7 @@ from twisted.internet.task import LoopingCall
 import log
 from shared import config, maps
 from constants import *
-from objects import Actor, Character, Characters, Accounts
+from objects import Characters, Accounts
 from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition
 from misc import getTick, splitCommand
 
@@ -175,7 +175,7 @@ class EventObject(object):
     
     def _gmCommandError(self, actor, message):
         """
-        Display an error message to the player, in red.
+        Display an error message to the player, in red. (FIXME: Is it possible to put it in red? If not, party chat colour?)
         """
         actor.session.sendPacket(
             0x8e,
@@ -219,13 +219,17 @@ class EventObject(object):
         
         attr = getattr(gm, command)
         
+        if not callable(attr):
+            return False
+        
         arguments.insert(0, actor)
         
-        if attr:
-            thread.start_new_thread(attr, tuple(arguments))
-            return True
+        # Don't pass too many arguments (-1 is for "self")
+        arguments = arguments[:(attr.func_code.co_argcount - 1)]
         
-        return False
+        thread.start_new_thread(attr, tuple(arguments))
+        
+        return True
     
     def sayChat(self, actor, message):
         if not self._doGMCommand(actor, message):
@@ -526,6 +530,40 @@ class GMCommand(EventObject):
         actor.save(actor.map, actor.x, actor.y)
         Characters.save(actor)
         self._gmCommandSuccess(actor, "Current location set as save point.")
+    
+    def item(self, actor, select = None, amount = 1):
+        """
+        Gives the player the specified item.
+        """
+        if select == None:
+            return self._gmCommandHelper(actor, "Usage: @item <id/name> [<amount>]")
+        
+        from objects import Items
+        
+        if select.isdigit():
+            item = Items.get(select)
+        else:
+            item = Items.get(cleanName = select, op1 = "OR", name = select)
+        
+        if not item:
+            return self._gmCommandError(actor, "Item not found.")
+        
+        actor.session.sendPacket(
+            0xa0,
+            location = 4,
+            amount = int(amount),
+            itemID = int(item.id),
+            identified = 1,
+            broken = 0,
+            refine = 0,
+            card1 = 0,
+            card2 = 0,
+            card3 = 0,
+            card4 = 0,
+            equipType = 0,
+            type = 0,
+            fail = 0
+        )
     
     # def threads(self, actor, start = 0):
     #     from time import sleep
