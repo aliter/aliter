@@ -3,6 +3,8 @@ import thread
 environment = {}
     
 class Script(object):
+    ended = False
+    
     def __init__(self, code, filename = "<string>"):
         self.code = compile(code, filename, "exec")
     
@@ -15,6 +17,9 @@ class Script(object):
         
     
     def say(self, message):
+        if self.ended:
+            return
+        
         self.actor.session.sendPacket(
             0xb4,
             actorID = self.actor.gameID,
@@ -22,26 +27,40 @@ class Script(object):
         )
     
     def close(self):
+        if self.ended:
+            return
+        
         self.actor.session.sendPacket(
             0xb6,
             actorID = self.actor.gameID
         )
+        self.ended = True
     
     def menu(self, items):
-        self.menu = items
+        if self.ended:
+            return
+        
+        self.menuFunctions = items
+        
         self.actor.session.sendPacket(
             0xb7,
             actorID = self.actor.gameID,
             items = ":".join(items.keys())
         )
 
-    def next(self, function):
+    def next(self, function = None):
+        if self.ended:
+            return
+        
         self.nextFunc = function
+        
         self.actor.session.sendPacket(
             0xb5,
             actorID = self.actor.gameID
         )
-    
-    def waiting(self):
-        return not self.done_waiting
+        
+        self.actor.waitNext = True
+        
+        while self.actor.waitNext:
+            pass
         

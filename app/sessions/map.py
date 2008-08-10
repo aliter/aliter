@@ -9,6 +9,7 @@ from app.misc import getTick
 from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from app.event import Event
 
+import sys
 
 class MapSession(Session):
     def __init__(self):
@@ -82,15 +83,15 @@ class MapSession(Session):
         if actorID in maps[self.character.map].npcs:
             self.sendPacket(
                 0x95,
-                actorID=actorID,
-                name=maps[self.character.map].npcs[actorID].name
+                actorID = actorID,
+                name = maps[self.character.map].npcs[actorID].name
             )
         
         if actorID in maps[self.character.map].players:
             self.sendPacket(
                 0x95,
-                actorID=actorID,
-                name=maps[self.character.map].players[actorID].name
+                actorID = actorID,
+                name = maps[self.character.map].players[actorID].name
             )
     
     def npcActivate(self, npcID):
@@ -104,11 +105,14 @@ class MapSession(Session):
         
         self.npc.run(self.character)
     
-    def npcNext(self, accountID, function = None):
+    def npcNext(self, accountID):
         if not self.character:
             raise IllegalPacket
         
-        self.npc.script.nextFunc()
+        self.character.waitNext = False
+        
+        if self.npc.script.nextFunc:
+            self.npc.script.nextFunc()
     
     def npcClosed(self, accountID):
         if not self.character:
@@ -120,7 +124,11 @@ class MapSession(Session):
         if not self.character:
             raise IllegalPacket
         
-        menu = self.npc.script.menu
+        # They clicked "Cancel"
+        if selection == 255:
+            return
+        
+        menu = self.npc.script.menuFunctions
         selected = menu.keys()[selection - 1]
         menu[selected]()
     
