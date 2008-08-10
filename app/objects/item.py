@@ -1,14 +1,13 @@
-from app.utils.hashcompat import sha_constructor
-
 from model import Model
 from manager import Manager
 
 
 class Item(Model):
     required = [
-        'id', 'name', 'cleanName'
+        'name', 'cleanName'
     ]
     optional = [
+        ('id', None),
         ('type', 0),
         ('priceBuy', 0),
         ('priceSell', None),

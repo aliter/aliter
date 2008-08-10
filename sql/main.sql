@@ -1,3 +1,19 @@
+DROP TABLE IF EXISTS `accounts`;
+CREATE TABLE `accounts` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `username` varchar(255) NOT NULL,
+  `password` varchar(40) NOT NULL,
+  `Email` varchar(60) NOT NULL,
+  `gender` tinyint(1) NOT NULL default 1,
+  `loginCount` mediumint(9) unsigned NOT NULL default 0,
+  `lastLogin` datetime NULL,
+  `lastIP` varchar(100) NULL,
+  `gmLevel` tinyint(2) NOT NULL default 0,
+  `banUntil` datetime NULL,
+  PRIMARY KEY (`id`),
+  KEY `username` (`username`)
+) AUTO_INCREMENT=2000000;
+
 DROP TABLE IF EXISTS `characters`;
 CREATE TABLE `characters` (
   `id` int(11) unsigned NOT NULL auto_increment,
@@ -35,11 +51,11 @@ CREATE TABLE `characters` (
   `viewHeadMiddle` smallint(6) unsigned NOT NULL default 0,
   `viewHeadBottom` smallint(6) unsigned NOT NULL default 0,
   `map` varchar(20) NOT NULL default 'new_zone01',
-  `x` smallint(4) unsigned NOT NULL default '53',
-  `y` smallint(4) unsigned NOT NULL default '111',
+  `x` smallint(4) unsigned NOT NULL default 53,
+  `y` smallint(4) unsigned NOT NULL default 111,
   `saveMap` varchar(20) NOT NULL default 'new_zone01',
-  `saveX` smallint(4) unsigned NOT NULL default '53',
-  `saveY` smallint(4) unsigned NOT NULL default '111',
+  `saveX` smallint(4) unsigned NOT NULL default 53,
+  `saveY` smallint(4) unsigned NOT NULL default 111,
   `online` tinyint(2) NOT NULL default 0,
   `fame` int(11) unsigned NOT NULL default 0,
   PRIMARY KEY  (`id`),
@@ -49,31 +65,36 @@ CREATE TABLE `characters` (
   KEY `online` (`online`)
 ) AUTO_INCREMENT=150000;
 
-DROP TABLE IF EXISTS `accounts`;
-CREATE TABLE `accounts` (
+DROP TABLE IF EXISTS `inventory`;
+CREATE TABLE `inventory` (
   `id` int(11) unsigned NOT NULL auto_increment,
-  `username` varchar(255) NOT NULL,
-  `password` varchar(40) NOT NULL,
-  `Email` varchar(60) NOT NULL,
-  `gender` tinyint(1) NOT NULL default 1,
-  `loginCount` mediumint(9) unsigned NOT NULL default 0,
-  `lastLogin` datetime NULL,
-  `lastIP` varchar(100) NULL,
-  `gmLevel` tinyint(2) NOT NULL default 0,
-  `banUntil` datetime NULL,
-  PRIMARY KEY (`id`),
-  KEY `username` (`username`)
-) AUTO_INCREMENT=2000000;
+  `characterID` int(11) unsigned NOT NULL default 0,
+  `itemID` int(11) unsigned NOT NULL default 0,
+  `amount` int(11) unsigned NOT NULL default 1,
+  `equipLocation` mediumint(8) unsigned NOT NULL default 0,
+  `identified` tinyint(1) NOT NULL default 0,
+  `refine` tinyint(3) unsigned NOT NULL default 0,
+  `broken` tinyint(1) unsigned NOT NULL default 0,
+  `forger` int(11) unsigned NOT NULL default 0,
+  `element` tinyint(2) unsigned NOT NULL default 0,
+  `very` tinyint(1) unsigned NOT NULL default 0,
+  `card1` smallint(11) NOT NULL default 0,
+  `card2` smallint(11) NOT NULL default 0,
+  `card3` smallint(11) NOT NULL default 0,
+  `card4` smallint(11) NOT NULL default 0,
+  PRIMARY KEY  (`id`),
+  KEY `characterID` (`characterID`)
+);
 
 DROP TABLE IF EXISTS `items`;
 CREATE TABLE `items` (
-  `id` smallint(5) unsigned NOT NULL default '0',
+  `id` smallint(5) unsigned NOT NULL default 0,
   `cleanName` varchar(50) NOT NULL,
   `name` varchar(50) NOT NULL,
-  `type` tinyint(2) unsigned NOT NULL default '0',
+  `type` tinyint(2) unsigned NOT NULL default 0,
   `priceBuy` mediumint(10) unsigned default NULL,
   `priceSell` mediumint(10) unsigned default NULL,
-  `weight` smallint(5) unsigned NOT NULL default '0',
+  `weight` smallint(5) unsigned NOT NULL default 0,
   `attack` smallint(3) unsigned default NULL,
   `defence` tinyint(3) unsigned default NULL,
   `range` tinyint(2) unsigned default NULL,

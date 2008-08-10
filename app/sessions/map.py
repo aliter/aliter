@@ -60,7 +60,7 @@ class MapSession(Session):
         # Say something
         self.sendPacket(
             0x8e,
-            message='Welcome to Aliter',
+            message = "Welcome to Aliter",
         )
         
         Event._registerActorView(self.character)
@@ -74,12 +74,15 @@ class MapSession(Session):
                 sprite=npc.sprite,
                 position=encodePosition(npc.x, npc.y, npc.dir),
             )
+        
         for warp in maps[self.character.map].warps.values():
             self.sendPacket(
                 'viewWarp',
                 actorID=warp.id,
                 position=encodePosition(warp.x, warp.y),
             )
+        
+        self.character.loadInventory()
     
     def move(self, position):
         if not self.character:
@@ -241,24 +244,27 @@ class MapSession(Session):
         
         self.sendPacket(
             0x14e,
-            type=0x57,
+            type = 0x57 # Just say they're a member for now.
         )
     
     def guildInfo(self, page):
         if not self.character:
             raise IllegalPacket
         
+        if not self.character.guildID:
+            return
+        
         self.sendPacket(
             0x150,
-            guildID=0,
-            level=0,
-            capacity=0,
-            exp=0,
-            nextExp=0,
-            tax=0,
-            members=0,
-            name='Fake Guild',
-            master='Aliter',
+            guildID = 0,
+            level = 0,
+            capacity = 0,
+            exp = 0,
+            nextExp = 0,
+            tax = 0,
+            members = 0,
+            name = 'Fake Guild',
+            master = 'Aliter',
         )
     
     def quit(self):
@@ -312,3 +318,24 @@ class MapSession(Session):
             0x9a,
             message = message
         ))
+    
+    def characterName(self, characterID):
+        """
+        Returns the name of the character with the given ID, or "Nameless".
+        """        
+        player = Characters.get(characterID)
+        
+        if not player:
+            self.log("Character %s not found." % characterID)
+            self.sendPacket(
+                0x194,
+                actorID = 0,
+                name = "Nameless"
+            )
+            return
+        
+        self.sendPacket(
+            0x194,
+            actorID = player.id,
+            name = player.name
+        )

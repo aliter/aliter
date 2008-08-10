@@ -91,8 +91,10 @@ class Manager(object):
         models = []
         for row in rows:
             model = self._rowToObject(self.schema, row)
+            
             if cache:
                 self.cache[model.id] = model
+            
             models.append(model)
         
         return models
@@ -100,8 +102,10 @@ class Manager(object):
     def create(self, cache=True, **kwargs):
         #try:
         object = self.modelClass(**kwargs)
+        
         if cache:
             self.cache[object.id] = object
+        
         return self.save(object)
         #except:
         #    return False

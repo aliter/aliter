@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import termios
 import traceback
 
 from struct import unpack

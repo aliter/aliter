@@ -538,7 +538,7 @@ class GMCommand(EventObject):
         if select == None:
             return self._gmCommandHelper(actor, "Usage: @item <id/name> [<amount>]")
         
-        from objects import Items
+        from objects import Items, Inventory
         
         if select.isdigit():
             item = Items.get(select)
@@ -548,22 +548,70 @@ class GMCommand(EventObject):
         if not item:
             return self._gmCommandError(actor, "Item not found.")
         
-        actor.session.sendPacket(
-            0xa0,
-            location = 4,
-            amount = int(amount),
-            itemID = int(item.id),
-            identified = 1,
-            broken = 0,
-            refine = 0,
-            card1 = 0,
-            card2 = 0,
-            card3 = 0,
-            card4 = 0,
-            equipType = 0,
-            type = 0,
-            fail = 0
+        inventory = Inventory.getAll(
+            characterID = actor.id
         )
+        
+        if item.equipLocations == None:
+            # Do they already have this item?
+            stock = Inventory.get(itemID = item.id)
+            
+            if stock and stock:
+                stock.amount += int(amount)
+                Inventory.save(stock)
+            else:
+                Inventory.create(
+                    characterID = actor.id,
+                    itemID = item.id,
+                    amount = int(amount)
+                )
+            
+            actor.session.sendPacket(
+                0xa0,
+                index = len(inventory) + 2,
+                amount = int(amount),
+                itemID = item.id,
+                identified = 1,
+                broken = 0,
+                refine = 0,
+                card1 = 0,
+                card2 = 0,
+                card3 = 0,
+                card4 = 0,
+                equipLocations = item.equipLocations or 0,
+                type = item.type,
+                fail = 0
+            )
+        else:
+            for x in xrange(int(amount)):
+                Inventory.create(
+                    characterID = actor.id,
+                    itemID = item.id,
+                    amount = 1
+                )
+                
+                actor.session.sendPacket(
+                    0xa0,
+                    index = len(inventory) + 2 + x,
+                    amount = 1,
+                    itemID = item.id,
+                    identified = 1,
+                    broken = 0,
+                    refine = 0,
+                    card1 = 0,
+                    card2 = 0,
+                    card3 = 0,
+                    card4 = 0,
+                    equipLocations = item.equipLocations or 0,
+                    type = item.type,
+                    fail = 0
+                )
+    
+    def test(self, actor):
+        """docstring for test"""
+        # This seems to ping the client to fill in the "Guild" setting in the status window,
+        # but I can't figure out any important/unique data in this packet. Weird.
+        actor.session.sendRaw("\xB0\x00\x35\x00\xE8\x02\x00\x00")
     
     # def threads(self, actor, start = 0):
     #     from time import sleep
