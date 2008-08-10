@@ -114,6 +114,23 @@ class EventObject(object):
                 	position=encodePosition(player.x, player.y) + "\x88\x05\x05",
                 	blevel=player.baseLevel,
                 ))
+        
+        # Display all NPCs on current map
+        for npc in maps[actor.map].npcs.values():
+            actor.session.sendPacket(
+                'viewNPC',
+                actorID = npc.id,
+                sprite = npc.sprite,
+                position = encodePosition(npc.x, npc.y, npc.dir),
+            )
+        
+        # Display warps
+        for warp in maps[actor.map].warps.values():
+            actor.session.sendPacket(
+                'viewWarp',
+                actorID = warp.id,
+                position = encodePosition(warp.x, warp.y),
+            )
     
     def _registerActorView(self, actor):
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(

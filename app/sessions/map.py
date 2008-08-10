@@ -8,7 +8,6 @@ from app.packets import generatePacket as _, receivedPackets, sendPacket, encode
 from app.misc import getTick
 from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from app.event import Event
-from app.script import Scripts
 
 
 class MapSession(Session):
@@ -66,22 +65,6 @@ class MapSession(Session):
         Event._registerActorView(self.character)
         Event._showActors(self.character)
         
-        # Display all actors on current map
-        for npc in maps[self.character.map].npcs.values():
-            self.sendPacket(
-                'viewNPC',
-                actorID=npc.id,
-                sprite=npc.sprite,
-                position=encodePosition(npc.x, npc.y, npc.dir),
-            )
-        
-        for warp in maps[self.character.map].warps.values():
-            self.sendPacket(
-                'viewWarp',
-                actorID=warp.id,
-                position=encodePosition(warp.x, warp.y),
-            )
-        
         self.character.loadInventory()
     
     def move(self, position):
@@ -124,26 +107,13 @@ class MapSession(Session):
     def npcActivate(self, npcID):
         if not self.character:
             raise IllegalPacket
+        
         if npcID not in maps[self.character.map].npcs:
             return
         
         npc = maps[self.character.map].npcs[npcID]
-        self.log('Request to talk to "%s"' % npc.name)
-        self.npc = {
-            'file': npc.scriptFile,
-            'offset': npc.scriptOffset,
-            'register': None,
-            'vars': {
-                'character': self.character,
-            },
-            'extra': {
-                'npc': npc,
-                'sayName': npc.name,
-            },
-            'halt': False,
-        }
         
-        self._npcExecute()
+        npc.run(self.character)
     
     def npcNext(self, npcID):
         if not self.character:

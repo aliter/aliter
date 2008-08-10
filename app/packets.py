@@ -97,8 +97,9 @@ sentPackets = {
     
     'ack':      ('l', ('accountID',)), # Acknowledge login/char server connection (0283 prefixed)
     'map':      ('hl', (0x0187, 'accountID',)), # Acknowledge map server connection
-    'viewNPC':  ('hlh6xh30x3s2Bxxx', (0x78, 'actorID', 200, 'sprite', 'position', 5, 5)), # Display NPC on map
-    'viewWarp': ('hlh6xh30x3s2Bxxx', (0x78, 'actorID', 200, 45, 'position', 5, 5)), # Display warp on map
+    # <ID>.l <speed>.w ?.6w <class>.w ?.7w <X_Y>.3B ?.2B
+    'viewNPC':  ('hxlh6xh30x3s3xB', (0x78, 'actorID', 200, 'sprite', 'position', 1)), # Display NPC on map
+    'viewWarp': ('hxlh6xh30x3s3xB', (0x78, 'actorID', 200, 45, 'position', 1)), # Display warp on map
     
     #------------------------------------------------------
     # Login server packets

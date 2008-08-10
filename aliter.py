@@ -11,10 +11,11 @@ from app.shared import config, maps
 from app.constants import *
 from app.exceptions import ScriptError
 from app.misc import ttysize
-from app.objects import Server, Map
+from app.objects import Server, Map, NPC
 from app.sessions import LoginSession, CharSession, MapSession
-from app.script import Scripts
+from app.script import Script
 from app.tools import grf
+from app.lib import yaml
 
 class Aliter(object):
     def main(self):
@@ -91,21 +92,21 @@ class Aliter(object):
                         print ''
             print '\033[A\033[2KLoading maps... Done'
             
-            # Load scripts [Disabled for now - Alex]
-            # print ''
-            # for file in config['scripts']:
-            #     print '\033[A\033[2KLoading scripts... %s' % file
-            #     try:
-            #         Scripts.load(file)
-            #     except IOError:
-            #         print ANSI_LIGHT_RED + "\033[A\033[2KError loading script: %s [File doesn't exist]" % file + ANSI_DEFAULT
-            #         print ''
-            #     except ScriptError, msg:
-            #         #print ANSI_LIGHT_RED + '\033[A\033[2KError loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
-            #         print ANSI_LIGHT_RED + 'Error loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
-            #         print ''
-            # 
-            # print '\033[A\033[2KLoading scripts... Done'
+            # Load scripts
+            print ""
+            for file in config['scripts']:
+                print '\033[A\033[2KLoading scripts... %s' % file
+                try:
+                    self.loadNPC(file)
+                except IOError:
+                    print ANSI_LIGHT_RED + "\033[A\033[2KError loading script: %s [File doesn't exist]" % file + ANSI_DEFAULT
+                    print ''
+                except ScriptError, msg:
+                    #print ANSI_LIGHT_RED + '\033[A\033[2KError loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
+                    print ANSI_LIGHT_RED + 'Error loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
+                    print ''
+            
+            print '\033[A\033[2KLoading scripts... Done'
         except KeyboardInterrupt:
             print ANSI_YELLOW + 'Ctrl+C detected: Shutting down Aliter.' + ANSI_DEFAULT
             sys.exit(1)
@@ -148,6 +149,75 @@ class Aliter(object):
                 self.login.factory.shutdown(self.login)
             return False
         return True
+    
+    nextNPCID = 5000000
+    
+    def loadNPC(self, filename):
+        """
+        Compiles an NPC's script into the cache and places it in its map.
+        """
+        
+        file      = open("script/%s.py" % filename)
+        fileLines = file.readlines()
+        file.close()
+        
+        docblock = False
+        inblock = ""
+        for line in fileLines:
+            if not docblock and line[:3] == '"""':
+                docblock = True
+                continue
+            
+            if docblock and line[:3] == '"""':
+                docblock = False
+                break
+            
+            if docblock:
+                inblock += line
+        
+        if inblock.strip() == "":
+            raise ScriptError("NPC does not have a docblock.")
+        
+        npc = yaml.load(inblock)
+        
+        direction = {
+            "N": 0,
+            "North": 0,
+            "NW": 1,
+            "Northwest": 1,
+            "W": 2,
+            "West": 2,
+            "SW": 3,
+            "Southwest": 3,
+            "S": 4,
+            "South": 4,
+            "SE": 5,
+            "Southeast": 5,
+            "E": 6,
+            "East": 6,
+            "NE": 7,
+            "Northeast": 7
+        }
+        
+        if type(npc['Map']['Direction']) != int:
+            if npc['Map']['Direction'] in direction:
+                npc['Map']['Direction'] = direction[npc['Map']['Direction']]
+            else:
+                raise ScriptError("Invalid direction. Please specify N, NW, W, SW, S, SE, E, NE, or their corresponding numbers (starting at 0).")
+        
+        
+        if "ID" not in npc:
+            npc['ID'] = self.nextNPCID
+        
+        maps[npc['Map']['Name']].npcs[npc['ID']] = NPC(
+            npc['ID'],
+            npc['Name'],
+            (npc['Map'], npc['Map']['x'], npc['Map']['y'], npc['Map']['Direction']),
+            npc['Sprite'],
+            Script("".join(fileLines).replace("\r\n", "\n"), "script/%s.py" % filename)
+        )
+        
+        self.nextNPCID += 1
     
     # Shutdown cleanly
     def shutdown(self):
