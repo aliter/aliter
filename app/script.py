@@ -36,7 +36,7 @@ class Script(object):
         )
 
     def next(self, function):
-        self.next2 = function
+        self.nextFunc = function
         self.actor.session.sendPacket(
             0xb5,
             actorID = self.actor.gameID

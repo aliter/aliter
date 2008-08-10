@@ -108,8 +108,7 @@ class MapSession(Session):
         if not self.character:
             raise IllegalPacket
         
-        self.npc.wait = False
-        self.npc.done_waiting = True
+        self.npc.script.nextFunc()
     
     def npcClosed(self, accountID):
         if not self.character:
