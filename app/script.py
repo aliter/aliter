@@ -1,23 +1,38 @@
 import thread
-
-environment = {}
     
 class Script(object):
+    """
+    Holds a script and compiles it.
+    The script will be executed in its own environment and in its own thread when the "run" method is called.
+    """
     ended = False
     
     def __init__(self, code, filename = "<string>"):
+        """
+        Compile the script for later execution.
+        """
         self.code = compile(code, filename, "exec")
     
     def run(self, actor):
+        """
+        Sets self.actor to "actor" (if provided) and runs "self.threadedRun" in a thread.
+        If the "actor" argument is provided, the script will be executed as that player.
+        """
         self.actor = actor
         thread.start_new_thread(self.threadedRun, ())
     
     def threadedRun(self):
-        exec self.code in { "say": self.say, "close": self.close, "menu": self.menu, "next": self.next }
-        
+        """
+        Executes the script.
+        """
+        exec self.code in { "say": self.say, "close": self.close, "menu": self.menu, "next": self.next, "markMap": self.markMap, "removeMark": self.removeMark, "cuton": self.cutin, "hideCutins": self.hideCutins, "hideCutin": self.hideCutin, "self": self.origin }
     
     def say(self, message):
+        """
+        Says something.
+        """
         if self.ended:
+            print "Script has already ended, so I can't say \"%s\"." % message
             return
         
         self.actor.session.sendPacket(
@@ -27,6 +42,9 @@ class Script(object):
         )
     
     def close(self):
+        """
+        Shows the "close" button and ends the script's execution.
+        """
         if self.ended:
             return
         
@@ -37,6 +55,10 @@ class Script(object):
         self.ended = True
     
     def menu(self, items):
+        """
+        Provides a menu for the player to select something from.
+        The "items" argument is a dictionary containing menu item names pointing to callback functions.
+        """
         if self.ended:
             return
         
@@ -49,6 +71,9 @@ class Script(object):
         )
 
     def next(self, function = None):
+        """
+        Shows the "Next" button and postpones the script until the player clicks it.
+        """
         if self.ended:
             return
         
@@ -63,4 +88,66 @@ class Script(object):
         
         while self.actor.waitNext:
             pass
-        
+    
+    def markMap(self, pointID, x, y, red = 0, green = 0, blue = 0):
+        """
+        Marks a coordinate on the mini-map.
+        """
+        self.actor.session.sendPacket(
+            0x144,
+            actorID = self.origin.id,
+            type = 1,
+            pointID = pointID,
+            x = x,
+            y = y,
+            red = red,
+            green = green,
+            blue = blue
+        )
+    
+    def removeMark(self, pointID):
+        """
+        Removes a marker from the mini-map.
+        """
+        self.actor.session.sendPacket(
+            0x144,
+            actorID = self.origin.id,
+            type = 2,
+            pointID = pointID,
+            x = 0,
+            y = 0,
+            red = 0,
+            green = 0,
+            blue = 0,
+        )
+    
+    def cutin(self, filename, position):
+        """
+        Displays an illustration.
+        """
+        self.actor.session.sendPacket(
+            0x1b3,
+            filename = filename,
+            position = position
+        )
+    
+    def hideCutin(self, filename):
+        """
+        Hides the specified cutin.
+        """
+        self.actor.session.sendPacket(
+            0x1b3,
+            filename = filename,
+            position = 255
+        )
+    
+    def hideCutins(self):
+        """
+        Hides all cutins.
+        """
+        self.actor.session.sendPacket(
+            0x1b3,
+            filename = "",
+            position = 255
+        )
+

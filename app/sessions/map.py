@@ -9,8 +9,6 @@ from app.misc import getTick
 from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from app.event import Event
 
-import sys
-
 class MapSession(Session):
     def __init__(self):
         Session.__init__(self, receivedPackets['map'], log.map)
@@ -102,7 +100,7 @@ class MapSession(Session):
             return
         
         self.npc = maps[self.character.map].npcs[npcID]
-        
+        self.npc.script.ended = False
         self.npc.run(self.character)
     
     def npcNext(self, accountID):

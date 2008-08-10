@@ -10,6 +10,8 @@ class NPC(object):
         self.dir    = int(position[3])
         self.sprite = int(sprite)
         self.script = script
+        
+        self.script.origin = self
     
     def run(self, actor):
         """
