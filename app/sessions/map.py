@@ -93,17 +93,6 @@ class MapSession(Session):
                 name=maps[self.character.map].players[actorID].name
             )
     
-    def _npcExecute(self):
-        "Continue to execute an NPC script"
-        while 1:
-            self.npc = Scripts.execute(self.npc)
-            halt     = self.npc['halt']
-            if self.npc['offset'] < 0:
-                self.npc = None
-                halt     = True
-            if halt:
-                break
-    
     def npcActivate(self, npcID):
         if not self.character:
             raise IllegalPacket
@@ -111,56 +100,30 @@ class MapSession(Session):
         if npcID not in maps[self.character.map].npcs:
             return
         
-        npc = maps[self.character.map].npcs[npcID]
+        self.npc = maps[self.character.map].npcs[npcID]
         
-        npc.run(self.character)
+        self.npc.run(self.character)
     
-    def npcNext(self, npcID):
+    def npcNext(self, accountID, function = None):
         if not self.character:
             raise IllegalPacket
         
-        if not self.npc \
-        or self.npc['extra']['npc'].id != npcID \
-        or self.npc['register'] != '_next':
-            return
-        
-        self._npcExecute()
+        self.npc.wait = False
+        self.npc.done_waiting = True
     
-    def npcClosed(self, npcID):
+    def npcClosed(self, accountID):
         if not self.character:
             raise IllegalPacket
         
-        if not self.npc \
-        or self.npc['extra']['npc'].id != npcID \
-        or self.npc['register'] not in ('_close', '_close2'):
-            return
-        
-        if self.npc['register'] == '_close':
-            self.npc = None
-        else:
-            self._npcExecute()
+        self.npc = None
     
-    def npcMenuSelect(self, npcID, selection):
+    def npcMenuSelect(self, accountID, selection):
         if not self.character:
             raise IllegalPacket
         
-        if not self.npc \
-        or self.npc['extra']['npc'].id != npcID \
-        or self.npc['register'] not in ('_select', '_prompt'):
-            return
-        
-        if selection == 255 and self.npc['register'] == '_select':
-            # User clicked cancel
-            if 'cutin' in self.npc['extra']:
-                self.sendPacket(
-                    0x1b3,
-                    filename='',
-                    position=255,
-                )
-            self.npc = None
-        else:
-            self.npc['register'] = selection
-            self._npcExecute()
+        menu = self.npc.script.menu
+        selected = menu.keys()[selection - 1]
+        menu[selected]()
     
     def menuButton(self, type):
         if not self.character:

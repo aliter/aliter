@@ -49,12 +49,12 @@ receivedPackets = {
         0x0a2: ['characterName', '9xl', 'characterID'], # Request character name of forged item
         0x0a7: ['move', 'xxx3s', 'position'], # Character movement
         0x0b2: ['menuButton', 'B', 'type'], # Character select / Last save point menu button
-        0x0b8: ['npcMenuSelect', 'lB', 'npcID', 'selection'], # Selected item from NPC menu (First=1)
-        0x0b9: ['npcNext', 'l', 'npcID'], # Clicked the NPC next button
+        0x0b8: ['npcMenuSelect', 'lB', 'accountID', 'selection'], # Selected item from NPC menu (First=1)
+        0x0b9: ['npcNext', 'l', 'accountID'], # Clicked the NPC next button
         0x0bf: ['emotion', 'B', 'emotion'], # Character emotion
         0x0f3: ['speech', 'h!', 'packetLen', 'message'], # Talking
-        0x143: ['npcNumInput', 'l', 'npcID'], # NPC numerical input
-        0x146: ['npcClosed', 'l', 'npcID'], # NPC close button was pressed
+        0x143: ['npcNumInput', 'l', 'accountID'], # NPC numerical input
+        0x146: ['npcClosed', 'l', 'accountID'], # NPC close button was pressed
         0x14d: ['guildPage'], # Request guild page
         0x14f: ['guildInfo', 'l', 'page'], # Request guild information tab
         0x151: ['guildEmblem', 'l', 'guildID'], # Request guild emblem
@@ -67,7 +67,7 @@ receivedPackets = {
         0x170: ['guildAllianceRequest', 'lll', 'accountID', 'sourceAccountID', 'characterID'], # Send guild alliance request (FIXME: The names of these arguments need to be verified.)
         0x172: ['guildAllianceRespond', 'll', 'accountID', 'type'], # Respond to guild alliance request (type: 1 = accept, 0 = rejext)
         0x18a: ['quit', 'xx'],
-        0x1d5: ['npcStrInput', 'wl!', 'packetLen', 'npcID', 'message'], # NPC string input (NUL terminated)
+        0x1d5: ['npcStrInput', 'wl!', 'packetLen', 'accountID', 'message'], # NPC string input (NUL terminated)
         0x21d: [None, 'l', 'disabled'], # Does user have /effect disabled?
     },
 }
@@ -97,7 +97,6 @@ sentPackets = {
     
     'ack':      ('l', ('accountID',)), # Acknowledge login/char server connection (0283 prefixed)
     'map':      ('hl', (0x0187, 'accountID',)), # Acknowledge map server connection
-    # <ID>.l <speed>.w ?.6w <class>.w ?.7w <X_Y>.3B ?.2B
     'viewNPC':  ('hxlh6xh30x3s3xB', (0x78, 'actorID', 200, 'sprite', 'position', 1)), # Display NPC on map
     'viewWarp': ('hxlh6xh30x3s3xB', (0x78, 'actorID', 200, 45, 'position', 1)), # Display warp on map
     
