@@ -76,18 +76,17 @@ class Character(Actor):
         for stock in inventory:
             item = Items.get(stock.itemID)
             if item.equipLocations == None:
-                items.append(generatePacket(
-                    "inventoryItem",
-                    index = index,
-                    itemID = item.id,
-                    type = item.type,
-                    identified = stock.identified,
-                    amount = stock.amount,
-                    card1 = stock.card1,
-                    card2 = stock.card2,
-                    card3 = stock.card3,
-                    card4 = stock.card4
-                ))
+                items.append({
+                    "index": index,
+                    "itemID": item.id,
+                    "type": item.type,
+                    "identified": stock.identified,
+                    "amount": stock.amount,
+                    "card1": stock.card1,
+                    "card2": stock.card2,
+                    "card3": stock.card3,
+                    "card4": stock.card4
+                })
             else:
                 # Crazy-ass client logic.
                 card1 = stock.forger and 255 or stock.card1
@@ -95,20 +94,19 @@ class Character(Actor):
                 card3 = stock.forger and (18928 + (stock.forger - 150000)) or stock.card3
                 card4 = stock.forger and 2 or stock.card4
                 
-                equips.append(generatePacket(
-                    "inventoryEquip",
-                    index = index,
-                    itemID = item.id,
-                    type = item.type,
-                    identified = stock.identified,
-                    equipLocations = item.equipLocations,
-                    equipPoint = stock.equipLocation,
-                    refine = stock.refine,
-                    card1 = card1,
-                    card2 = card2,
-                    card3 = card3,
-                    card4 = card4
-                ))
+                equips.append({
+                    "index": index,
+                    "itemID": item.id,
+                    "type": item.type,
+                    "identified": stock.identified,
+                    "equipLocations": item.equipLocations,
+                    "equipPoint": stock.equipLocation,
+                    "refine": stock.refine,
+                    "card1": card1,
+                    "card2": card2,
+                    "card3": card3,
+                    "card4": card4
+                })
             
             self.inventoryIndex[item.id] = index
             
@@ -117,13 +115,13 @@ class Character(Actor):
         if items:
             self.session.sendPacket(
                 0x1ee,
-                data = "".join(items)
+                items = items
             )
         
         if equips:
             self.session.sendPacket(
                 0xa4,
-                data = "".join(equips)
+                equips = equips
             )
             
 

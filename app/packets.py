@@ -89,8 +89,8 @@ sentPackets = {
             'name', 'str', 'agi', 'vit', 'int', 'dex', 'luk', 'charNum', 1
         )
     ),
-    "inventoryItem": ('2h2BH2x4H', ('index', 'itemID', 'type', 'identified', 'amount', 'card1', 'card2', 'card3', 'card4')),
-    "inventoryEquip": ('hhBBhhxB4h', ('index', 'itemID', 'type', 'identified', 'equipLocations', 'equipPoint', 'refine', 'card1', 'card2', 'card3', 'card4')),
+    "items": ('2h2BH2x4H', ('index', 'itemID', 'type', 'identified', 'amount', 'card1', 'card2', 'card3', 'card4')),
+    "equips": ('hhBBhhxB4h', ('index', 'itemID', 'type', 'identified', 'equipLocations', 'equipPoint', 'refine', 'card1', 'card2', 'card3', 'card4')),
     
     #------------------------------------------------------
     # Special versions of packets
@@ -133,7 +133,7 @@ sentPackets = {
     0x095: ('l24s', ('actorID', 'name')), # Display actor name
     0x09a: ('h!', ('packetLen', 'message')), # /b Message
     0x0a0: ('3h3B5h2B', ('index', 'amount', 'itemID', 'identified', 'broken', 'refine', 'card1', 'card2', 'card3', 'card4', 'equipLocations', 'type', 'fail')), # Item receiving
-    0x0a4: ('h!', ('packetLen', 'data')), # Equipment (inventory)
+    0x0a4: ('h?', ('packetLen',), ("equips",)), # Equipment (inventory)
     0x0b0: ('hl', ('type', 'value')), # Update character stats (type: 0 = speed (* 1000), 3 = ?, 4 = mute (seconds), 5 = HP, 6 = Max HP, 7 = SP, 8 = Max SP, 9 = status points, 11 = base level, 12 = skill points, 24 = weight, 25 = max weight, 41 = attack, 42 = attack bonus, 43 = matk max, 44 = matk min, 45 = defense, 46 = defense bonus, 47 = mdef, 48 = mdef bonus, 49 = hit, 50 = flee, 51 = flee bonus, 52 = critical, 53 = aspd, 55 = job level, 124 = ?)
     0x0b1: ('hl', ('type', 'value')), # Update other char stats (type: 1 = bexp, 2 = jexp, 20 = zeny, 22 = bexp required, 23 = jexp required)
     0x0b3: ('l', ('type',)), # Returned to character select screen
@@ -169,7 +169,7 @@ sentPackets = {
     0x1b3: ('64sB', ('filename', 'position')), # NPC cut-in image
     0x1d4: ('l', ('actorID',)), # NPC string input
     0x1d7: ('lbhh', ('accountID', 'equip', 'w1', 'w2')), # Equip view grabbing
-    0x1ee: ('h!', ('packetLen', 'data')), # Inventory (data: 'index', 'itemID', 'type', 'identified', 'broken', 'card1', 'card2', 'card3', 'card4')
+    0x1ee: ('h?', ('packetLen',), ("items",)), # Inventory (data: 'index', 'itemID', 'type', 'identified', 'broken', 'card1', 'card2', 'card3', 'card4')
     0x1f3: ('lh2x', ('accountID', 'effect')), # Effects
     # This beast handles a few times when a user should show up for other people. [Alex]
     0x22b: ('l4h2x10hl3h2x2b5sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),
