@@ -25,7 +25,18 @@ class Script(object):
         """
         Executes the script.
         """
-        exec self.code in { "say": self.say, "close": self.close, "menu": self.menu, "next": self.next, "markMap": self.markMap, "removeMark": self.removeMark, "cuton": self.cutin, "hideCutins": self.hideCutins, "hideCutin": self.hideCutin, "self": self.origin }
+        methods = dir(self)
+        defaults = dir(object)
+        
+        for default in defaults + ["__dict__", "__module__", "__weakref__", "actor", "ended", "run", "threadedRun"]:
+            methods.remove(default)
+        
+        environment = { "self": self.origin }
+        
+        for method in methods:
+            environment[method] = getattr(self, method)
+        
+        exec self.code in environment
     
     def say(self, message):
         """
@@ -151,4 +162,3 @@ class Script(object):
             filename = "",
             position = 255
         )
-

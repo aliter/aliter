@@ -42,9 +42,10 @@ class CharSession(Session):
             packetChar = char.__dict__
             packetChar['speed'] = int(char.speed)
             charPack.append(packetChar)
+        
         self.sendPacket(
             0x6b,
-            character=charPack,
+            character = charPack
         )
     
     def selectChar(self, charNum):
