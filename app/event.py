@@ -583,9 +583,11 @@ class GMCommand(EventObject):
                     amount = int(amount)
                 )
             
+            index = item.id in actor.inventoryIndex and actor.inventoryIndex[item.id] or len(inventory) + 2
+            
             actor.session.sendPacket(
                 0xa0,
-                index = len(inventory) + 2,
+                index = index,
                 amount = int(amount),
                 itemID = item.id,
                 identified = 1,
@@ -599,6 +601,8 @@ class GMCommand(EventObject):
                 type = item.type,
                 fail = 0
             )
+            
+            actor.inventoryIndex[item.id] = index
         else:
             for x in xrange(int(amount)):
                 Inventory.create(

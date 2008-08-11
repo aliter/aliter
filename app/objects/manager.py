@@ -123,10 +123,12 @@ class Manager(object):
             query = 'UPDATE `%s` SET %s WHERE `id` = %%s' % (self.table, ', '.join(keys))
             values.append(data['id'])
             cursor.execute(query, values)
+            db.commit()
             return object
         else:
             query = 'INSERT INTO `%s` SET %s' % (self.table, ', '.join(keys))
             cursor.execute(query, values)
+            db.commit()
             object.id = cursor.lastrowid
             return object
 
@@ -135,6 +137,7 @@ class Manager(object):
         try:
             cursor = db.cursor()
             cursor.execute('DELETE FROM `%s` WHERE `id` = %%s' % self.table, id)
+            db.commit()
         except:
             return False
         return True

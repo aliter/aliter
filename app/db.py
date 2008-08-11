@@ -28,3 +28,6 @@ def getOne(query, vals=[]):
     cursor = db.cursor()
     cursor.execute(query, vals)
     return cursor.fetchone()
+
+def commit():
+    return db.commit()

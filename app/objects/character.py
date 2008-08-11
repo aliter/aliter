@@ -42,6 +42,8 @@ class Character(Actor):
         'online', 'fame', 
     ]
     
+    inventoryIndex = {}
+    
     def __init__(self, **kwargs):
         self.required.extend(super(Character, self).required)
         self.optional.extend(super(Character, self).optional)
@@ -108,17 +110,21 @@ class Character(Actor):
                     card4 = card4
                 ))
             
+            self.inventoryIndex[item.id] = index
+            
             index += 1
         
-        self.session.sendPacket(
-            0x1ee,
-            data = "".join(items)
-        )
+        if items:
+            self.session.sendPacket(
+                0x1ee,
+                data = "".join(items)
+            )
         
-        self.session.sendPacket(
-            0xa4,
-            data = "".join(equips)
-        )
+        if equips:
+            self.session.sendPacket(
+                0xa4,
+                data = "".join(equips)
+            )
             
 
 class CharacterManager(Manager):

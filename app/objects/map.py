@@ -64,6 +64,7 @@ class Map(object):
                 dX, dY  = nextDX, nextDY
             
             walkPath.append([next[0], next[1], None])
+        
         lastKey[2] = walkPath[-1]
         
         return walkPath

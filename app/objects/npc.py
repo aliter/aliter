@@ -1,5 +1,3 @@
-from app.script import environment
-
 class NPC(object):
     def __init__(self, id, name, position, sprite, script):
         self.id     = id

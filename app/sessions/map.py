@@ -61,10 +61,10 @@ class MapSession(Session):
             message = "Welcome to Aliter",
         )
         
+        self.character.loadInventory()
+        
         Event._registerActorView(self.character)
         Event._showActors(self.character)
-        
-        self.character.loadInventory()
     
     def move(self, position):
         if not self.character:

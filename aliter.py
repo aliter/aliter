@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import traceback
+import socket
 
 from struct import unpack
 from twisted.internet import reactor
@@ -123,12 +124,12 @@ class Aliter(object):
                 return reactor.listenTCP(port, serverInstance)
             except socket.error, msg:
                 if msg[0] == 98:
-                    log.unbound('Waiting 10 seconds...')
+                    log.console('Waiting 10 seconds...')
                     time.sleep(10)
             except:
-                log.unbound('Exception raised <%s>: %s' % (sys.exc_info()[0], sys.exc_info()[1]), log.CRITICAL)
+                log.console('Exception raised <%s>: %s' % (sys.exc_info()[0], sys.exc_info()[1]), log.CRITICAL)
                 for line in traceback.format_tb(sys.exc_info()[2]):
-                    log.unbound(line[:-1], log.CRITICAL)
+                    log.console(line[:-1], log.CRITICAL)
                 return False
     
     def initServers(self):

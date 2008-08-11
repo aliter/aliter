@@ -75,6 +75,8 @@ class CharSession(Session):
         if not self.accountID:
             raise IllegalPacket
         
+        hairColor = hairColor - 1
+        
         self.log('Request character creation - Name: %s, Position: %s, Hair: %s/%s, Stats: %s/%s/%s/%s/%s/%s' % \
             (name, charNum, hairStyle, hairColor, str, agi, vit, int, dex, luk,), log.LOW)
         

@@ -86,8 +86,9 @@ class Script(object):
         
         self.actor.waitNext = True
         
+        from time import sleep
         while self.actor.waitNext:
-            pass
+            sleep(1)
     
     def markMap(self, pointID, x, y, red = 0, green = 0, blue = 0):
         """
