@@ -42,7 +42,7 @@ class Character(Actor):
         'online', 'fame', 
     ]
     
-    inventoryIndex = {}
+    inventory = {}
     
     def __init__(self, **kwargs):
         self.required.extend(super(Character, self).required)
@@ -52,20 +52,10 @@ class Character(Actor):
         
         self.gameID = self.accountID
     
-    def load(self):
-        from app.event import Event
-        Event.warp(self, self.saveX, self.saveY, self.saveMap)
-    
-    def save(self, map, x, y):
-        from app.event import Event
-        self.saveMap = map
-        self.saveX = x
-        self.saveY = y
-        Characters.save(self)
-    
     def loadInventory(self):
         from app.objects import Inventory, Items
-        from app.packets import generatePacket
+        
+        self.inventory = {}
         
         inventory = Inventory.getAll(characterID = self.id)
         
@@ -108,7 +98,7 @@ class Character(Actor):
                     "card4": card4
                 })
             
-            self.inventoryIndex[item.id] = index
+            self.inventory[index] = { "item": item, "stock": stock }
             
             index += 1
         
@@ -123,6 +113,23 @@ class Character(Actor):
                 0xa4,
                 equips = equips
             )
+    
+    def load(self):
+        from app.event import Event
+        Event.warp(self, self.saveX, self.saveY, self.saveMap)
+    
+    def save(self, map = None, x = None, y = None):
+        from app.event import Event
+        self.saveMap = map or self.map
+        self.saveX = x or self.x
+        self.saveY = y or self.y
+        Characters.save(self)
+    
+    def give(self, itemID):
+        """
+        Gives the player an item.
+        """
+        
             
 
 class CharacterManager(Manager):

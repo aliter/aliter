@@ -30,6 +30,7 @@ class Map(object):
         self.monsters = {}
         self.npcs     = {}
         self.warps    = {}
+        self.objects  = 0
     
     def pathfind(self, x, y, toX, toY):
         if x == toX and y == toY:

@@ -1,3 +1,4 @@
+import sys
 import random
 import thread
 from datetime import datetime
@@ -311,6 +312,9 @@ class EventObject(object):
             log.map('Reached (%s, %s)' % (actor.x, actor.y), log.DEBUG, id=actor.name)
     
     def move(self, actor, x, y):
+        """
+        Actor has moved.
+        """
         walkPath = maps[actor.map].pathfind(actor.x, actor.y, x, y)
         actor.walkPath = walkPath
         actor.walkPathOffset = 0
@@ -323,6 +327,9 @@ class EventObject(object):
         self._movement[actor.gameID].start(actor.moveDelay, now=True)
     
     def warp(self, actor, x, y, map=None):
+        """
+        Actor has warped.
+        """
         if map:
             if map not in maps:
                 log.map("%s tried to warp to invalid map: %s" % (actor.name, map), log.HIGH)
@@ -344,6 +351,44 @@ class EventObject(object):
         self._registerActorView(actor)
         self._showActors(actor)
         # TODO: Send warp effect to other players in sight
+    
+    def drop(self, actor, index, amount):
+        """
+        Actor has dropped an item.
+        """
+        inventory = actor.inventory[index]
+        item, stock = inventory["item"], inventory["stock"]
+        
+        subX = (random.randint(0, sys.maxint) & 3) * 3 + 3
+        subY = ((random.randint(0, sys.maxint) >> 2) & 3) * 3 + 3
+        
+        print maps[actor.map].objects
+        maps[actor.map].objects += 1
+        
+        self._sendToPlayersOnMap(actor.map, _(
+            0x9e,
+            objID = maps[actor.map].objects,
+            itemID = item.id,
+            identified = stock.identified,
+            x = actor.x,
+            y = actor.y - 1, # FIXME: Replace this with official behaviour.
+            subX = subX,
+            subY = subY,
+            amount = amount
+        ))
+        
+        actor.session.sendPacket(
+            0xaf,
+            index = index,
+            amount = amount
+        )
+        
+        from objects import Inventory
+        if amount == stock.amount:
+            Inventory.delete(stock.id)
+        else:
+            stock.amount -= amount
+            Inventory.save(stock)
     
     #--------------------------------------------------
     # Battle
@@ -577,13 +622,14 @@ class GMCommand(EventObject):
                 stock.amount += int(amount)
                 Inventory.save(stock)
             else:
-                Inventory.create(
+                stock = Inventory.create(
                     characterID = actor.id,
                     itemID = item.id,
                     amount = int(amount)
                 )
             
-            index = item.id in actor.inventoryIndex and actor.inventoryIndex[item.id] or len(inventory) + 2
+            search = [k for k, v in self.character.inventory.iteritems() if v["item"].id == item.id]
+            index = search and search[0] or len(inventory) + 2
             
             actor.session.sendPacket(
                 0xa0,
@@ -602,18 +648,19 @@ class GMCommand(EventObject):
                 fail = 0
             )
             
-            actor.inventoryIndex[item.id] = index
+            actor.inventory[index] = { "item": item, "stock": stock }
         else:
             for x in xrange(int(amount)):
-                Inventory.create(
+                stock = Inventory.create(
                     characterID = actor.id,
                     itemID = item.id,
                     amount = 1
                 )
                 
+                index = len(inventory) + 2 + x
                 actor.session.sendPacket(
                     0xa0,
-                    index = len(inventory) + 2 + x,
+                    index = index,
                     amount = 1,
                     itemID = item.id,
                     identified = 1,
@@ -627,6 +674,8 @@ class GMCommand(EventObject):
                     type = item.type,
                     fail = 0
                 )
+                
+                actor.inventory[index] = { "item": item, "stock": stock }
     
     def test(self, actor):
         """docstring for test"""

@@ -277,3 +277,13 @@ class MapSession(Session):
             actorID = player.id,
             name = player.name
         )
+    
+    def drop(self, index, amount):
+        """
+        Actor has dropped an item.
+        """
+        if index not in self.character.inventory:
+            return log.map("Character %d tried to drop an item they do not have in their inventory.", log.LOW)
+        
+        Event.drop(self.character, index, amount)
+

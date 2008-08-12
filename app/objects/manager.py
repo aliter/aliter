@@ -135,6 +135,7 @@ class Manager(object):
     def delete(self, id):
         # TODO: Remove from cache
         try:
+            del self.cache[id] # TODOne? [Alex]
             cursor = db.cursor()
             cursor.execute('DELETE FROM `%s` WHERE `id` = %%s' % self.table, id)
             db.commit()
