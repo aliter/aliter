@@ -133,8 +133,9 @@ sentPackets = {
     0x091: ('16shh', ('map', 'x', 'y')), # Change map on same server
     0x095: ('l24s', ('actorID', 'name')), # Display actor name
     0x09a: ('h!', ('packetLen', 'message')), # /b Message
-    0x09e: ('lhBhhBBh', ('objID', 'itemID', 'identified', 'x', 'y', 'subX', 'subY', 'amount')), # Item dropped
+    0x09e: ('lhBhhBBh', ('objectID', 'itemID', 'identified', 'x', 'y', 'subX', 'subY', 'amount')), # Item dropped
     0x0a0: ('3h3B5h2B', ('index', 'amount', 'itemID', 'identified', 'broken', 'refine', 'card1', 'card2', 'card3', 'card4', 'equipLocations', 'type', 'fail')), # Item receiving
+    0x0a1: ('l', ('objectID',)), # Item disappeared (from the floor)
     0x0a4: ('h?', ('packetLen',), ("equips",)), # Equipment (inventory)
     0x0af: ('hh', ('index', 'amount')), # Item removed from inventory
     0x0b0: ('hl', ('type', 'value')), # Update character stats (type: 0 = speed (* 1000), 3 = ?, 4 = mute (seconds), 5 = HP, 6 = Max HP, 7 = SP, 8 = Max SP, 9 = status points, 11 = base level, 12 = skill points, 24 = weight, 25 = max weight, 41 = attack, 42 = attack bonus, 43 = matk max, 44 = matk min, 45 = defense, 46 = defense bonus, 47 = mdef, 48 = mdef bonus, 49 = hit, 50 = flee, 51 = flee bonus, 52 = critical, 53 = aspd, 55 = job level, 124 = ?)

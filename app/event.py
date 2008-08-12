@@ -362,12 +362,11 @@ class EventObject(object):
         subX = (random.randint(0, sys.maxint) & 3) * 3 + 3
         subY = ((random.randint(0, sys.maxint) >> 2) & 3) * 3 + 3
         
-        print maps[actor.map].objects
         maps[actor.map].objects += 1
         
         self._sendToPlayersOnMap(actor.map, _(
             0x9e,
-            objID = maps[actor.map].objects,
+            objectID = maps[actor.map].objects,
             itemID = item.id,
             identified = stock.identified,
             x = actor.x,
@@ -384,11 +383,26 @@ class EventObject(object):
         )
         
         from objects import Inventory
+        
         if amount == stock.amount:
             Inventory.delete(stock.id)
         else:
             stock.amount -= amount
             Inventory.save(stock)
+        
+        reactor.callLater(60, self.removeDrop, actor.map, maps[actor.map].objects)
+    
+    def removeDrop(self, map, objectID):
+        """
+        Removes a dropped item from the map.
+        """
+        log.map("Removing unpicked item %d from map %s." % (objectID, map), log.DEBUG)
+        self._sendToPlayersOnMap(map, _(
+            0xa1,
+            objectID = objectID
+        ))
+        
+        maps[map].objects -= 1
     
     #--------------------------------------------------
     # Battle
@@ -628,7 +642,7 @@ class GMCommand(EventObject):
                     amount = int(amount)
                 )
             
-            search = [k for k, v in self.character.inventory.iteritems() if v["item"].id == item.id]
+            search = [k for k, v in actor.inventory.iteritems() if v["item"].id == item.id]
             index = search and search[0] or len(inventory) + 2
             
             actor.session.sendPacket(
