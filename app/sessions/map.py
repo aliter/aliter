@@ -71,16 +71,6 @@ class MapSession(Session):
             guildName = self.character.guild().name
         )
         
-        # Update their name
-        self.sendPacket(
-            0x195,
-            accountID = self.character.accountID,
-            name = self.character.name,
-            partyName = "", # FIXME: Implement parties. :P
-            guildName = self.character.guild().name,
-            guildPosition = self.character.position().name
-        )
-        
         self.character.loadInventory()
         
         self.character.online = 1

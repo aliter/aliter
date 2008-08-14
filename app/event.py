@@ -72,16 +72,24 @@ class EventObject(object):
     def _showActors(self, actor):
         for player in self._playersInSight(actor.map, actor.x, actor.y):
             if player.id != actor.id:
-                actor.session.sendRaw(_(
+                actor.session.sendPacket(
                     0x1d7,
                     accountID=player.accountID,
                     equip=2,
                     w1=player.viewWeapon,
                     w2=player.viewShield
-                ))
-        
-                # FIXME: Should this use _sendToOtherPlayersOnMap?
-                actor.session.sendRaw(_(
+                )
+                
+                actor.session.sendPacket(
+                    0x195,
+                    accountID = player.accountID,
+                    name = player.name,
+                    partyName = "", # TODO: Implement parties. :P
+                    guildName = player.guild() and player.guild().name or "",
+                    guildPosition = player.position() and player.position().name or ""
+                )
+                
+                actor.session.sendPacket(
                     0x22c,
                     accountID=player.accountID,
                     speed=150, # TODO: Make this real.
@@ -100,14 +108,14 @@ class EventObject(object):
                     ccolor=player.clothesColor,
                     headdir=0, # FIXME: How can this be tested?
                     guildID=player.guildID,
-                    guildEmblem=0, # TODO: Make this real.
+                    guildEmblem=player.guild() and player.guild().emblem().id or 0,
                     manner=0, # TODO: Make this real.
                     effect=0, # TODO: Make this real.
                     karma=0, # TODO: Make this real.
                     gender=player.account.gender,
                     position=encodePosition(player.x, player.y) + "\x88\x05\x05",
                     blevel=player.baseLevel,
-                ))
+                )
         
         # Display all NPCs on current map
         for npc in maps[actor.map].npcs.values():
@@ -135,12 +143,16 @@ class EventObject(object):
             w2=actor.viewShield
         ))
         
-        account = Accounts.get(actor.accountID)
-        
-        if account.gender == 1:
-            gender = 1
-        else:
-            gender = 0
+        # Update their name
+        # FIXME: Should this use _sendToOtherPlayersOnMap?
+        self._sendToPlayersInSight(actor.map, actor.x, actor.y, _(
+            0x195,
+            accountID = actor.accountID,
+            name = actor.name,
+            partyName = "", # TODO: Implement parties. :P
+            guildName = actor.guild() and actor.guild().name or "",
+            guildPosition = actor.position() and actor.position().name or ""
+        ))
         
         # FIXME: Should this use _sendToOtherPlayersOnMap?
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
@@ -161,13 +173,13 @@ class EventObject(object):
             ccolor=actor.clothesColor,
             headdir=0, # FIXME: How can this be tested?
             guildID=actor.guildID,
-            guildEmblem=0, # TODO: Make this real.
+            guildEmblem=actor.guild() and actor.guild().emblem().id or 0,
             manner=0, # TODO: Make this real.
             effect=0, # TODO: Make this real.
             karma=0, # TODO: Make this real.
-            gender=gender,
+            gender=actor.account().gender,
             position=encodePosition(actor.x, actor.y) + "\x05\x05",
-            blevel=actor.baseLevel,
+            blevel=actor.baseLevel
         ))
     
     #--------------------------------------------------
