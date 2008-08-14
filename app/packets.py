@@ -65,7 +65,7 @@ receivedPackets = {
         0x165: ['guildCreate', 'l24s', 'accountID', 'guildName'],
         0x168: ['guildInvite', 'lll', 'accountID', 'inviterAccountID', 'characterID'],
         0x16b: ['guildReject', 'll', 'guildID', 'type'],
-        0x16e: ['guildSetAnnouncement', 'l60s120s', 'guildID', 'title', 'body'],
+        0x16e: ['setGuildAnnouncement', 'l60s120s', 'guildID', 'title', 'body'],
         0x170: ['guildAllianceRequest', 'lll', 'accountID', 'sourceAccountID', 'characterID'],
         0x172: ['guildAllianceRespond', 'll', 'accountID', 'type'],
         0x18a: ['quit', 'xx'],

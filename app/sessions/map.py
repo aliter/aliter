@@ -62,14 +62,22 @@ class MapSession(Session):
             message = "Welcome to Aliter!"
         )
         
-        # Set their guild status (FIXME: Is this the correct placement?)
-        self.sendPacket(
-            0x16c,
-            guildID = self.character.guildID,
-            emblemID = self.character.guild().emblem().id,
-            mode = self.character.position().mode,
-            guildName = self.character.guild().name
-        )
+        # FIXME: Move these to the Character class so they can be used easier
+        guild = self.character.guild()
+        if guild:
+            self.sendPacket(
+                0x16c,
+                guildID = guild.id,
+                emblemID = guild.emblem().id,
+                mode = self.character.position().mode,
+                guildName = guild.name
+            )
+            
+            self.sendPacket(
+                0x16f,
+                title = guild.messageTitle,
+                body = guild.messageBody
+            )
         
         self.character.loadInventory()
         
@@ -336,6 +344,31 @@ class MapSession(Session):
             guildID = self.character.guildID,
             emblemID = emblem.id,
             emblem = hexlify(data)
+        )
+    
+    def setGuildAnnouncement(self, guildID, title, body):
+        """
+        Sets a guild's announcement message.
+        """
+        guild = Guilds.get(guildID)
+        if not guild:
+            return
+        
+        if guild.masterID != self.character.id:
+            return log.map(("Character '%s' tried to change the announcement "
+                            "of guild '%s' but they are not the guild master.")
+                                % (self.character.name, guild.name),
+                            log.HIGH)
+        
+        guild.messageTitle = title
+        guild.messageBody = body
+        Guilds.save(guild)
+        
+        # FIXME: This should send to all members of the guild.
+        self.sendPacket(
+            0x16f,
+            title = title,
+            body = body
         )
     
     def quit(self):
