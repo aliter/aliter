@@ -39,38 +39,38 @@ receivedPackets = {
     # Map server packets
     
     'map': {
-        0x07d: [], # Map loading complete
-        0x085: [None, '10x'], # Gets sent when talking to NPCs
+        0x07d: [],
+        0x085: [None, '10x'],
         0x089: ['keepAlive', 'xxl', 'clientTick'],
-        0x08c: ['getActorName', 'xxxxxl', 'actorID'], # Hover over actor
-        0x090: ['npcActivate', 'lx', 'npcID'], # Activate NPC
-        0x099: ['announce', 'h!', 'packetLen', 'message'], # /b Message
+        0x08c: ['getActorName', 'xxxxxl', 'actorID'],
+        0x090: ['npcActivate', 'lx', 'npcID'],
+        0x099: ['announce', 'h!', 'packetLen', 'message'],
         0x09b: ['identify', 'xxlxlxxxxLxxxxx', 'accountID', 'characterID', 'loginIDa'],
-        0x0a2: ['characterName', '9xl', 'characterID'], # Request character name of forged item
-        0x0a7: ['move', 'xxx3s', 'position'], # Character movement
-        0x0b2: ['menuButton', 'B', 'type'], # Character select / Last save point menu button
-        0x0b8: ['npcMenuSelect', 'lB', 'accountID', 'selection'], # Selected item from NPC menu (First=1)
-        0x0b9: ['npcNext', 'l', 'accountID'], # Clicked the NPC next button
-        0x0bf: ['emotion', 'B', 'emotion'], # Character emotion
-        0x0f3: ['speech', 'h!', 'packetLen', 'message'], # Talking
-        0x116: ['drop', '3xhxh', 'index', 'amount'], # Dropped item
-        0x143: ['npcNumInput', 'l', 'accountID'], # NPC numerical input
-        0x146: ['npcClosed', 'l', 'accountID'], # NPC close button was pressed
-        0x14d: ['guildPage'], # Request guild page
-        0x14f: ['guildInfo', 'l', 'page'], # Request guild information tab
-        0x151: ['guildEmblem', 'l', 'guildID'], # Request guild emblem
-        0x153: ['setGuildEmblem', 'h!', 'packetLen', 'data'], # Set guild emblem
-        0x159: ['guildLeave', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'], # Leaving guild
-        0x15b: ['guildExpel', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'], # Expel from guild
-        0x165: ['guildCreate', 'l24s', 'accountID', 'guildName'], # Create guild
-        0x168: ['guildInvite', 'lll', 'accountID', 'inviterAccountID', 'characterID'], # Invite
-        0x16b: ['guildReject', 'll', 'guildID', 'type'], # Guild request response (type: 1 = accept, 0 = reject)
-        0x16e: ['guildSetAnnouncement', 'l60s120s', 'guildID', 'title', 'body'], # Set guild announcement
-        0x170: ['guildAllianceRequest', 'lll', 'accountID', 'sourceAccountID', 'characterID'], # Send guild alliance request (FIXME: The names of these arguments need to be verified.)
-        0x172: ['guildAllianceRespond', 'll', 'accountID', 'type'], # Respond to guild alliance request (type: 1 = accept, 0 = rejext)
+        0x0a2: ['characterName', '9xl', 'characterID'],
+        0x0a7: ['move', 'xxx3s', 'position'],
+        0x0b2: ['menuButton', 'B', 'type'],
+        0x0b8: ['npcMenuSelect', 'lB', 'accountID', 'selection'],
+        0x0b9: ['npcNext', 'l', 'accountID'],
+        0x0bf: ['emotion', 'B', 'emotion'],
+        0x0f3: ['speech', 'h!', 'packetLen', 'message'],
+        0x116: ['drop', '3xhxh', 'index', 'amount'],
+        0x143: ['npcNumInput', 'l', 'accountID'],
+        0x146: ['npcClosed', 'l', 'accountID'],
+        0x14d: ['guildStatus'],
+        0x14f: ['guildInfo', 'l', 'page'],
+        0x151: ['guildEmblem', 'l', 'guildID'],
+        0x153: ['setGuildEmblem', 'h!', 'packetLen', 'data'],
+        0x159: ['guildLeave', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'],
+        0x15b: ['guildExpel', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'],
+        0x165: ['guildCreate', 'l24s', 'accountID', 'guildName'],
+        0x168: ['guildInvite', 'lll', 'accountID', 'inviterAccountID', 'characterID'],
+        0x16b: ['guildReject', 'll', 'guildID', 'type'],
+        0x16e: ['guildSetAnnouncement', 'l60s120s', 'guildID', 'title', 'body'],
+        0x170: ['guildAllianceRequest', 'lll', 'accountID', 'sourceAccountID', 'characterID'],
+        0x172: ['guildAllianceRespond', 'll', 'accountID', 'type'],
         0x18a: ['quit', 'xx'],
-        0x1d5: ['npcStrInput', 'wl!', 'packetLen', 'accountID', 'message'], # NPC string input (NUL terminated)
-        0x21d: [None, 'l', 'disabled'], # Does user have /effect disabled?
+        0x1d5: ['npcStrInput', 'wl!', 'packetLen', 'accountID', 'message'],
+        0x21d: [None, 'l', 'disabled'],
     },
 }
 
@@ -93,7 +93,8 @@ sentPackets = {
     ),
     "items": ('2h2BH2x4H', ('index', 'itemID', 'type', 'identified', 'amount', 'card1', 'card2', 'card3', 'card4')),
     "equips": ('hhBBhhxB4h', ('index', 'itemID', 'type', 'identified', 'equipLocations', 'equipPoint', 'refine', 'card1', 'card2', 'card3', 'card4')),
-    "guildRelationships": ('ll24s', ('type', 'guildID', 'name')),
+    "guildRelationships": ('ll24s', ('type', 'guildID', 'name')), # (Type 0 = Ally, 1 = Enemy)
+    "guildPositionsData": ('llll', ('index', 'mode', 'index', 'tax')),
     "guildPositions": ('l24s', ('index', 'name')),
     "guildMembers": ('llhhhhhlll50x24s', ('accountID', 'characterID', 'hairStyle', 'hairColor', 'gender', 'job', 'baseLevel', 'tax', 'online', 'positionID', 'name')),
     
@@ -163,6 +164,7 @@ sentPackets = {
     0x154: ('h?', ('packetLen',), ('guildMembers',)), # Guild member
     0x15a: ('24s40s', ('charName', 'message')), # Person left the guild
     0x15c: ('24s40s24x', ('charName', 'message')), # Person expelled from guild
+    0x160: ('h?', ('packetLen',), ('guildPositionsData',)),
     0x166: ('h?', ('packetLen',), ('guildPositions',)), # Guild positions
     0x167: ('b', ('status',)), # Guild creation result (0 = success, 1 = already in a guild, 2 = name taken, 3 = no Emperium)
     0x169: ('b', ('type',)), # Guild invitation denied

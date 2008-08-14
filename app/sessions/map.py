@@ -71,6 +71,16 @@ class MapSession(Session):
             guildName = self.character.guild().name
         )
         
+        # Update their name
+        self.sendPacket(
+            0x195,
+            accountID = self.character.accountID,
+            name = self.character.name,
+            partyName = "", # FIXME: Implement parties. :P
+            guildName = self.character.guild().name,
+            guildPosition = self.character.position().name
+        )
+        
         self.character.loadInventory()
         
         self.character.online = 1
@@ -191,7 +201,7 @@ class MapSession(Session):
         
             self.character.load()
     
-    def guildPage(self):
+    def guildStatus(self):
         if not self.character:
             raise IllegalPacket
         
@@ -211,13 +221,12 @@ class MapSession(Session):
         if not self.character.guildID:
             return
         
-        guild = Guilds.get(self.character.guildID)
+        guild = self.character.guild()
         
         if not guild:
             return
         
-        # FIXME: This is nasty, but it works..most of the time. Find a consistent and less ugly solution.
-        for i in xrange(20):
+        if page == 0:
             self.sendPacket(
                 0x1b6,
                 guildID = guild.id,
@@ -235,53 +244,64 @@ class MapSession(Session):
                 master = guild.master().name,
                 territory = "Everywhere, bitches." # FIXME
             )
+            
+            relationships = []
+            for relationship in guild.relations():
+                relationships.append({
+                    "type": relationship.type,
+                    "guildID": relationship.guildID,
+                    "name": relationship.name
+                })
+            
+            self.sendPacket(
+                0x14c,
+                guildRelationships = relationships
+            )
+        elif page == 1:
+            members = []
+            for member in guild.members():
+                members.append({
+                    "accountID": member.accountID,
+                    "characterID": member.id,
+                    "hairStyle": member.hairStyle,
+                    "hairColor": member.hairColor,
+                    "gender": member.account().gender,
+                    "job": member.job,
+                    "baseLevel": member.baseLevel,
+                    "tax": member.guildTaxed,
+                    "online": member.online,
+                    "positionID": member.guildPositionID - 1,
+                    "name": member.name
+                })
         
-        self.sendPacket(
-            0x14c,
-            guildRelationships = [] # FIXME
-        )
-        
-        positions = []
-        for position in guild.positions():
-            positions.append({
-                "index": position.positionID - 1,
-                "name": position.name
-            })
-        
-        self.sendPacket(
-            0x166,
-            guildPositions = positions
-        ) # Test this.
-        
-        members = []
-        for member in guild.members():
-            members.append({
-                "accountID": member.accountID,
-                "characterID": member.id,
-                "hairStyle": member.hairStyle,
-                "hairColor": member.hairColor,
-                "gender": member.account().gender,
-                "job": member.job,
-                "baseLevel": member.baseLevel,
-                "tax": member.guildTaxed,
-                "online": member.online,
-                "positionID": member.guildPositionID - 1,
-                "name": member.name
-            })
-        
-        self.sendPacket(
-            0x154,
-            guildMembers = members
-        ) # Test this.
-        
-        self.sendPacket(
-            0x195,
-            accountID = self.character.accountID,
-            name = self.character.name,
-            partyName = "", # FIXME: Implement parties. :P
-            guildName = guild.name,
-            guildPosition = self.character.position().name
-        )
+            self.sendPacket(
+                0x154,
+                guildMembers = members
+            )
+        elif page == 2:
+            positions = []
+            positionsData = []
+            for position in guild.positions():
+                positions.append({
+                    "index": position.positionID - 1,
+                    "name": position.name
+                })
+                
+                positionsData.append({
+                    "index": position.positionID - 1,
+                    "mode": position.mode,
+                    "tax": position.tax
+                })
+            
+            self.sendPacket(
+                0x166,
+                guildPositions = positions
+            )
+            
+            self.sendPacket(
+                0x160,
+                guildPositionsData = positionsData
+            )
     
     def guildEmblem(self, guildID):
         """
