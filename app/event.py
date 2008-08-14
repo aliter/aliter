@@ -73,47 +73,40 @@ class EventObject(object):
         for player in self._playersInSight(actor.map, actor.x, actor.y):
             if player.id != actor.id:
                 actor.session.sendRaw(_(
-                	0x1d7,
-                	accountID=player.accountID,
-                	equip=2,
-                	w1=player.viewWeapon,
-                	w2=player.viewShield
+                    0x1d7,
+                    accountID=player.accountID,
+                    equip=2,
+                    w1=player.viewWeapon,
+                    w2=player.viewShield
                 ))
-        
-                account = Accounts.get(player.accountID)
-                
-                if account.gender == 1:
-                    gender = 1
-                else:
-                    gender = 0
         
                 # FIXME: Should this use _sendToOtherPlayersOnMap?
                 actor.session.sendRaw(_(
-                	0x22c,
-                	accountID=player.accountID,
-                	speed=150, # TODO: Make this real.
-                	opt1=0, # TODO: Make this real.
-                	opt2=0, # TODO: Make this real.
-                	opt3=0, # TODO: Make this real.
-                	job=player.job,
-                	hstyle=player.hairStyle,
-                	weapon=player.viewWeapon,
-                	shield=player.viewShield,
-                	lowhead=player.viewHeadBottom,
-                	tick=getTick(),
-                	tophead=player.viewHeadTop,
-                	midhead=player.viewHeadMiddle,
-                	hcolor=player.hairColor,
-                	ccolor=player.clothesColor,
-                	headdir=0, # FIXME: How can this be tested?
-                	guildID=player.guildID,
-                	guildEmblem=0, # TODO: Make this real.
-                	manner=0, # TODO: Make this real.
-                	effect=0, # TODO: Make this real.
-                	karma=0, # TODO: Make this real.
-                	sex=gender,
-                	position=encodePosition(player.x, player.y) + "\x88\x05\x05",
-                	blevel=player.baseLevel,
+                    0x22c,
+                    accountID=player.accountID,
+                    speed=150, # TODO: Make this real.
+                    opt1=0, # TODO: Make this real.
+                    opt2=0, # TODO: Make this real.
+                    opt3=0, # TODO: Make this real.
+                    job=player.job,
+                    hstyle=player.hairStyle,
+                    weapon=player.viewWeapon,
+                    shield=player.viewShield,
+                    lowhead=player.viewHeadBottom,
+                    tick=getTick(),
+                    tophead=player.viewHeadTop,
+                    midhead=player.viewHeadMiddle,
+                    hcolor=player.hairColor,
+                    ccolor=player.clothesColor,
+                    headdir=0, # FIXME: How can this be tested?
+                    guildID=player.guildID,
+                    guildEmblem=0, # TODO: Make this real.
+                    manner=0, # TODO: Make this real.
+                    effect=0, # TODO: Make this real.
+                    karma=0, # TODO: Make this real.
+                    gender=player.account.gender,
+                    position=encodePosition(player.x, player.y) + "\x88\x05\x05",
+                    blevel=player.baseLevel,
                 ))
         
         # Display all NPCs on current map
@@ -135,11 +128,11 @@ class EventObject(object):
     
     def _registerActorView(self, actor):
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
-        	0x1d7,
-        	accountID=actor.accountID,
-        	equip=2,
-        	w1=actor.viewWeapon,
-        	w2=actor.viewShield
+            0x1d7,
+            accountID=actor.accountID,
+            equip=2,
+            w1=actor.viewWeapon,
+            w2=actor.viewShield
         ))
         
         account = Accounts.get(actor.accountID)
@@ -151,30 +144,30 @@ class EventObject(object):
         
         # FIXME: Should this use _sendToOtherPlayersOnMap?
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
-        	0x22b,
-        	accountID=actor.accountID,
-        	speed=150, # TODO: Make this real.
-        	opt1=0, # TODO: Make this real.
-        	opt2=0, # TODO: Make this real.
-        	opt3=0, # TODO: Make this real.
-        	job=actor.job,
-        	hstyle=actor.hairStyle,
-        	weapon=actor.viewWeapon,
-        	shield=actor.viewShield,
-        	lowhead=actor.viewHeadBottom,
-        	tophead=actor.viewHeadTop,
-        	midhead=actor.viewHeadMiddle,
-        	hcolor=actor.hairColor,
-        	ccolor=actor.clothesColor,
-        	headdir=0, # FIXME: How can this be tested?
-        	guildID=actor.guildID,
-        	guildEmblem=0, # TODO: Make this real.
-        	manner=0, # TODO: Make this real.
-        	effect=0, # TODO: Make this real.
-        	karma=0, # TODO: Make this real.
-        	sex=gender,
-        	position=encodePosition(actor.x, actor.y) + "\x05\x05",
-        	blevel=actor.baseLevel,
+            0x22b,
+            accountID=actor.accountID,
+            speed=150, # TODO: Make this real.
+            opt1=0, # TODO: Make this real.
+            opt2=0, # TODO: Make this real.
+            opt3=0, # TODO: Make this real.
+            job=actor.job,
+            hstyle=actor.hairStyle,
+            weapon=actor.viewWeapon,
+            shield=actor.viewShield,
+            lowhead=actor.viewHeadBottom,
+            tophead=actor.viewHeadTop,
+            midhead=actor.viewHeadMiddle,
+            hcolor=actor.hairColor,
+            ccolor=actor.clothesColor,
+            headdir=0, # FIXME: How can this be tested?
+            guildID=actor.guildID,
+            guildEmblem=0, # TODO: Make this real.
+            manner=0, # TODO: Make this real.
+            effect=0, # TODO: Make this real.
+            karma=0, # TODO: Make this real.
+            gender=gender,
+            position=encodePosition(actor.x, actor.y) + "\x05\x05",
+            blevel=actor.baseLevel,
         ))
     
     #--------------------------------------------------
@@ -386,7 +379,9 @@ class EventObject(object):
         
         if amount == stock.amount:
             Inventory.delete(stock.id)
+            del actor.inventory[index]
         else:
+            actor.inventory[index]["stock"].amount -= amount
             stock.amount -= amount
             Inventory.save(stock)
         

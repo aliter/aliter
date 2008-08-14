@@ -1,5 +1,6 @@
 from actor import Actor
 from manager import Manager
+from account import Accounts
 
 
 class Character(Actor):
@@ -32,6 +33,8 @@ class Character(Actor):
         ('saveY',     111),
         ('online',    0),
         ('fame',      0),
+        ('guildPositionID', 0),
+        ('guildTaxed', 0)
     ]
     saveData = [
         'id', 'accountID', 'charNum', 'job', 'jobLevel', 
@@ -39,7 +42,7 @@ class Character(Actor):
         'partyID', 'guildID', 'petID', 'homunculusID', 'hairStyle', 
         'hairColor', 'clothesColor', 'viewWeapon', 'viewShield', 'viewHeadTop', 
         'viewHeadMiddle', 'viewHeadBottom', 'saveMap', 'saveX', 'saveY', 
-        'online', 'fame', 
+        'online', 'fame', 'guildPositionID', 'guildTaxed'
     ]
     
     inventory = {}
@@ -51,6 +54,26 @@ class Character(Actor):
         super(Character, self).__init__(**kwargs)
         
         self.gameID = self.accountID
+    
+    def account(self):
+        """
+        Returns the character's account.
+        """
+        return Accounts.get(self.accountID)
+    
+    def guild(self):
+        """
+        Returns the character's guild.
+        """
+        from guild import Guilds
+        return Guilds.get(self.guildID)
+    
+    def position(self):
+        """
+        Returns the character's guild.
+        """
+        from guild import GuildPositions
+        return GuildPositions.get(self.guildPositionID)
     
     def loadInventory(self):
         from app.objects import Inventory, Items
@@ -130,6 +153,43 @@ class Character(Actor):
         Gives the player an item.
         """
         
+    def hasItem(self, id = None, **kwargs):
+        """
+        Checks if the player has an item.
+        
+        You can either provide an ID or keyword arguments to check for.
+        
+        If an item is found in the character's inventory (only one keyword
+        argument has to match), it will return the inventory value 
+        (as { "item": item, "stock": stock }). Otherwise, False.
+        """
+        if id:
+            check = [v for k, v in self.inventory.iteritems() if v["item"].id == id]
+            if check:
+                return check[0]
+        
+        for key, val in kwargs.iteritems():
+            check = [v for k, v in self.inventory.iteritems() if getattr(v["item"], key) == val]
+            if check:
+                return check[0]
+        
+        return False
+    
+    def inventoryIndex(self, id = None, **kwargs):
+        """
+        Same as hasItem, but returns the index of the item in their inventory.
+        """
+        if id:
+            check = [k for k, v in self.inventory.iteritems() if v["item"].id == id]
+            if check:
+                return check[0]
+        
+        for key, val in kwargs.iteritems():
+            check = [k for k, v in self.inventory.iteritems() if getattr(v["item"], key) == val]
+            if check:
+                return check[0]
+        
+        return False
             
 
 class CharacterManager(Manager):
@@ -145,7 +205,7 @@ class CharacterManager(Manager):
         'homunculusID', 'hairStyle', 'hairColor', 'clothesColor', 'viewWeapon',
         'viewShield', 'viewHeadTop', 'viewHeadMiddle', 'viewHeadBottom', 'map',
         'x', 'y', 'saveMap', 'saveX', 'saveY', 'online',
-        'fame',
+        'fame', 'guildPositionID', 'guildTaxed'
     ]
 
 Characters = CharacterManager()

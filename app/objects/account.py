@@ -24,6 +24,7 @@ class Account(Model):
     def verifyPassword(self, password):
         if not self.password or not password:
             return False
+        
         return self.password == self.hashPassword(password)
 
 class AccountManager(Manager):
@@ -34,4 +35,5 @@ class AccountManager(Manager):
         'id', 'username', 'password', 'Email', 'gender',
         'loginCount', 'lastLogin', 'lastIP', 'gmLevel', 'banUntil',
     ]
+
 Accounts = AccountManager()

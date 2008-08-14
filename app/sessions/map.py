@@ -1,8 +1,9 @@
 from datetime import datetime
+from binascii import unhexlify, hexlify
 
 from app import log
 from app.shared import config, maps
-from app.objects import Session, Accounts, Characters
+from app.objects import Session, Accounts, Characters, Guilds, GuildPositions, GuildEmblems
 from app.exceptions import IllegalPacket
 from app.packets import generatePacket as _, receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
 from app.misc import getTick
@@ -58,10 +59,22 @@ class MapSession(Session):
         # Say something
         self.sendPacket(
             0x8e,
-            message = "Welcome to Aliter",
+            message = "Welcome to Aliter!"
+        )
+        
+        # Set their guild status (FIXME: Is this the correct placement?)
+        self.sendPacket(
+            0x16c,
+            guildID = self.character.guildID,
+            emblemID = self.character.guild().emblem().id,
+            mode = self.character.position().mode,
+            guildName = self.character.guild().name
         )
         
         self.character.loadInventory()
+        
+        self.character.online = 1
+        Characters.save(self.character)
         
         Event._registerActorView(self.character)
         Event._showActors(self.character)
@@ -137,6 +150,8 @@ class MapSession(Session):
         if type:
             self.log('Returned to character select screen.', log.LOW)
             
+            self.character.online = 0
+            
             # Save character state
             Characters.save(self.character)
             
@@ -180,9 +195,13 @@ class MapSession(Session):
         if not self.character:
             raise IllegalPacket
         
+        guild = self.character.guild()
+        if not guild:
+            return
+        
         self.sendPacket(
             0x14e,
-            type = 0x57 # Just say they're a member for now.
+            type = self.character.id == guild.masterID and 0xd7 or 0x57
         )
     
     def guildInfo(self, page):
@@ -192,17 +211,121 @@ class MapSession(Session):
         if not self.character.guildID:
             return
         
+        guild = Guilds.get(self.character.guildID)
+        
+        if not guild:
+            return
+        
+        # FIXME: This is nasty, but it works..most of the time. Find a consistent and less ugly solution.
+        for i in xrange(20):
+            self.sendPacket(
+                0x1b6,
+                guildID = guild.id,
+                level = guild.level,
+                online = guild.connectedMembers,
+                capacity = 16 * guild.level, # FIXME: I doubt this is the formula; filler.
+                averageLevel = guild.averageLevel,
+                exp = guild.exp,
+                nextExp = guild.nextExp,
+                taxPoints = 0, # FIXME ?
+                tendencyLR = 0, # FIXME eventually?
+                tendencyDU = 0, # FIXME eventually?
+                emblemID = guild.emblem() and guild.emblem().id or 0,
+                name = guild.name,
+                master = guild.master().name,
+                territory = "Everywhere, bitches." # FIXME
+            )
+        
         self.sendPacket(
-            0x150,
-            guildID = 0,
-            level = 0,
-            capacity = 0,
-            exp = 0,
-            nextExp = 0,
-            tax = 0,
-            members = 0,
-            name = 'Fake Guild',
-            master = 'Aliter',
+            0x14c,
+            guildRelationships = [] # FIXME
+        )
+        
+        positions = []
+        for position in guild.positions():
+            positions.append({
+                "index": position.positionID - 1,
+                "name": position.name
+            })
+        
+        self.sendPacket(
+            0x166,
+            guildPositions = positions
+        ) # Test this.
+        
+        members = []
+        for member in guild.members():
+            members.append({
+                "accountID": member.accountID,
+                "characterID": member.id,
+                "hairStyle": member.hairStyle,
+                "hairColor": member.hairColor,
+                "gender": member.account().gender,
+                "job": member.job,
+                "baseLevel": member.baseLevel,
+                "tax": member.guildTaxed,
+                "online": member.online,
+                "positionID": member.guildPositionID - 1,
+                "name": member.name
+            })
+        
+        self.sendPacket(
+            0x154,
+            guildMembers = members
+        ) # Test this.
+        
+        self.sendPacket(
+            0x195,
+            accountID = self.character.accountID,
+            name = self.character.name,
+            partyName = "", # FIXME: Implement parties. :P
+            guildName = guild.name,
+            guildPosition = self.character.position().name
+        )
+    
+    def guildEmblem(self, guildID):
+        """
+        Sends the client the emblem for a guild.
+        """
+        guild = Guilds.get(guildID)
+        if not guild:
+            return
+        
+        emblem = guild.emblem()
+        if not emblem:
+            return
+        
+        self.sendPacket(
+            0x152,
+            guildID = guild.id,
+            emblemID = emblem.id,
+            emblem = unhexlify(emblem.data)
+        )
+    
+    def setGuildEmblem(self, data):
+        """
+        Sets a guild's emblem.
+        """
+        GuildEmblems.delete(guildID = self.character.guildID)
+        
+        emblem = GuildEmblems.create(
+            guildID = self.character.guildID,
+            data = hexlify(data)
+        )
+        
+        self.sendPacket(
+            0x16c,
+            guildID = self.character.guildID,
+            emblemID = emblem.id,
+            mode = self.character.position().mode,
+            guildName = self.character.guild().name
+        )
+        
+        self.sendPacket(
+            0x152,
+            guildID = self.character.guildID,
+            emblemID = emblem.id,
+            emblem = hexlify(data)
         )
     
     def quit(self):
@@ -210,6 +333,8 @@ class MapSession(Session):
             raise IllegalPacket
         
         self.log('Quitting', log.LOW)
+        
+        self.character.online = 0
         
         # Save character state
         Characters.save(self.character)
@@ -286,4 +411,63 @@ class MapSession(Session):
             return log.map("Character %d tried to drop an item they do not have in their inventory.", log.LOW)
         
         Event.drop(self.character, index, amount)
+    
+    def guildCreate(self, accountID, guildName):
+        """
+        Actor has attempted to create a guild.
+        """
+        if guildName.strip() == "":
+            return
+        
+        # Is the player already in a guild?
+        if self.character.guildID:
+            return self.sendPacket(0x167, status = 1)
+        
+        # Does a guild already exist with this name?
+        checkGuild = Guilds.get(name = guildName)
+        if checkGuild:
+            return self.sendPacket(0x167, status = 2)
+        
+        # Do they have an Emperium?
+        emperium = self.character.hasItem(cleanName = "Emperium")
+        if not emperium:
+            return self.sendPacket(0x167, status = 3)
+        
+        # All is well. Create it and set their guild ID.
+        
+        guild = Guilds.create(
+            name = guildName,
+            masterID = self.character.id,
+            averageLevel = self.character.baseLevel
+        )
+        
+        # try:
+        for i in xrange(1, 21):
+            GuildPositions.create(
+                guildID = guild.id,
+                positionID = i,
+                name = i == 1 and "Guild Master" or i == 20 and "Newbie" or "Position %d" % i,
+                mode = i == 1 and 17 or i == 2 and 1 or 0,
+                tax = 0
+            )
+        
+        from app.objects import Inventory
+        
+        index = self.character.inventoryIndex(name = "Emperium")
+        if emperium["stock"].amount == 1:
+            Inventory.delete(emperium["stock"].id)
+            del self.character.inventory[index]
+        else:
+            self.character.inventory[index]["stock"].amount -= 1
+            emperium["stock"].amount -= 1
+            Inventory.save(emperium["stock"])
+        
+        self.character.guildID = guild.id
+        Characters.save(self.character)
+        # except:
+        #     Guilds.delete(guild.id)
+        #     log.map("Guild creation '%s' by '%s' failed." % (guildName, self.character.name), log.HIGH)
+        #     return
+        
+        self.sendPacket(0x167, status = 0)
 

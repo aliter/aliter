@@ -28,7 +28,7 @@ receivedPackets = {
     # Char server packets
     
     'char': {
-        0x065: ['identify', 'lLLxxB', 'accountID', 'loginIDa', 'loginIDb', 'sex'],
+        0x065: ['identify', 'lLLxxB', 'accountID', 'loginIDa', 'loginIDb', 'gender'],
         0x066: ['selectChar', 'b', 'charNum'],
         0x067: ['createChar', '24s8BxBx', 'name', 'str', 'agi', 'vit', 'int', 'dex', 'luk', 'charNum', 'hairStyle', 'hairColor'],
         0x068: ['deleteChar', 'l40s', 'characterID', 'Email'],
@@ -59,6 +59,7 @@ receivedPackets = {
         0x14d: ['guildPage'], # Request guild page
         0x14f: ['guildInfo', 'l', 'page'], # Request guild information tab
         0x151: ['guildEmblem', 'l', 'guildID'], # Request guild emblem
+        0x153: ['setGuildEmblem', 'h!', 'packetLen', 'data'], # Set guild emblem
         0x159: ['guildLeave', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'], # Leaving guild
         0x15b: ['guildExpel', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'], # Expel from guild
         0x165: ['guildCreate', 'l24s', 'accountID', 'guildName'], # Create guild
@@ -92,6 +93,9 @@ sentPackets = {
     ),
     "items": ('2h2BH2x4H', ('index', 'itemID', 'type', 'identified', 'amount', 'card1', 'card2', 'card3', 'card4')),
     "equips": ('hhBBhhxB4h', ('index', 'itemID', 'type', 'identified', 'equipLocations', 'equipPoint', 'refine', 'card1', 'card2', 'card3', 'card4')),
+    "guildRelationships": ('ll24s', ('type', 'guildID', 'name')),
+    "guildPositions": ('l24s', ('index', 'name')),
+    "guildMembers": ('llhhhhhlll50x24s', ('accountID', 'characterID', 'hairStyle', 'hairColor', 'gender', 'job', 'baseLevel', 'tax', 'online', 'positionID', 'name')),
     
     #------------------------------------------------------
     # Special versions of packets
@@ -153,16 +157,17 @@ sentPackets = {
     0x141: ('lll', ('type', 'base', 'bonus')), # Update a single stat (type: 13-18 = str, agi, vit, int, dex, luk)
     0x142: ('l', ('actorID',)), # NPC numerical input
     0x144: ('4l4Bx', ('actorID', 'type', 'x', 'y', 'pointID', 'red', 'green', 'blue')), # Mark the minimap (Type 2 = Remove)
+    0x14c: ('h?', ('packetLen',), ('guildRelationships',)), # Guild allies/enemies
     0x14e: ('l', ('type',)), # Guild page response (87 or 0x57 = member, 215 or 0xd7 = guild master)
-    0x150: ('11l24s24s16s', ('guildID', 'level', 0, 'capacity', 0, 'exp', 'nextExp', 'tax', 0, 0, 'members', 'name', 'master', '')), # Guild information response
     0x152: ('hll!', ('packetLen', 'guildID', 'emblemID', 'emblem')), # Send guild emblem
-    0x154: ('h!', ('packetLen', 'info')), # Info: {<accID>.l <charactorID>.l <?>.w <?.w <?>.w <job>.w <lvl?>.w <?>.l <online>.l <Position>.l ?.50B <nick>.24B} [repeated for each character]
+    0x154: ('h?', ('packetLen',), ('guildMembers',)), # Guild member
     0x15a: ('24s40s', ('charName', 'message')), # Person left the guild
     0x15c: ('24s40s24x', ('charName', 'message')), # Person expelled from guild
-    0x167: ('b', ('status',)), # Guild creation result (0 = success, 2 = name taken, 1 and 2 are probably "no emperium" and "invalid name", but I haven't checked (FIXME))
+    0x166: ('h?', ('packetLen',), ('guildPositions',)), # Guild positions
+    0x167: ('b', ('status',)), # Guild creation result (0 = success, 1 = already in a guild, 2 = name taken, 3 = no Emperium)
     0x169: ('b', ('type',)), # Guild invitation denied
     0x16a: ('l24s', ('guildID', 'name')), # Invited to guild (confirm dialogue)
-    0x16c: ('l24s', ('guildID', 'name')), # Guild information
+    0x16c: ('lll5x24s', ('guildID', 'emblemID', 'mode', 'guildName')), # Guild information
     0x16d: ('lll', ('guildID', 'characterID', 'online')), # Guild member has signed in
     0x16f: ('60s120s', ('title', 'body')), # Guild announcement
     0x171: ('l24s', ('sourceAccountID', 'name')), # Guild alliance invite
@@ -170,14 +175,15 @@ sentPackets = {
     0x17f: ('h!', ('packetLen', 'message')), # Guild chat message
     0x18b: ('l', ('failure',)), # Quit response
     0x194: ('l24s', ('actorID', 'name')), # Response to name request, e.g. forger names
+    0x195: ('l24s24s24s24s', ('accountID', 'name', 'partyName', 'guildName', 'guildPosition')), # Player names
     0x1b3: ('64sB', ('filename', 'position')), # NPC cut-in image
+    0x1b6: ('11l24s24s20s', ('guildID', 'level', 'online', 'capacity', 'averageLevel', 'exp', 'nextExp', 'taxPoints', 'tendencyLR', 'tendencyDU', 'emblemID', 'name', 'master', 'territory')), # Guild information
     0x1d4: ('l', ('actorID',)), # NPC string input
     0x1d7: ('lbhh', ('accountID', 'equip', 'w1', 'w2')), # Equip view grabbing
     0x1ee: ('h?', ('packetLen',), ("items",)), # Inventory (data: 'index', 'itemID', 'type', 'identified', 'broken', 'card1', 'card2', 'card3', 'card4')
     0x1f3: ('lh2x', ('accountID', 'effect')), # Effects
-    # This beast handles a few times when a user should show up for other people. [Alex]
-    0x22b: ('l4h2x10hl3h2x2b5sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),
-    0x22c: ('xl4h2x5hL5hl3h2x2b8sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tick', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'sex', 'position', 'blevel')),
+    0x22b: ('l4h2x10hl3h2x2b5sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'gender', 'position', 'blevel')), # User info (to others)
+    0x22c: ('xl4h2x5hL5hl3h2x2b8sh', ('accountID', 'speed', 'opt1', 'opt2', 'opt3', 'job', 'hstyle', 'weapon', 'shield', 'lowhead', 'tick', 'tophead', 'midhead', 'hcolor', 'ccolor', 'headdir', 'guildID', 'guildEmblem', 'manner', 'effect', 'karma', 'gender', 'position', 'blevel')), # User info (to self)
 }
 
 def generatePacket(packetID, **kwargs):

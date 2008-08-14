@@ -115,9 +115,11 @@ class Manager(object):
         data   = object.getForSave()
         keys   = []
         values = []
+        
         for key, value in data.iteritems():
             keys.append('`%s` = %%s' % key)
             values.append(value)
+        
         cursor = db.cursor()
         if object.id:
             query = 'UPDATE `%s` SET %s WHERE `id` = %%s' % (self.table, ', '.join(keys))
@@ -132,14 +134,20 @@ class Manager(object):
             object.id = cursor.lastrowid
             return object
 
-    def delete(self, id):
-        # TODO: Remove from cache
-        try:
-            del self.cache[id] # TODOne? [Alex]
+    def delete(self, id = None, **kwargs):
+        if id:
+            del self.cache[id]
             cursor = db.cursor()
             cursor.execute('DELETE FROM `%s` WHERE `id` = %%s' % self.table, id)
             db.commit()
-        except:
-            return False
+        else:
+            # TODO: Remove from cache
+            where = self._generateWHERE(**kwargs)
+            if not where:
+                return
+            
+            cursor = db.cursor()
+            cursor.execute("DELETE FROM `%s` WHERE %s" % (self.table, where))
+        
         return True
 

@@ -14,19 +14,21 @@ class Model(object):
         # Required attributes
         try:
             for key in self.required:
-                exec 'self.%s = kwargs[key]' % key
+                setattr(self, key, kwargs[key])
         except AttributeError:
             raise InvalidAccount
         
         # Optional attributes
         for key, default in self.optional:
             if key in kwargs:
-                exec 'self.%s = kwargs[key]' % key
+                setattr(self, key, kwargs[key])
             else:
-                exec 'self.%s = default' % key
+                setattr(self, key, default)
     
     def getForSave(self):
         data = {}
+        
         for key in self.saveData:
             data[key] = getattr(self, key)
+        
         return data

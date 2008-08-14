@@ -12,7 +12,7 @@ class CharSession(Session):
     def __init__(self):
         Session.__init__(self, receivedPackets['char'], log.char)
     
-    def identify(self, accountID, loginIDa, loginIDb, sex):
+    def identify(self, accountID, loginIDa, loginIDb, gender):
         self.accountID = accountID
         
         # Verify login

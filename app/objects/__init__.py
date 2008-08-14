@@ -10,3 +10,4 @@ from skill import *
 from warp import *
 from item import *
 from inventory import *
+from guild import *
