@@ -62,9 +62,10 @@ receivedPackets = {
         0x153: ['setGuildEmblem', 'h!', 'packetLen', 'data'],
         0x159: ['guildLeave', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'],
         0x15b: ['guildExpel', 'lll40s', 'guildID', 'accountID', 'characterID', 'message'],
+        # 0x161: ['setGuildPositions', 'h?'], # TODO: Subpacket receiving
         0x165: ['guildCreate', 'l24s', 'accountID', 'guildName'],
         0x168: ['guildInvite', 'lll', 'accountID', 'inviterAccountID', 'characterID'],
-        0x16b: ['guildReject', 'll', 'guildID', 'type'],
+        0x16b: ['guildInviteReponse', 'll', 'guildID', 'type'],
         0x16e: ['setGuildAnnouncement', 'l60s120s', 'guildID', 'title', 'body'],
         0x170: ['guildAllianceRequest', 'lll', 'accountID', 'sourceAccountID', 'characterID'],
         0x172: ['guildAllianceRespond', 'll', 'accountID', 'type'],

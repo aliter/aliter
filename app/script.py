@@ -99,7 +99,8 @@ class Script(object):
         
         from time import sleep
         while self.actor.waitNext:
-            sleep(1)
+            pass # FIXME: Is there a better way to do this?
+                 #        It understandably seems to slow down certain servers.
     
     def markMap(self, pointID, x, y, red = 0, green = 0, blue = 0):
         """

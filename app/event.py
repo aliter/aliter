@@ -112,7 +112,7 @@ class EventObject(object):
                     manner=0, # TODO: Make this real.
                     effect=0, # TODO: Make this real.
                     karma=0, # TODO: Make this real.
-                    gender=player.account.gender,
+                    gender=player.account().gender,
                     position=encodePosition(player.x, player.y) + "\x88\x05\x05",
                     blevel=player.baseLevel,
                 )

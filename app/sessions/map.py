@@ -19,6 +19,7 @@ class MapSession(Session):
     def keepAlive(self, clientTick):
         if self.lastKeepAlive[1] > clientTick:
             raise IllegalPacket
+        
         self.lastKeepAlive = (datetime.now(), clientTick)
     
     def identify(self, accountID, characterID, loginIDa):
@@ -319,6 +320,12 @@ class MapSession(Session):
             emblemID = emblem.id,
             emblem = unhexlify(emblem.data)
         )
+    
+    def guildInvite(self, accountID, inviterAccountID, characterID):
+        """
+        Invite a user to join a guild.
+        """
+        pass
     
     def setGuildEmblem(self, data):
         """

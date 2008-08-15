@@ -142,6 +142,13 @@ class Session(protocol.Protocol):
                     self.log(line[:-1], log.CRITICAL)
                 #break
     
+    def connectionLost(self, *args):
+        """
+        React to disconnections from players.
+        """
+        if hasattr(self, "quit") and self.character:
+            self.quit()
+    
     def log(self, message, priority = log.NORMAL, **kwargs):
         kwargs['id'] = self.id
         self.logMethod(message, priority, **kwargs)
