@@ -64,22 +64,21 @@ class Script(object):
         Shows the "close" button and ends the script's execution.
         """
         self.closeIsFake = False
+        self.closeCutinsOnPress = closeCutins
         
         self.actor.session.sendPacket(
             0xb6,
             actorID = self.actor.gameID
         )
         
-        if closeCutins:
-            self.closeCutins()
-        
         self.process.kill()
     
-    def fakeClose(self):
+    def fakeClose(self, closeCutins = False):
         """
         Shows the "close" button and ends the script's execution.
         """
         self.closeIsFake = True
+        self.closeCutinsOnPress = closeCutins
         
         self.actor.session.sendPacket(
             0xb6,

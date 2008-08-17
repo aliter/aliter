@@ -141,6 +141,9 @@ class MapSession(Session):
         if not self.character:
             raise IllegalPacket
         
+        if self.npc.script.closeCutinsOnPress:
+            self.npc.script.closeCutins()
+        
         if not self.npc.script.closeIsFake:
             self.npc = None
         else:
