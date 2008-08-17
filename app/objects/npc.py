@@ -1,5 +1,6 @@
 class NPC(object):
-    def __init__(self, id, name, position, sprite, script):
+    def __init__(self, num, id, name, position, sprite, script):
+        self.num    = num
         self.id     = id
         self.name   = name
         self.map    = position[0]

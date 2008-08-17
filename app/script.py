@@ -1,11 +1,13 @@
 import thread
+from stackless import channel, tasklet, run
     
 class Script(object):
     """
     Holds a script and compiles it.
     The script will be executed in its own environment and in its own thread when the "run" method is called.
     """
-    ended = False
+    process = False
+    channel = channel()
     
     def __init__(self, code, filename = "<string>"):
         """
@@ -23,12 +25,19 @@ class Script(object):
     
     def threadedRun(self):
         """
+        Runs the script in a tasklet and sets the process.
+        """
+        self.process = tasklet(self.tasklet)()
+        run()
+    
+    def tasklet(self):
+        """
         Executes the script.
         """
         methods = dir(self)
         defaults = dir(object)
         
-        for default in defaults + ["__dict__", "__module__", "__weakref__", "actor", "ended", "run", "threadedRun"]:
+        for default in defaults + ["__dict__", "__module__", "__weakref__", "process", "run", "threadedRun", "tasklet"]:
             methods.remove(default)
         
         environment = { "self": self.origin }
@@ -38,56 +47,66 @@ class Script(object):
         
         exec self.code in environment
     
-    def say(self, message):
+    def say(self, *messages):
         """
         Says something.
         """
-        if self.ended:
-            print "Script has already ended, so I can't say \"%s\"." % message
-            return
-        
-        self.actor.session.sendPacket(
-            0xb4,
-            actorID = self.actor.gameID,
-            message = str(message) + "\x00"
-        )
+        for message in messages:
+            if message != None and message != False:
+                self.actor.session.sendPacket(
+                    0xb4,
+                    actorID = self.actor.gameID,
+                    message = str(message) + "\x00"
+                )
     
-    def close(self):
+    def close(self, closeCutins = True):
         """
         Shows the "close" button and ends the script's execution.
         """
-        if self.ended:
-            return
+        self.closeIsFake = False
         
         self.actor.session.sendPacket(
             0xb6,
             actorID = self.actor.gameID
         )
-        self.ended = True
+        
+        if closeCutins:
+            self.closeCutins()
+        
+        self.process.kill()
     
-    def menu(self, items):
+    def fakeClose(self):
+        """
+        Shows the "close" button and ends the script's execution.
+        """
+        self.closeIsFake = True
+        
+        self.actor.session.sendPacket(
+            0xb6,
+            actorID = self.actor.gameID
+        )
+        
+        self.channel.receive()
+    
+    def menu(self, *items):
         """
         Provides a menu for the player to select something from.
-        The "items" argument is a dictionary containing menu item names pointing to callback functions.
-        """
-        if self.ended:
-            return
-        
+        The "items" argument is all of the items provided, like ("Name", func).
+        """        
         self.menuFunctions = items
         
         self.actor.session.sendPacket(
             0xb7,
             actorID = self.actor.gameID,
-            items = ":".join(items.keys())
+            items = ":".join([key for key, val in items])
         )
+        
+        self.process.kill()
 
     def next(self, function = None):
         """
         Shows the "Next" button and postpones the script until the player clicks it.
         """
-        if self.ended:
-            return
-        
         self.nextFunc = function
         
         self.actor.session.sendPacket(
@@ -95,12 +114,16 @@ class Script(object):
             actorID = self.actor.gameID
         )
         
-        self.actor.waitNext = True
-        
-        from time import sleep
-        while self.actor.waitNext:
-            pass # FIXME: Is there a better way to do this?
-                 #        It understandably seems to slow down certain servers.
+        if function:
+            self.process.kill()
+        else:
+            self.channel.receive()
+    
+    def end(self):
+        """
+        Ends the script.
+        """
+        self.process.kill()
     
     def markMap(self, pointID, x, y, red = 0, green = 0, blue = 0):
         """
@@ -134,7 +157,7 @@ class Script(object):
             blue = 0,
         )
     
-    def cutin(self, filename, position):
+    def cutin(self, filename, position = 2):
         """
         Displays an illustration.
         """
@@ -144,9 +167,9 @@ class Script(object):
             position = position
         )
     
-    def hideCutin(self, filename):
+    def closeCutin(self, filename):
         """
-        Hides the specified cutin.
+        Closes the specified cutin.
         """
         self.actor.session.sendPacket(
             0x1b3,
@@ -154,9 +177,9 @@ class Script(object):
             position = 255
         )
     
-    def hideCutins(self):
+    def closeCutins(self):
         """
-        Hides all cutins.
+        Closes all cutins.
         """
         self.actor.session.sendPacket(
             0x1b3,

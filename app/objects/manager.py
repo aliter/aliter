@@ -6,10 +6,10 @@ class Manager(object):
     
     def _rowToObject(self, schema, row):
         object = {}
-        offset = 0
-        for field in row:
+        
+        for offset, field in enumerate(row):
             object[schema[offset]] = field
-            offset += 1
+        
         return self.modelClass(**object)
     
     def _generateWHERE(self, *args, **kwargs):

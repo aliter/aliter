@@ -104,8 +104,8 @@ sentPackets = {
     
     'ack':      ('l', ('accountID',)), # Acknowledge login/char server connection (0283 prefixed)
     'map':      ('hl', (0x0187, 'accountID',)), # Acknowledge map server connection
-    'viewNPC':  ('hxlh6xh30x3s3xB', (0x78, 'actorID', 200, 'sprite', 'position', 1)), # Display NPC on map
-    'viewWarp': ('hxlh6xh30x3s3xB', (0x78, 'actorID', 200, 45, 'position', 1)), # Display warp on map
+    'viewNPC':  ('hxlh6xh30x3s3xh', (0x78, 'actorID', 200, 'sprite', 'position', 256)), # Display NPC on map
+    'viewWarp': ('hxlh6xh30x3s3xh', (0x78, 'actorID', 200, 45, 'position', 256)), # Display warp on map
     
     #------------------------------------------------------
     # Login server packets
@@ -198,15 +198,13 @@ def generatePacket(packetID, **kwargs):
     if not schema: # Empty packet
         return pack('=h', packetID)
     
-    offset       = -1
     packetLayout = schema[0]
     packetLenOffset = None
     arguments    = []
     
     # Append normal arguments
     if schema[1]:
-        for argument in schema[1]:
-            offset += 1
+        for offset, argument in enumerate(schema[1]):
             if argument not in kwargs:
                 if type(argument) == int or argument == '': # Blank arguments
                     arguments.append(argument)

@@ -5,10 +5,12 @@ from datetime import datetime
 
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
+from stackless import channel, tasklet, run, schedule
 
 import log
 from shared import config, maps
 from constants import *
+from app.exceptions import ScriptError
 from objects import Characters, Accounts
 from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition
 from misc import getTick, splitCommand
@@ -121,7 +123,7 @@ class EventObject(object):
         for npc in maps[actor.map].npcs.values():
             actor.session.sendPacket(
                 'viewNPC',
-                actorID = npc.id,
+                actorID = npc.num,
                 sprite = npc.sprite,
                 position = encodePosition(npc.x, npc.y, npc.dir),
             )
@@ -251,6 +253,8 @@ class EventObject(object):
         arguments = arguments[:(attr.func_code.co_argcount - 1)]
         
         thread.start_new_thread(attr, tuple(arguments))
+        # tasklet(attr)(*arguments)
+        # run()
         
         return True
     
@@ -704,25 +708,32 @@ class GMCommand(EventObject):
         # but I can't figure out any important/unique data in this packet. Weird.
         actor.session.sendRaw("\xB0\x00\x35\x00\xE8\x02\x00\x00")
     
-    # def threads(self, actor, start = 0):
-    #     from time import sleep
-    #     
-    #     if start == 0:
-    #         log.map("Running @test...")
-    #         if "test" not in self.loops:
-    #             self.loops.append("test")
-    #             log.map("Adding 'test' to the loops list.")
-    #         else:
-    #             log.map("Removing 'test' from the loops list.")
-    #             return self.loops.remove("test")
-    #     
-    #     if "test" not in self.loops or start >= 10:
-    #         return
-    #     
-    #     if start != 0:
-    #         sleep(1)
-    #     
-    #     log.map("Looping: %s" % start, log.HIGH)
-    #     self._gmCommandError(actor, "Looping: "+ str(start))
-    #     self.threads(actor, start + 1)
+    def threads(self, actor):
+        from time import sleep
+        
+        for i in range(10):
+            self._gmCommandHelper(actor, "Looping %d" % i)
+            sleep(1)
+    
+    def reloadscripts(self, actor):
+        """
+        Reloads every enabled script.
+        """
+        from aliter import Aliter
+        aliter = Aliter()
+        print ""
+        for file in config['scripts']:
+            print '\033[A\033[2KLoading scripts... %s' % file
+            try:
+                aliter.loadNPC(file)
+            except IOError:
+                print ANSI_LIGHT_RED + "\033[A\033[2KError loading script: %s [File doesn't exist]" % file + ANSI_DEFAULT
+                self._gmCommandError(actor, "Error loading script: %s [File doesn't exist]" % file)
+                print ''
+            except ScriptError, msg:
+                print ANSI_LIGHT_RED + '\nError loading script: %s [%s]' % (file, msg) + ANSI_DEFAULT
+                self._gmCommandError(actor, "Error loading script: %s [%s]" % (file, msg))
+                print ''
+        
+        self._gmCommandSuccess(actor, "Scripts reloaded.")
 

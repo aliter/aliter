@@ -1,5 +1,6 @@
 from datetime import datetime
 from binascii import unhexlify, hexlify
+from stackless import tasklet, run
 
 from app import log
 from app.shared import config, maps
@@ -129,16 +130,21 @@ class MapSession(Session):
         if not self.character:
             raise IllegalPacket
         
-        self.character.waitNext = False
-        
         if self.npc.script.nextFunc:
-            self.npc.script.nextFunc()
+            self.npc.script.process = tasklet(self.npc.script.nextFunc)()
+            run()
+            self.npc.script.nextFunc = None
+        else:
+            self.npc.script.channel.send(True)
     
     def npcClosed(self, accountID):
         if not self.character:
             raise IllegalPacket
         
-        self.npc = None
+        if not self.npc.script.closeIsFake:
+            self.npc = None
+        else:
+            self.npc.script.channel.send(True)
     
     def npcMenuSelect(self, accountID, selection):
         if not self.character:
@@ -148,9 +154,14 @@ class MapSession(Session):
         if selection == 255:
             return
         
-        menu = self.npc.script.menuFunctions
-        selected = menu.keys()[selection - 1]
-        menu[selected]()
+        name, function = self.npc.script.menuFunctions[selection - 1]
+        
+        if function.func_code.co_argcount == 1:
+            self.npc.script.process = tasklet(function)(name)
+        else:
+            self.npc.script.process = tasklet(function)()
+        
+        run()
     
     def menuButton(self, type):
         if not self.character:

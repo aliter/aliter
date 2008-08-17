@@ -8,6 +8,8 @@ Map:
 Sprite: 403
 """
 
+from time import sleep
+
 try:
     self.variable += 1
 except:
@@ -15,21 +17,44 @@ except:
     
 def foo():
     say("You chose 'Foo!'")
-    close()
+    next()
+    say("Hi")
+    next(bar)
+    say("You can't see me!")
 
 def bar():
     say("You chose 'Bar!'")
+    next()
+    say("Hi")
     close()
 
-say("Hi, how are you? %d" % self.variable)
+say("Hi, how are YOU!? %d" % self.variable)
 next()
 
 say("I'm doing great, thanks for asking!")
-next()
+menu(("Foo", foo), ("Bar", bar))
+say("You can't see me.")
+# next()
 
-markMap(1, 156, 188, 255)
-markMap(2, 156, 156, 0, 255)
-say("What's that? You're choosing something?")
-next(foo)
+# from time import sleep
+# for i in xrange(10):
+#     say("Hello!")
+#     sleep(1)
 
-menu({ "Foo": foo, "Bar": bar })
+#close()
+
+# close()
+# 
+# sleep(5)
+# 
+# say("HA! You thought I was gone, DIDN'T YOU!?")
+# next()
+# say("Well, uh, I am now. Bye~")
+# close()
+
+# markMap(1, 156, 188, 255)
+# markMap(2, 156, 156, 0, 255)
+# say("What's that? You're choosing something?")
+# next(foo)
+# 
+# menu({ "Foo": foo, "Bar": bar })

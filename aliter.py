@@ -206,11 +206,11 @@ class Aliter(object):
             else:
                 raise ScriptError("Invalid direction. Please specify N, NW, W, SW, S, SE, E, NE, or their corresponding numbers (starting at 0).")
         
-        
         if "ID" not in npc:
             npc['ID'] = self.nextNPCID
         
-        maps[npc['Map']['Name']].npcs[npc['ID']] = NPC(
+        maps[npc['Map']['Name']].npcs[self.nextNPCID] = NPC(
+            self.nextNPCID,
             npc['ID'],
             npc['Name'],
             (npc['Map'], npc['Map']['x'], npc['Map']['y'], npc['Map']['Direction']),
@@ -219,6 +219,28 @@ class Aliter(object):
         )
         
         self.nextNPCID += 1
+        
+        if "Duplicates" in npc and type(npc['Duplicates']) == list:
+            for duplicate in npc['Duplicates']:
+                if type(duplicate['Map']['Direction']) != int:
+                    if duplicate['Map']['Direction'] in direction:
+                        duplicate['Map']['Direction'] = direction[duplicate['Map']['Direction']]
+                    else:
+                        raise ScriptError("Invalid direction. Please specify N, NW, W, SW, S, SE, E, NE, or their corresponding numbers (starting at 0).")
+                
+                if "ID" not in duplicate:
+                    duplicate['ID'] = self.nextNPCID
+                
+                maps[duplicate['Map']['Name']].npcs[self.nextNPCID] = NPC(
+                    self.nextNPCID,
+                    duplicate['ID'],
+                    "Name" in duplicate and duplicate['Name'] or npc['Name'],
+                    (duplicate['Map'], duplicate['Map']['x'], duplicate['Map']['y'], duplicate['Map']['Direction']),
+                    duplicate['Sprite'],
+                    Script("".join(fileLines).replace("\r\n", "\n"), "script/%s.py" % filename)
+                )
+                
+                self.nextNPCID += 1
     
     # Shutdown cleanly
     def shutdown(self):
