@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `characters` (
   `guildID` int(11) unsigned NOT NULL default 0,
   `petID` int(11) unsigned NOT NULL default 0,
   `homunculusID` int(11) unsigned NOT NULL default 0,
+  'mercenaryID' int(11) unsigned NOT NULL default 0,
   `hairStyle` tinyint(4) unsigned NOT NULL default 0,
   `hairColor` smallint(5) unsigned NOT NULL default 0,
   `clothesColor` smallint(5) unsigned NOT NULL default 0,
@@ -4186,3 +4187,14 @@ INSERT INTO `items` (`id`, `cleanName`, `name`, `type`, `priceBuy`, `priceSell`,
 (14585, 'Blue_Butterfly_Wing', 'Blue Butterfly Wing', 2, NULL, NULL, 10, NULL, NULL, NULL, NULL, 4294967295, 7, 2, NULL, NULL, NULL, NULL, NULL, ' callfunc "F_CashCity",4; ', NULL, NULL),
 (14593, 'Mystical_Amplification_Scroll', 'Mystical_Amplification_Scroll', 11, NULL, NULL, 10, NULL, NULL, NULL, NULL, 4294967295, 7, 2, NULL, NULL, NULL, NULL, NULL, ' itemskill 366,10; ', NULL, NULL),
 (14594, 'Quagmire_scroll', 'Quagmire scroll', 11, NULL, NULL, 10, NULL, NULL, NULL, NULL, 4294967295, 7, 2, NULL, NULL, NULL, NULL, NULL, ' itemskill 92,5; ', NULL, NULL);
+
+CREATE TABLE IF NOT EXISTS `mercenary` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `characterID` int(11) NOT NULL,
+  `class` mediumint(9) unsigned NOT NULL default '0',
+  `hp` int(12) NOT NULL default '1',
+  `sp` int(12) NOT NULL default '1',
+  `killCounter` int(11) NOT NULL,
+  `timeRemaining` int(11) NOT NULL default '0', 
+  PRIMARY KEY (`id`)
+)
