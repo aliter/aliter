@@ -1,3 +1,9 @@
+try:
+    import psyco
+    psyco.full()
+except:
+    pass
+
 import os
 import sys
 import time

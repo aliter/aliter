@@ -1,6 +1,7 @@
 from actor import Actor
 from manager import Manager
 from account import Accounts
+from app.exceptions import InvalidItem
 
 
 class Character(Actor):
@@ -147,11 +148,6 @@ class Character(Actor):
         self.saveX = x or self.x
         self.saveY = y or self.y
         Characters.save(self)
-    
-    def give(self, itemID):
-        """
-        Gives the player an item.
-        """
         
     def hasItem(self, id = None, **kwargs):
         """
@@ -190,7 +186,114 @@ class Character(Actor):
                 return check[0]
         
         return False
+    
+    def give(self, id = None, amount = 1, **kwargs):
+        """
+        Gives `amount` items to the player.
+        """
+        from item import Items
+        from inventory import Inventory
+        
+        if id:
+            item = Items.get(id)
+        else:
+            item = Items.get(**kwargs)
+        
+        if not item:
+            raise InvalidItem
+        
+        inventory = Inventory.getAll(
+            characterID = self.id
+        )
+        
+        if item.equipLocations == None:
+            # Do they already have this item?
+            stock = Inventory.get(itemID = item.id)
             
+            if stock and stock:
+                stock.amount += int(amount)
+                Inventory.save(stock)
+            else:
+                stock = Inventory.create(
+                    characterID = self.id,
+                    itemID = item.id,
+                    amount = int(amount)
+                )
+            
+            search = [k for k, v in self.inventory.iteritems() if v["item"].id == item.id]
+            index = search and search[0] or len(inventory) + 2
+            
+            self.session.sendPacket(
+                0xa0,
+                index = index,
+                amount = int(amount),
+                itemID = item.id,
+                identified = 1,
+                broken = 0,
+                refine = 0,
+                card1 = 0,
+                card2 = 0,
+                card3 = 0,
+                card4 = 0,
+                equipLocations = item.equipLocations or 0,
+                type = item.type,
+                fail = 0
+            )
+            
+            self.inventory[index] = { "item": item, "stock": stock }
+        else:
+            for x in xrange(int(amount)):
+                stock = Inventory.create(
+                    characterID = self.id,
+                    itemID = item.id,
+                    amount = 1
+                )
+                
+                index = len(inventory) + 2 + x
+                self.session.sendPacket(
+                    0xa0,
+                    index = index,
+                    amount = 1,
+                    itemID = item.id,
+                    identified = 1,
+                    broken = 0,
+                    refine = 0,
+                    card1 = 0,
+                    card2 = 0,
+                    card3 = 0,
+                    card4 = 0,
+                    equipLocations = item.equipLocations or 0,
+                    type = item.type,
+                    fail = 0
+                )
+                
+                self.inventory[index] = { "item": item, "stock": stock }
+    
+    def takeItem(self, id = None, amount = 1, **kwargs):
+        """
+        Takes `amount` items from the player.
+        """
+        from inventory import Inventory
+        
+        index = self.inventoryIndex(id, **kwargs)
+        item, stock = self.hasItem(id, **kwargs)
+        if stock.amount <= amount:
+            Inventory.delete(stock.id)
+            del self.inventory[index]
+        else:
+            self.inventory[index]["stock"].amount -= amount
+            stock.amount -= amount
+            Inventory.save(stock)
+        
+        # FIXME: Update the client?
+    
+    def warp(self, map, x, y):
+        """
+        Mask for Event.warp
+        """
+        from app.event import Event
+        
+        Event.warp(self, x, y, map)
 
 class CharacterManager(Manager):
     modelClass = Character

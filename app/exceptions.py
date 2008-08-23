@@ -13,6 +13,9 @@ class InvalidAccount(Exception):
 class InvalidActor(Exception):
     pass
 
+class InvalidItem(Exception):
+    pass
+
 class MissingArgument(Exception):
     pass
 

@@ -517,14 +517,7 @@ class MapSession(Session):
         
         from app.objects import Inventory
         
-        index = self.character.inventoryIndex(name = "Emperium")
-        if emperium["stock"].amount == 1:
-            Inventory.delete(emperium["stock"].id)
-            del self.character.inventory[index]
-        else:
-            self.character.inventory[index]["stock"].amount -= 1
-            emperium["stock"].amount -= 1
-            Inventory.save(emperium["stock"])
+        self.character.takeItem(cleanName = "Emperium", amount = 1)
         
         self.character.guildID = guild.id
         Characters.save(self.character)

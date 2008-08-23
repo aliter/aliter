@@ -36,18 +36,15 @@
 - prtg_cas04
 - prtg_cas05
 - new_zone01
-
---- # Full List
-
-- 06guild_01
-- 06guild_02
-- 06guild_03
-- 06guild_04
-- 06guild_05
-- 06guild_06
-- 06guild_07
-- 06guild_08
-- 06guild_r
+# - 06guild_01
+# - 06guild_02
+# - 06guild_03
+# - 06guild_04
+# - 06guild_05
+# - 06guild_06
+# - 06guild_07
+# - 06guild_08
+# - 06guild_r
 - 1@cata
 - 1@orcs
 - 1@tower
@@ -98,8 +95,8 @@
 - arug_cas01
 - arug_cas02
 - arug_cas03
-- arug_cas04
-- arug_cas05
+# - arug_cas04
+# - arug_cas05
 - arug_dun01
 - arug_que01
 - aru_gld
@@ -113,17 +110,17 @@
 - ayo_in01
 - ayo_in02
 - bat_a01
-- bat_a02
+# - bat_a02
 - bat_b01
-- bat_b02
+# - bat_b02
 - bat_room
 - beach_dun
 - beach_dun2
 - beach_dun3
-- bossnia_01
-- bossnia_02
-- bossnia_03
-- bossnia_04
+# - bossnia_01
+# - bossnia_02
+# - bossnia_03
+# - bossnia_04
 - cave
 - cmd_fild01
 - cmd_fild02
@@ -246,7 +243,7 @@
 - in_sphinx3
 - in_sphinx4
 - in_sphinx5
-- itemmall
+# - itemmall
 - izlu2dun
 - izlude
 - izlude_in
@@ -469,22 +466,22 @@
 - que_hugel
 - que_job01
 - que_job02
-- que_moc_16
-- que_moon
+# - que_moc_16
+# - que_moon
 - que_ng
-- que_qaru01
-- que_qaru02
-- que_qaru03
-- que_qaru04
-- que_qaru05
+# - que_qaru01
+# - que_qaru02
+# - que_qaru03
+# - que_qaru04
+# - que_qaru05
 - que_qsch01
-- que_qsch02
-- que_qsch03
-- que_qsch04
-- que_qsch05
+# - que_qsch02
+# - que_qsch03
+# - que_qsch04
+# - que_qsch05
 - que_rachel
 - que_sign01
-- que_temsky
+# - que_temsky
 - que_thor
 - quiz_00
 - quiz_01
@@ -515,10 +512,10 @@
 - schg_cas01
 - schg_cas02
 - schg_cas03
-- schg_cas04
-- schg_cas05
+# - schg_cas04
+# - schg_cas05
 - schg_dun01
-- schg_que01
+# - schg_que01
 - sch_gld
 - sec_in01
 - sec_in02
@@ -598,4 +595,4 @@
 - yuno_in04
 - yuno_in05
 - yuno_pre
-- z_agit
+# - z_agit
