@@ -5,45 +5,45 @@ from account import Accounts
 
 class Character(Actor):
     required = [
-        'accountID', 'charNum',
+        "accountID", "charNum",
     ]
     optional = [
-        ('id', None),
-        ('job', 0),
-        ('jobLevel', 1),
-        ('zeny', 0),
-        ('maxSP', 11),
-        ('sp', 11),
-        ('statusPoints', 0),
-        ('skillPoints', 0),
-        ('partyID', 0),
-        ('guildID', 0),
-        ('petID', 0),
-        ('homunculusID', 0),
-        ('mercenaryID', 0),
-        ('hairStyle', 0),
-        ('hairColor', 0),
-        ('clothesColor', 0),
-        ('viewWeapon', 1),
-        ('viewShield', 0),
-        ('viewHeadTop', 0),
-        ('viewHeadMiddle', 0),
-        ('viewHeadBottom', 0),
-        ('saveMap', 'new_zone01'),
-        ('saveX', 53),
-        ('saveY', 111),
-        ('online', 0),
-        ('fame', 0),
-        ('guildPositionID', 0),
-        ('guildTaxed', 0)
+        ("id", None),
+        ("job", 0),
+        ("jobLevel", 1),
+        ("zeny", 0),
+        ("maxSP", 11),
+        ("sp", 11),
+        ("statusPoints", 0),
+        ("skillPoints", 0),
+        ("partyID", 0),
+        ("guildID", 0),
+        ("petID", 0),
+        ("homunculusID", 0),
+        ("mercenaryID", 0),
+        ("hairStyle", 0),
+        ("hairColor", 0),
+        ("clothesColor", 0),
+        ("viewWeapon", 1),
+        ("viewShield", 0),
+        ("viewHeadTop", 0),
+        ("viewHeadMiddle", 0),
+        ("viewHeadBottom", 0),
+        ("saveMap", "new_zone01"),
+        ("saveX", 53),
+        ("saveY", 111),
+        ("online", 0),
+        ("fame", 0),
+        ("guildPositionID", 0),
+        ("guildTaxed", 0)
     ]
     saveData = [
-        'id', 'accountID', 'charNum', 'job', 'jobLevel', 
-        'zeny', 'maxSP', 'sp', 'statusPoints', 'skillPoints', 
-        'partyID', 'guildID', 'petID', 'homunculusID', 'mercenaryID', 'hairStyle', 
-        'hairColor', 'clothesColor', 'viewWeapon', 'viewShield', 'viewHeadTop', 
-        'viewHeadMiddle', 'viewHeadBottom', 'saveMap', 'saveX', 'saveY', 
-        'online', 'fame', 'guildPositionID', 'guildTaxed'
+        "id", "accountID", "charNum", "job", "jobLevel", 
+        "zeny", "maxSP", "sp", "statusPoints", "skillPoints", 
+        "partyID", "guildID", "petID", "homunculusID", "mercenaryID", "hairStyle", 
+        "hairColor", "clothesColor", "viewWeapon", "viewShield", "viewHeadTop", 
+        "viewHeadMiddle", "viewHeadBottom", "saveMap", "saveX", "saveY", 
+        "online", "fame", "guildPositionID", "guildTaxed"
     ]
     
     inventory = {}
@@ -196,17 +196,17 @@ class Character(Actor):
 class CharacterManager(Manager):
     modelClass = Character
     cacheDict  = {}
-    table  = 'characters'
+    table  = "characters"
     schema = [
-        'id', 'accountID', 'charNum', 'name', 'job',
-        'baseLevel', 'baseExp', 'jobLevel', 'jobExp', 'zeny',
-        'str', 'agi', 'vit', 'int', 'dex',
-        'luk', 'maxHP', 'hp', 'maxSP', 'sp',
-        'statusPoints', 'skillPoints', 'partyID', 'guildID', 'petID',
-        'homunculusID', 'mercenaryID', 'hairStyle', 'hairColor', 'clothesColor', 
-        'viewWeapon', 'viewShield', 'viewHeadTop', 'viewHeadMiddle', 'viewHeadBottom', 
-        'map', 'x', 'y', 'saveMap', 'saveX', 'saveY', 'online',
-        'fame', 'guildPositionID', 'guildTaxed'
+        "id", "accountID", "charNum", "name", "job",
+        "baseLevel", "baseExp", "jobLevel", "jobExp", "zeny",
+        "str", "agi", "vit", "int", "dex",
+        "luk", "maxHP", "hp", "maxSP", "sp",
+        "statusPoints", "skillPoints", "partyID", "guildID", "petID",
+        "homunculusID", "mercenaryID", "hairStyle", "hairColor", "clothesColor", 
+        "viewWeapon", "viewShield", "viewHeadTop", "viewHeadMiddle", "viewHeadBottom", 
+        "map", "x", "y", "saveMap", "saveX", "saveY", "online",
+        "fame", "guildPositionID", "guildTaxed"
     ]
 
 Characters = CharacterManager()

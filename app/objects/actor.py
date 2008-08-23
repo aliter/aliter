@@ -6,28 +6,28 @@ from app import log
 
 class Actor(Model):
     required = [
-        'name',
+        "name",
     ]
     optional = [
-        ('baseLevel', 1),
-        ('baseExp', 0),
-        ('jobExp', 0),
-        ('str', 5),
-        ('agi', 5),
-        ('vit', 5),
-        ('int', 5),
-        ('dex', 5),
-        ('luk', 5),
-        ('maxHP', 40),
-        ('hp', 40),
-        ('map', 'new_zone01'),
-        ('x', 53),
-        ('y', 111),
+        ("baseLevel", 1),
+        ("baseExp", 0),
+        ("jobExp", 0),
+        ("str", 5),
+        ("agi", 5),
+        ("vit", 5),
+        ("int", 5),
+        ("dex", 5),
+        ("luk", 5),
+        ("maxHP", 40),
+        ("hp", 40),
+        ("map", "new_zone01"),
+        ("x", 53),
+        ("y", 111),
     ]
     saveData = [
-        'name', 'baseLevel', 'baseExp', 'jobExp', 'str',
-        'agi', 'vit', 'int', 'dex', 'luk',
-        'maxHP', 'hp', 'map', 'x', 'y',
+        "name", "baseLevel", "baseExp", "jobExp", "str",
+        "agi", "vit", "int", "dex", "luk",
+        "maxHP", "hp", "map", "x", "y",
     ]
     
     def __init__(self, **kwargs):

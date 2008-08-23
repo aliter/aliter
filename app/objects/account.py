@@ -6,16 +6,16 @@ from manager import Manager
 
 class Account(Model):
     required = [
-        'username', 'password', 'Email',
+        "username", "password", "Email",
     ]
     optional = [
-        ('id',         None),
-        ('lastLogin',  None),
-        ('gender',     0),
-        ('loginCount', 0),
-        ('gmLevel',    0),
-        ('lastIP',     None),
-        ('banUntil',   None),
+        ("id",         None),
+        ("lastLogin",  None),
+        ("gender",     0),
+        ("loginCount", 0),
+        ("gmLevel",    0),
+        ("lastIP",     None),
+        ("banUntil",   None),
     ]
     
     def hashPassword(self, password):
@@ -30,10 +30,10 @@ class Account(Model):
 class AccountManager(Manager):
     modelClass = Account
     cacheDict  = {}
-    table  = 'accounts'
+    table  = "accounts"
     schema = [
-        'id', 'username', 'password', 'Email', 'gender',
-        'loginCount', 'lastLogin', 'lastIP', 'gmLevel', 'banUntil',
+        "id", "username", "password", "Email", "gender",
+        "loginCount", "lastLogin", "lastIP", "gmLevel", "banUntil",
     ]
 
 Accounts = AccountManager()
