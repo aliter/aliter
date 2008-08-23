@@ -1,16 +1,12 @@
 import re
 import thread
-
-from app import log
-
-from app.constants import MAIN_THREAD
-
-from struct import pack, unpack, calcsize
 from twisted.internet import reactor
 
-from misc import expandStruct
-
+from app import log
+from app.constants import MAIN_THREAD
 from exceptions import MissingArgument
+from misc import expandStruct
+from struct import pack, unpack, calcsize
 
 
 # Custom struct codes:
