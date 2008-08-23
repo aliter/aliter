@@ -16,22 +16,23 @@ class Mercenary(Model):
         ("timeRemaining", 0)
     ]
     saveData = [
-        "id", "characterID", "class", "hp", "sp", "killCounter", "timeRemaining"
+        "id", "characterID", "class", "hp", "sp", "killCounter", 
+        "timeRemaining"
     ]
     
     def master(self):
         """
-        Returns the mercenary"s master.
+        Returns the mercenary's master.
         """
         return Characters.get(self.characterID)
-    
 
 class MercenaryManager(Manager):
     modelClass = Mercenary
     cacheDict  = {}
     table  = "mercenaries"
     schema = [
-        "id", "characterID", "class", "hp", "sp", "killCounter", "timeRemaining"
+        "id", "characterID", "class", "hp", "sp", "killCounter", 
+        "timeRemaining"
     ]
-    
+
 Mercenaries = MercenaryManager()

@@ -38,11 +38,11 @@ class Character(Actor):
         ("guildTaxed", 0)
     ]
     saveData = [
-        "id", "accountID", "charNum", "job", "jobLevel", 
-        "zeny", "maxSP", "sp", "statusPoints", "skillPoints", 
-        "partyID", "guildID", "petID", "homunculusID", "mercenaryID", "hairStyle", 
-        "hairColor", "clothesColor", "viewWeapon", "viewShield", "viewHeadTop", 
-        "viewHeadMiddle", "viewHeadBottom", "saveMap", "saveX", "saveY", 
+        "id", "accountID", "charNum", "job", "jobLevel", "zeny", "maxSP",
+        "sp", "statusPoints", "skillPoints", "partyID", "guildID", "petID",
+        "homunculusID", "mercenaryID", "hairStyle", "hairColor",
+        "clothesColor", "viewWeapon", "viewShield", "viewHeadTop",
+        "viewHeadMiddle", "viewHeadBottom", "saveMap", "saveX", "saveY",
         "online", "fame", "guildPositionID", "guildTaxed"
     ]
     
@@ -198,15 +198,14 @@ class CharacterManager(Manager):
     cacheDict  = {}
     table  = "characters"
     schema = [
-        "id", "accountID", "charNum", "name", "job",
-        "baseLevel", "baseExp", "jobLevel", "jobExp", "zeny",
-        "str", "agi", "vit", "int", "dex",
-        "luk", "maxHP", "hp", "maxSP", "sp",
-        "statusPoints", "skillPoints", "partyID", "guildID", "petID",
-        "homunculusID", "mercenaryID", "hairStyle", "hairColor", "clothesColor", 
-        "viewWeapon", "viewShield", "viewHeadTop", "viewHeadMiddle", "viewHeadBottom", 
-        "map", "x", "y", "saveMap", "saveX", "saveY", "online",
-        "fame", "guildPositionID", "guildTaxed"
+        "id", "accountID", "charNum", "name", "job", "baseLevel", "baseExp",
+        "jobLevel", "jobExp", "zeny", "str", "agi", "vit", "int", "dex",
+        "luk", "maxHP", "hp", "maxSP", "sp", "statusPoints", "skillPoints",
+        "partyID", "guildID", "petID", "homunculusID", "mercenaryID",
+        "hairStyle", "hairColor", "clothesColor", "viewWeapon", "viewShield",
+        "viewHeadTop", "viewHeadMiddle", "viewHeadBottom", "map", "x", "y",
+        "saveMap", "saveX", "saveY", "online", "fame", "guildPositionID",
+        "guildTaxed"
     ]
 
 Characters = CharacterManager()

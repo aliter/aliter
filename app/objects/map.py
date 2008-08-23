@@ -7,14 +7,14 @@ from app.shared import config
 class Map(object):
     def __init__(self, name):
         # Open and validate
-        file   = open('%s/%s.map' % (config['MapServer'][0]['mapCache'], name), 'rb')
+        file = open('%s/%s.map' % (config['MapServer'][0]['mapCache'], name), 'rb')
         header = unpack('=3sBll', file.read(12))
         if header[0] != 'MAP' or header[2] < 1 or header[3] < 1:
             return False
         
         # Define meta-data
-        self.name   = name
-        self.width  = header[2]
+        self.name = name
+        self.width = header[2]
         self.height = header[3]
         
         # Decompress block data
@@ -26,11 +26,11 @@ class Map(object):
             offset += self.height
         
         # Define other stuff
-        self.players  = {}
+        self.players = {}
         self.monsters = {}
-        self.npcs     = {}
-        self.warps    = {}
-        self.objects  = 0
+        self.npcs = {}
+        self.warps = {}
+        self.objects = 0
     
     def pathfind(self, x, y, toX, toY):
         if x == toX and y == toY:

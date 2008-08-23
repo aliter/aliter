@@ -25,9 +25,8 @@ class Actor(Model):
         ("y", 111),
     ]
     saveData = [
-        "name", "baseLevel", "baseExp", "jobExp", "str",
-        "agi", "vit", "int", "dex", "luk",
-        "maxHP", "hp", "map", "x", "y",
+        "name", "baseLevel", "baseExp", "jobExp", "str", "agi", "vit", "int",
+        "dex", "luk", "maxHP", "hp", "map", "x", "y",
     ]
     
     def __init__(self, **kwargs):
