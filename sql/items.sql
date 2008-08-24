@@ -1,30 +1,4 @@
-CREATE TABLE IF NOT EXISTS `items` (
-  `id` smallint(5) unsigned NOT NULL default 0,
-  `cleanName` varchar(50) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `type` tinyint(2) unsigned NOT NULL default 0,
-  `priceBuy` mediumint(10) unsigned default NULL,
-  `priceSell` mediumint(10) unsigned default NULL,
-  `weight` smallint(5) unsigned NOT NULL default 0,
-  `attack` smallint(3) unsigned default NULL,
-  `defence` tinyint(3) unsigned default NULL,
-  `range` tinyint(2) unsigned default NULL,
-  `slots` tinyint(2) unsigned default NULL,
-  `equipJobs` int(12) unsigned default NULL,
-  `equipUpper` tinyint(8) unsigned default NULL,
-  `equipGenders` tinyint(2) unsigned default NULL,
-  `equipLocations` smallint(4) unsigned default NULL,
-  `weaponLevel` tinyint(2) unsigned default NULL,
-  `equipLevel` tinyint(3) unsigned default NULL,
-  `refineable` tinyint(1) unsigned default NULL,
-  `view` smallint(3) unsigned default NULL,
-  `script` text,
-  `equipScript` text,
-  `unequipScript` text,
-  PRIMARY KEY  (`id`)
-);
-
-INSERT INTO `items` (`id`, `cleanName`, `name`, `type`, `priceBuy`, `priceSell`, `weight`, `attack`, `defence`, `range`, `slots`, `equipJobs`, `equipUpper`, `equipGenders`, `equipLocations`, `weaponLevel`, `equipLevel`, `refineable`, `view`, `script`, `equipScript`, `unequipScript`) VALUES
+REPLACE INTO `items` (`id`, `cleanName`, `name`, `type`, `priceBuy`, `priceSell`, `weight`, `attack`, `defence`, `range`, `slots`, `equipJobs`, `equipUpper`, `equipGenders`, `equipLocations`, `weaponLevel`, `equipLevel`, `refineable`, `view`, `script`, `equipScript`, `unequipScript`) VALUES
 (501, 'Red_Potion', 'Red Potion', 0, 50, NULL, 70, NULL, NULL, NULL, NULL, 4294967295, 7, 2, NULL, NULL, NULL, NULL, NULL, ' itemheal rand(45,65),0; ', NULL, NULL),
 (502, 'Orange_Potion', 'Orange Potion', 0, 200, NULL, 100, NULL, NULL, NULL, NULL, 4294967295, 7, 2, NULL, NULL, NULL, NULL, NULL, ' itemheal rand(105,145),0; ', NULL, NULL),
 (503, 'Yellow_Potion', 'Yellow Potion', 0, 550, NULL, 130, NULL, NULL, NULL, NULL, 4294967295, 7, 2, NULL, NULL, NULL, NULL, NULL, ' itemheal rand(175,235),0; ', NULL, NULL),

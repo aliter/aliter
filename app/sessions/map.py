@@ -11,6 +11,7 @@ from app.misc import getTick
 from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from app.event import Event
 
+
 class MapSession(Session):
     def __init__(self):
         Session.__init__(self, receivedPackets['map'], log.map)

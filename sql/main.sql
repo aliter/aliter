@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `characters` (
   `guildID` int(11) unsigned NOT NULL default 0,
   `petID` int(11) unsigned NOT NULL default 0,
   `homunculusID` int(11) unsigned NOT NULL default 0,
+  'mercenaryID' int(11) unsigned NOT NULL default 0,
   `hairStyle` tinyint(4) unsigned NOT NULL default 0,
   `hairColor` smallint(5) unsigned NOT NULL default 0,
   `clothesColor` smallint(5) unsigned NOT NULL default 0,
@@ -158,3 +159,42 @@ CREATE TABLE IF NOT EXISTS `inventory` (
   PRIMARY KEY  (`id`),
   KEY `characterID` (`characterID`)
 );
+
+CREATE TABLE IF NOT EXISTS `mercenary` (
+  `id` int(11) unsigned NOT NULL auto_increment,
+  `characterID` int(11) NOT NULL,
+  `class` mediumint(9) unsigned NOT NULL default '0',
+  `hp` int(12) NOT NULL default '1',
+  `sp` int(12) NOT NULL default '1',
+  `killCounter` int(11) NOT NULL,
+  `timeRemaining` int(11) NOT NULL default '0', 
+  PRIMARY KEY (`id`)
+);
+
+CREATE TABLE IF NOT EXISTS `items` (
+  `id` smallint(5) unsigned NOT NULL default 0,
+  `cleanName` varchar(50) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `type` tinyint(2) unsigned NOT NULL default 0,
+  `priceBuy` mediumint(10) unsigned default NULL,
+  `priceSell` mediumint(10) unsigned default NULL,
+  `weight` smallint(5) unsigned NOT NULL default 0,
+  `attack` smallint(3) unsigned default NULL,
+  `defence` tinyint(3) unsigned default NULL,
+  `range` tinyint(2) unsigned default NULL,
+  `slots` tinyint(2) unsigned default NULL,
+  `equipJobs` int(12) unsigned default NULL,
+  `equipUpper` tinyint(8) unsigned default NULL,
+  `equipGenders` tinyint(2) unsigned default NULL,
+  `equipLocations` smallint(4) unsigned default NULL,
+  `weaponLevel` tinyint(2) unsigned default NULL,
+  `equipLevel` tinyint(3) unsigned default NULL,
+  `refineable` tinyint(1) unsigned default NULL,
+  `view` smallint(3) unsigned default NULL,
+  `script` text,
+  `equipScript` text,
+  `unequipScript` text,
+  PRIMARY KEY  (`id`)
+);
+
+# TODO: `monsters` table

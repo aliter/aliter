@@ -2,6 +2,7 @@ from account import *
 from actor import *
 from character import *
 from map import *
+from mercenary import *
 from model import *
 from monster import *
 from npc import *

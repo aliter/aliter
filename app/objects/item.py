@@ -4,46 +4,46 @@ from manager import Manager
 
 class Item(Model):
     required = [
-        'name', 'cleanName'
+        "name", "cleanName"
     ]
     optional = [
-        ('id', None),
-        ('type', 0),
-        ('priceBuy', 0),
-        ('priceSell', None),
-        ('weight', 0),
-        ('attack', None),
-        ('defence', None),
-        ('range', None),
-        ('slots', None),
-        ('equipJobs', 4294967295),
-        ('equipUpper', 7),
-        ('equipGeners', 2),
-        ('equipLocations', None),
-        ('weaponLevel', None),
-        ('equipLevel', None),
-        ('refineable', None),
-        ('view', None),
-        ('script', None),
-        ('equipScript', None),
-        ('unequipScript', None)
+        ("id", None),
+        ("type", 0),
+        ("priceBuy", 0),
+        ("priceSell", None),
+        ("weight", 0),
+        ("attack", None),
+        ("defence", None),
+        ("range", None),
+        ("slots", None),
+        ("equipJobs", 4294967295),
+        ("equipUpper", 7),
+        ("equipGeners", 2),
+        ("equipLocations", None),
+        ("weaponLevel", None),
+        ("equipLevel", None),
+        ("refineable", None),
+        ("view", None),
+        ("script", None),
+        ("equipScript", None),
+        ("unequipScript", None)
     ]
     saveData = [
-        'name', 'type', 'priceBuy', 'priceSell', 'weight', 'attack',
-        'defence', 'range', 'slots', 'equipJobs', 'equipUpper',
-        'equipGenders', 'equipLocations', 'weaponLevel', 'equipLevel',
-        'refineable', 'view', 'script', 'equipScript', 'unequipScript'
+        "name", "type", "priceBuy", "priceSell", "weight", "attack",
+        "defence", "range", "slots", "equipJobs", "equipUpper",
+        "equipGenders", "equipLocations", "weaponLevel", "equipLevel",
+        "refineable", "view", "script", "equipScript", "unequipScript"
     ]
 
 class ItemManager(Manager):
     modelClass = Item
     cacheDict  = {}
-    table  = 'items'
+    table  = "items"
     schema = [
-        'id', 'cleanName', 'name', 'type', 'priceBuy', 'priceSell', 'weight',
-        'attack', 'defence', 'range', 'slots', 'equipJobs', 'equipUpper',
-        'equipGenders', 'equipLocations', 'weaponLevel', 'equipLevel',
-        'refineable', 'view', 'script', 'equipScript', 'unequipScript'
+        "id", "cleanName", "name", "type", "priceBuy", "priceSell", "weight",
+        "attack", "defence", "range", "slots", "equipJobs", "equipUpper",
+        "equipGenders", "equipLocations", "weaponLevel", "equipLevel",
+        "refineable", "view", "script", "equipScript", "unequipScript"
     ]
 
 Items = ItemManager()
