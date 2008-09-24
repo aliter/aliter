@@ -248,7 +248,7 @@ CREATE TABLE IF NOT EXISTS `monsters` (
   `dropRate5` smallint(9) unsigned NOT NULL default '0', 
   `dropID6` smallint(9) unsigned NOT NULL default '0',
   `dropRate6` smallint(9) unsigned NOT NULL default '0',
-  `dropID6` smallint(9) unsigned NOT NULL default '0', 
+  `dropID7` smallint(9) unsigned NOT NULL default '0', 
   `dropRate7` smallint(9) unsigned NOT NULL default '0', 
   `dropID8` smallint(9) unsigned NOT NULL default '0', 
   `dropRate8` smallint(9) unsigned NOT NULL default '0', 
