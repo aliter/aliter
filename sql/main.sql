@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS `characters` (
   `saveY` smallint(4) unsigned NOT NULL default 111,
   `online` tinyint(2) NOT NULL default 0,
   `fame` int(11) unsigned NOT NULL default 0,
+  `guildPositionID` int(11) unsigned NOT NULL default 0,
+  `guildTaxed` int(11) unsigned NOT NULL default 0,
   PRIMARY KEY  (`id`),
   KEY `partyID` (`partyID`),
   KEY `guildID` (`guildID`),
