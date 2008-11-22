@@ -1,8 +1,8 @@
-try:
-    import psyco
-    psyco.full()
-except:
-    pass
+#try:
+    #import psyco
+    #psyco.full()
+#except:
+    #pass
 
 import os
 import sys
