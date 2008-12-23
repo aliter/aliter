@@ -2,14 +2,11 @@ from app.constants import *
 
 class KafraBase(object):
     """Base class, common to all Kafras."""
-    def saved(where):
+    def saved(self, where):
         say("Your Respawn Point has been saved here %s." % where,
             "Thank you for using the Kafra Services.")
         close()
     
-    def save(self):
-        pointSaved("in the city of NOWHERE")
-
     def storage(self):
         """docstring for storage"""
         say("Pretend I just opened your storage.")

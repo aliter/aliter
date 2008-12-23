@@ -22,12 +22,18 @@ class EventObject(object):
     #--------------------------------------------------
     
     def _getPlayer(self, match, value):
+        """
+        Returns a player map instance, searching by `match` Player attribute == `value`.
+        """
         for map in maps:
             for player in maps[map].players.itervalues():
                 if getattr(player, match) == value:
                     return player
     
     def _playersInSight(self, map, x, y):
+        """
+        Returns a list of all players in sight of a given map and coordinates.
+        """
         players = []
         for player in maps[map].players.itervalues():
             if  player.x - x < config['MapServer'][0]['visible'] \
@@ -39,9 +45,13 @@ class EventObject(object):
         return players
     
     def _playersOnMap(self, map):
+        """
+        Returns a list of all players on a given map.
+        """
         players = []
         for player in maps[map].players.itervalues():
             players.append(player)
+
         return players
     
     #--------------------------------------------------
@@ -49,29 +59,47 @@ class EventObject(object):
     #--------------------------------------------------
     
     def _sendToPlayers(self, packet):
+        """
+        Sends a packet to every player on the server.
+        """
         for map in maps:
             for player in maps[map].players.itervalues():
                 player.session.sendRaw(packet)
     
     def _sendToPlayersInSight(self, map, x, y, packet):
+        """
+        Sends a packet to every player visible from the given map and coordinates.
+        """
         for player in self._playersInSight(map, x, y):
             player.session.sendRaw(packet)
     
     def _sendToOtherPlayersInSight(self, actor, map, x, y, packet):
+        """
+        Same as _sendToPlayersInSight, but does not send to the given actor.
+        """
         for player in self._playersInSight(map, x, y):
             if player.id != actor.id:
                 player.session.sendRaw(packet)
     
     def _sendToPlayersOnMap(self, map, packet):
+        """
+        Sends a packet to every player on a map.
+        """
         for player in self._playersOnMap(map):
             player.session.sendRaw(packet)
     
     def _sendToOtherPlayersOnMap(self, actor, map, packet):
+        """
+        Same as _sendToPlayersOnMap, but does not send to the given actor.
+        """
         for player in self._playersOnMap(map):
             if player.id != actor.id:
                 player.session.sendRaw(packet)
     
     def _showActors(self, actor):
+        """
+        Sends information of every player and NPC within the given actor's visible range.
+        """
         for player in self._playersInSight(actor.map, actor.x, actor.y):
             if player.id != actor.id:
                 actor.session.sendPacket(
@@ -137,6 +165,9 @@ class EventObject(object):
             )
     
     def _registerActorView(self, actor):
+        """
+        Sends the given actor's view to every player within sight.
+        """
         self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
             0x1d7,
             accountID=actor.accountID,
@@ -219,6 +250,9 @@ class EventObject(object):
         return False
     
     def _gmRandomTile(self, map):
+        """
+        Returns a random pair of walkable corrdinates on a given map.
+        """
         # Warning: Possible lock-up
         while 1:
             x = random.randint(1, map.width-2)
@@ -261,6 +295,9 @@ class EventObject(object):
         return True
     
     def sayChat(self, actor, message):
+        """
+        Send appropriate chat packets if the message does not appear to be a GM command.
+        """
         if not self._doGMCommand(actor, message):
             self._sendToOtherPlayersInSight(actor, actor.map, actor.x, actor.y, _(
                 0x8d,
