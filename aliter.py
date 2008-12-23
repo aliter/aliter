@@ -54,12 +54,6 @@ class Aliter(object):
         except:
             width = 80
         
-        # print '\033[2J\033[0;0H' + ANSI_YELLOW + '  _________ __     ___             __             ___            '.center(width)
-        # print ' /   _____/|__| __| _/______  _  _|__| ____    __| _/___________ '.center(width)
-        # print ' \\_____  \\ |  |/ __ |/ __ \\ \\/ \\/ /  |/    \\  / __ |/ __ \\_  __ \\'.center(width)
-        # print ' /        \\|  / /_/ \\  ___/\\     /|  |   |  \\/ /_/ \\  ___/|  | \\/'.center(width)
-        # print '/_______  /|__\\____ |\\___  >\\/\\_/ |__|___|  /\\____ |\\___  >__|   '.center(width)
-        # print '        \\/         \\/    \\/               \\/      \\/    \\/       '.center(width)
         print ANSI_RED + '-' * width
         print ANSI_WHITE + 'A L I T E R   R E V I S I O N   0 x x'.center(width)
         print ANSI_RED + '-' * width
