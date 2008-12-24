@@ -5,6 +5,8 @@ Base = declarative_base()
 
 
 class Mercenary(Base):
+    __tablename__ = "mercenaries"
+
     id = Column(Integer, primary_key = True)
     characterID = Column(Integer, ForeignKey("characters.id"))
     classID = Column(Integer)
