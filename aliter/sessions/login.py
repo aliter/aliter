@@ -14,7 +14,7 @@ class LoginSession(Session):
         Session.__init__(self, receivedPackets['login'], log.login)
     
     def login(self, packetVersion, username, password, region):
-        account = Accounts.get(username=username)
+        account = session.query(Account).filter(Account.username == username).one()
         
         # We currently only support packet version 18 and newer
         if packetVersion < 18:
@@ -45,16 +45,17 @@ class LoginSession(Session):
             
             self.sendPacket(
                 0x69,
-                loginIDa=loginIDa,
-                accountID=account.id,
-                loginIDb=loginIDb,
-                gender=account.gender,
-                charServer=charServerPack,
+                loginIDa = loginIDa,
+                accountID = account.id,
+                loginIDb = loginIDb,
+                gender = account.gender,
+                charServer = charServerPack,
             )
     
-    def failed(self, type, message=''):
+    def failed(self, type, message = ''):
         self.sendPacket(
             0x6a,
-            type=type,
-            message=message
+            type = type,
+            message = message
         )
+    
