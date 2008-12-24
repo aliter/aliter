@@ -4,6 +4,8 @@ Base = declarative_base()
 
 
 class Item(Base):
+    __tablename__ = "items"
+
     id = Column(Integer, primary_key = True)
     name = Column(String)
     cleanName = Column(String)

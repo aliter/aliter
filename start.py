@@ -91,6 +91,7 @@ class Aliter(object):
                     except IOError:
                         print ANSI_LIGHT_RED + "\033[A\033[2KError loading map: %s [File doesn't exist]" % map + ANSI_DEFAULT
                         print ''
+
             print '\033[A\033[2KLoading maps... Done'
             
             # Load scripts

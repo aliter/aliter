@@ -4,6 +4,8 @@ Base = declarative_base()
 
 
 class InventoryItem(Model):
+    __tablename__ = "inventory"
+
     id = Column(Integer, primary_key = True)
     characterID = Column(Integer, ForeignKey("characters.id"))
     itemID = Column(Integer, ForeignKey("items.id"))

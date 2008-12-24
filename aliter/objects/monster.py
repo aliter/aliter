@@ -4,6 +4,8 @@ Base = declarative_base()
 
 
 class Monster(Base):
+    __tablename__ = "monsters"
+
     id = Column(Integer, primary_key = True)
     cleanName = Column(String)
     translatedName = Column(String)
