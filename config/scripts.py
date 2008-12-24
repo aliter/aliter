@@ -1,0 +1,4 @@
+Scripts = [
+    "test",
+    "kafras/prontera"
+]

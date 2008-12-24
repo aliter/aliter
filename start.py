@@ -14,7 +14,9 @@ from struct import unpack
 from twisted.internet import reactor
 
 from aliter import log
-from aliter.shared import config, maps
+from config.main import LoginServer, MapServer, CharServer
+from config.maps import Maps
+from config.scripts import Scripts
 from aliter.constants import *
 from aliter.exceptions import ScriptError
 from aliter.misc import ttysize
@@ -64,9 +66,9 @@ class Aliter(object):
         try:
             # Generate map cache if needed
             cached = 0
-            for file in os.listdir(config['MapServer'][0]['mapCache']):
+            for file in os.listdir(MapServer[0]['mapCache']):
                 if file[-4:] == '.map':
-                    file = open(config['MapServer'][0]['mapCache']+'/'+file, 'r')
+                    file = open(MapServer[0]['mapCache']+'/'+file, 'r')
                     header, version = unpack('3sB', file.read(4))
                     if header == 'MAP' and version == MAP_CACHE_VERSION:
                         cached = 1
@@ -74,16 +76,16 @@ class Aliter(object):
             
             if not cached:
                 # Delete all cache files first in case they are an older version
-                for file in os.listdir(config['MapServer'][0]['mapCache']):
+                for file in os.listdir(MapServer[0]['mapCache']):
                     if file[-4:] == '.map':
-                        os.remove(config['MapServer'][0]['mapCache']+'/'+file)
+                        os.remove(MapServer[0]['mapCache']+'/'+file)
                 print ANSI_WHITE + 'Generating map cache:' + ANSI_DEFAULT
-                grf.generateCache(config['MapServer'][0]['sdata'])
+                grf.generateCache(MapServer[0]['sdata'])
                 print ANSI_WHITE + 'Generating map cache: Done' + ANSI_DEFAULT
             
             # Load maps
             print ''
-            for map in config['maps']:
+            for map in Maps:
                 if map not in maps:
                     print '\033[A\033[2KLoading maps... %s' % map
                     try:
@@ -96,7 +98,7 @@ class Aliter(object):
             
             # Load scripts
             print ""
-            for file in config['scripts']:
+            for file in Scripts:
                 print '\033[A\033[2KLoading scripts... %s' % file
                 try:
                     self.loadNPC(file)
@@ -134,13 +136,13 @@ class Aliter(object):
                 return False
     
     def initServers(self):
-        self.map   = self._initServer(Server(MapSession, log.map), config['MapServer'][0]['address']['port'])
+        self.map   = self._initServer(Server(MapSession, log.map), MapServer[0]['address']['port'])
         self.char  = None
         self.login = None
         if self.map:
-            self.char = self._initServer(Server(CharSession, log.char), config['CharServer'].values()[0]['address']['port'])
+            self.char = self._initServer(Server(CharSession, log.char), CharServer.values()[0]['address']['port'])
             if self.char:
-                self.login = self._initServer(Server(LoginSession, log.login), config['LoginServer']['address']['port'])
+                self.login = self._initServer(Server(LoginSession, log.login), LoginServer['address']['port'])
         if not self.map or not self.char or not self.login:
             log.console('Shutting down Aliter.\n', log.CRITICAL)
             if self.map:
