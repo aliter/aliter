@@ -1,16 +1,17 @@
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import *
+from sqlalchemy.orm import relation, backref
+
+from aliter.db import Base
 
 from character import Character
 
-
-Base = declarative_base()
 
 class Guild(Base):
     __tablename__ = "guilds"
     
     id = Column(Integer, primary_key = True)
+    masterID = Column(String, ForeignKey("characters.id"))
     name = Column(String)
-    masterID = Column(String, ForeignKey("users.id"))
     level = Column(Integer, default = 1)
     connectedMembers = Column(Integer)
     capacity = Column(Integer)
@@ -23,9 +24,6 @@ class Guild(Base):
     
     master = relation(Character, backref = "guild")
     members = relation(Character, order_by = Character.id, backref = "guild")
-    emblem = relation(GuildEmblem, backref = "guild")
-    positions = relation(GuildPositions, backref = "guild")
-    relations = relation(GuildRelations, backref = "guild")
     
 
 class GuildEmblem(Base):
@@ -37,8 +35,8 @@ class GuildEmblem(Base):
     id = Column(Integer, primary_key = True)
     guildID = Column(Integer, ForeignKey("guilds.id"))
     data = Column(BLOB)
-    
-    guild = relation(Guild, backref="guildEmblems")
+
+    guild = relation(Guild, backref = "emblem")
     
 
 class GuildRelation(Base):
@@ -52,8 +50,8 @@ class GuildRelation(Base):
     relatedID = Column(Integer, ForeignKey("guilds.id"))
     type = Column(String)
     name = Column(String)
-    
-    guild = relation(Guild, backref="guildRelations")
+
+    guild = relation(Guild, backref = backref("relations"))
     
 
 class GuildPosition(Base):
@@ -68,7 +66,7 @@ class GuildPosition(Base):
     name = Column(String, default = "Position")
     mode = Column(Integer)
     tax = Column(Integer)
-    
-    guild = relation(Guild, backref="guildPositions")
+
+    guild = relation(Guild, backref = backref("positions"))
     
 

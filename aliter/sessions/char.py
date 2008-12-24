@@ -2,7 +2,7 @@ from socket import inet_aton
 from sqlalchemy import and_
 
 from aliter import log
-from aliter.shared import config
+from aliter.config.main import MAP_SERVER
 from aliter.objects import Session, Account, Character
 from aliter.exceptions import IllegalPacket
 from aliter.packets import receivedPackets, sendPacket
@@ -69,8 +69,8 @@ class CharSession(Session):
             0x71,
             characterID = char.id,
             map = char.map+'.gat',
-            ip = inet_aton(config['MapServer'][0]['address']['host']),
-            port = config['MapServer'][0]['address']['port'],
+            ip = inet_aton(MAP_SERVER[0]['address']['host']),
+            port = MAP_SERVER[0]['address']['port'],
         )
     
     def createChar(self, name, str, agi, vit, int, dex, luk, charNum, hairStyle, hairColor):

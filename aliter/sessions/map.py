@@ -3,7 +3,6 @@ from binascii import unhexlify, hexlify
 from stackless import tasklet, run
 
 from aliter import log
-from aliter.shared import config, maps
 from aliter.objects import Session, Accounts, Characters, Guilds, GuildPositions, GuildEmblems
 from aliter.exceptions import IllegalPacket
 from aliter.packets import generatePacket as _, receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
@@ -11,6 +10,7 @@ from aliter.misc import getTick
 from aliter.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 from aliter.event import Event
 
+maps = {}
 
 class MapSession(Session):
     def __init__(self):

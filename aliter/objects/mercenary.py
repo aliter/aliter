@@ -1,8 +1,10 @@
+from sqlalchemy import *
+from sqlalchemy.orm import relation
+
+from aliter.db import Base
+
 from character import Character
-from sqlalchemy.ext.declarative import declarative_base
 
-
-Base = declarative_base()
 
 class Mercenary(Base):
     __tablename__ = "mercenaries"
@@ -15,6 +17,6 @@ class Mercenary(Base):
     killCounter = Column(Integer)
     timeRemaining = Column(Integer)
     
-    character = relation(Character, backref = "mercenaries")
+    character = relation(Character, backref = "mercenary")
     
 

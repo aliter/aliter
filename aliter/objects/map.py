@@ -1,13 +1,13 @@
 import zlib
 from struct import unpack
 
-from aliter.shared import config
+from aliter.config.main import MAP_SERVER
 
 
 class Map(object):
     def __init__(self, name):
         # Open and validate
-        file = open('%s/%s.map' % (config['MapServer'][0]['mapCache'], name), 'rb')
+        file = open('%s/%s.map' % (MapServer[0]['mapCache'], name), 'rb')
         header = unpack('=3sBll', file.read(12))
         if header[0] != 'MAP' or header[2] < 1 or header[3] < 1:
             return False

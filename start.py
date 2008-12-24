@@ -9,12 +9,12 @@ from struct import unpack
 from twisted.internet import reactor
 
 from aliter import log
-from aliter.config import main, maps, scripts
+from aliter.config import main as settings, maps, scripts
 from aliter.constants import *
 from aliter.exceptions import ScriptError
 from aliter.misc import ttysize
 from aliter.objects import Server, Map, NPC
-from aliter.sessions import LoginSession, CharSession, MapSession
+from aliter.sessions import LoginSession, CharSession, MapSession, maps
 from aliter.script import Script
 from aliter.tools import grf
 from aliter.lib import yaml

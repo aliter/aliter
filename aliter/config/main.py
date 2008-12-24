@@ -1,5 +1,5 @@
 # Database connection information
-DATABASE_URI = "sqlite://aliter.db"
+DATABASE_URI = "sqlite:///aliter.db"
 
 # Login server configuration
 LOGIN_SERVER = {

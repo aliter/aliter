@@ -1,17 +1,37 @@
+from sqlalchemy import *
+
+from aliter.db import Base
 from aliter.exceptions import InvalidItem
 
 from actor import Actor
-from manager import Manager
-from account import Account
 
 
-class Character(Actor):
+class Character(Base, Actor):
     __tablename__ = "characters"
     
     id = Column(Integer, primary_key = True)
-    accountID = Column(Integer, ForeignKey("accounts.id"))
+    accountID = Column(Integer)
+    partyID = Column(Integer)
+    guildID = Column(Integer)
+    petID = Column(Integer)
+    homunculusID = Column(Integer)
+    mercenaryID = Column(Integer)
     charNum = Column(Integer)
-    
+    name = Column(String)
+    baseLevel = Column(Integer, default = 1)
+    baseExp = Column(Integer)
+    jobExp = Column(Integer)
+    str = Column(Integer, default = 5)
+    agi = Column(Integer, default = 5)
+    vit = Column(Integer, default = 5)
+    int = Column(Integer, default = 5)
+    dex = Column(Integer, default = 5)
+    luk = Column(Integer, default = 5)
+    maxHP = Column(Integer, default = 40)
+    hp = Column(Integer, default = 40)
+    map = Column(String, default = "new_zone01")
+    x = Column(Integer, default = 53)
+    y = Column(Integer, default = 11)
     job = Column(Integer)
     jobLevel = Column(Integer, default = 1)
     zeny = Column(Integer)
@@ -19,11 +39,6 @@ class Character(Actor):
     sp = Column(Integer, default = 11)
     statusPoints = Column(Integer)
     skillPoints = Column(Integer)
-    partyID = Column(Integer, ForeignKey("parties.id"))
-    guildID = Column(Integer, ForeignKey("guilds.id"))
-    petID = Column(Integer, ForeignKey("pets.id"))
-    homunculusID = Column(Integer, ForeignKey("homonculi.id"))
-    mercenaryID = Column(Integer, ForeignKey("mercenaries.id"))
     hairStyle = Column(Integer)
     hairColor = Column(Integer)
     clothesColor = Column(Integer)
@@ -39,9 +54,6 @@ class Character(Actor):
     fame = Column(Integer)
     guildPositionID = Column(Integer)
     guildTaxed = Column(Integer)
-    
-    account = relation(Account, backref = "characters")
-    guild = relation(Guild, backref = "characters")
     
     inventory = {}
     

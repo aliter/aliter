@@ -1,9 +1,12 @@
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import *
+from sqlalchemy.orm import relation, backref
+
+from aliter.db import Base
+
+from character import Character
 
 
-Base = declarative_base()
-
-class InventoryItem(Model):
+class InventoryItem(Base):
     __tablename__ = "inventory"
     
     id = Column(Integer, primary_key = True)
@@ -22,4 +25,5 @@ class InventoryItem(Model):
     card3 = Column(Integer)
     card4 = Column(Integer)
     
+    character = relation(Character, backref = backref("inventory"))
 

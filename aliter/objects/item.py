@@ -1,7 +1,9 @@
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import *
 
+from aliter.db import Base
 
-Base = declarative_base()
+from character import Character
+
 
 class Item(Base):
     __tablename__ = "items"

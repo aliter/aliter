@@ -3,8 +3,8 @@ import sys
 from socket import inet_aton
 
 from aliter import log
-from aliter.shared import config
-from aliter.objects import Session, Accounts, Characters
+from aliter.config.main import CHAR_SERVER
+from aliter.objects import Session
 from aliter.packets import receivedPackets, sendPacket
 from aliter.inter import setLoginID
 
@@ -34,7 +34,7 @@ class LoginSession(Session):
             setLoginID(account.id, loginIDa, loginIDb)
             
             charServerPack = []
-            for name, server in config['CharServer'].items():
+            for name, server in CHAR_SERVER.items():
                 charServerPack.append({
                     'ip': inet_aton(server['address']['host']),
                     'port': server['address']['port'],

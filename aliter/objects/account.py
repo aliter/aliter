@@ -1,9 +1,11 @@
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import *
+from sqlalchemy.orm import relation, backref
 
+from aliter.db import Base
 from aliter.utils.hashcompat import sha_constructor
 
+from character import Character
 
-Base = declarative_base()
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -18,6 +20,8 @@ class Account(Base):
     gmLevel = Column(Integer)
     lastIP = Column(String)
     banUntil = Column(DateTime)
+
+    characters = relation(Character, backref = "account")
     
     def __init__(self, username, password, email):
         self.username = username

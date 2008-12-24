@@ -1,9 +1,13 @@
+from sqlalchemy import *
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relation, backref
+
+from actor import Actor
 
 
 Base = declarative_base()
 
-class Monster(Base):
+class Monster(Base, Actor):
     __tablename__ = "monsters"
     
     id = Column(Integer, primary_key = True)
