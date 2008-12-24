@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from config.main import Database
+from aliter.config import main
 
-engine = create_engine(Database) # TODO: Make this 4 real.
+
+engine = create_engine(main.DATABASE_URI) # TODO: Make this 4 real.
+
 Session = sessionmaker(bind = engine)
-
 session = Session()
