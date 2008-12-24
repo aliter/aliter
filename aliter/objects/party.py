@@ -3,18 +3,15 @@ from sqlalchemy.orm import relation, backref
 
 from aliter.db import Base
 
-from character import Character
-
 
 class Party(Base):
     __tablename__ = "parties"
     
     id = Column(Integer, primary_key = True)
-    leaderID = Column(String, ForeignKey("characters.id"))
-    name = Column(String)
-    exp = Column(Boolean)
-    item = Column(Boolean)
+    leaderID = Column(Integer)
+    name = Column(String(24))
+    exp = Column(Integer)
+    item = Column(Integer)
     
-    leader = relation(Character, backref = "party")
-    members = relation(Character, order_by = Character.id, backref = "party")
+    leader = relation("Character", backref = "party")
     

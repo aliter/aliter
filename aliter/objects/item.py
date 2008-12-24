@@ -9,8 +9,8 @@ class Item(Base):
     __tablename__ = "items"
     
     id = Column(Integer, primary_key = True)
-    name = Column(String)
-    cleanName = Column(String)
+    name = Column(String(50))
+    cleanName = Column(String(50))
     type = Column(Integer)
     priceBuy = Column(Integer)
     priceSell = Column(Integer, default = None)
@@ -27,8 +27,8 @@ class Item(Base):
     equipLevel = Column(Integer, default = None)
     refineable = Column(Boolean, default = None)
     view = Column(Integer, default = None)
-    script = Column(String, default = None)
-    equipScript = Column(String, default = None)
-    unequipScript = Column(String, default = None)
+    script = Column(Text, default = None)
+    equipScript = Column(Text, default = None)
+    unequipScript = Column(Text, default = None)
     
 

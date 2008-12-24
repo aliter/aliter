@@ -1,23 +1,29 @@
 from sqlalchemy import *
+from sqlalchemy.orm import relation, backref
 
 from aliter.db import Base
 from aliter.exceptions import InvalidItem
 
 from actor import Actor
+from homunculus import Homunculus
+from mercenary import Mercenary
+from pet import Pet
+from guild import Guild
+from party import Party
 
 
 class Character(Base, Actor):
     __tablename__ = "characters"
     
     id = Column(Integer, primary_key = True)
-    accountID = Column(Integer)
-    partyID = Column(Integer)
-    guildID = Column(Integer)
-    petID = Column(Integer)
-    homunculusID = Column(Integer)
-    mercenaryID = Column(Integer)
+    accountID = Column(Integer, ForeignKey("accounts.id"))
+    partyID = Column(Integer, ForeignKey("parties.id"))
+    guildID = Column(Integer, ForeignKey("guilds.id"))
+    petID = Column(Integer, ForeignKey("pets.id"))
+    homunculusID = Column(Integer, ForeignKey("homunculi.id"))
+    mercenaryID = Column(Integer, ForeignKey("mercenaries.id"))
     charNum = Column(Integer)
-    name = Column(String)
+    name = Column(String(30))
     baseLevel = Column(Integer, default = 1)
     baseExp = Column(Integer)
     jobExp = Column(Integer)
@@ -29,7 +35,7 @@ class Character(Base, Actor):
     luk = Column(Integer, default = 5)
     maxHP = Column(Integer, default = 40)
     hp = Column(Integer, default = 40)
-    map = Column(String, default = "new_zone01")
+    map = Column(String(20), default = "new_zone01")
     x = Column(Integer, default = 53)
     y = Column(Integer, default = 11)
     job = Column(Integer)
@@ -47,13 +53,19 @@ class Character(Base, Actor):
     viewHeadTop = Column(Integer)
     viewHeadMiddle = Column(Integer)
     viewHeadBottom = Column(Integer)
-    saveMap = Column(String)
+    saveMap = Column(String(20))
     saveX = Column(Integer)
     saveY = Column(Integer)
     online = Column(Boolean)
     fame = Column(Integer)
     guildPositionID = Column(Integer)
     guildTaxed = Column(Integer)
+
+    homunculus = relation(Homunculus, backref = "character")
+    pet = relation(Pet, backref = "character")
+    mercenary = relation(Mercenary, backref = "character")
+    guild = relation(Guild, backref = backref("members"))
+    party = relation(Party, backref = backref("members"))
     
     inventory = {}
     
@@ -61,13 +73,6 @@ class Character(Base, Actor):
         self.name = name
         self.accountID = accountID
         self.charNum = charNum
-    
-    def guild(self):
-        """
-        Returns the character's guild.
-        """
-        from guild import Guilds
-        return Guilds.get(self.guildID)
     
     def position(self):
         """

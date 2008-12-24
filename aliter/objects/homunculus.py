@@ -3,16 +3,14 @@ from sqlalchemy.orm import relation
 
 from aliter.db import Base
 
-from character import Character
-
 
 class Homunculus(Base):
     __tablename__ = "homunculi"
     
     id = Column(Integer, primary_key = True)
-    characterID = Column(Integer, ForeignKey("characters.id"))
+    characterID = Column(Integer)
     classID = Column(Integer)
-    name = Column(String)
+    name = Column(String(24))
     level = Column(Integer)
     exp = Column(Integer)
     intimacy = Column(Integer)
@@ -29,9 +27,8 @@ class Homunculus(Base):
     maxSP = Column(Integer)
     skillPoint = Column(Integer)
     alive = Column(Boolean)
-    vaporize = Column(Boolean)
+    vaporized = Column(Boolean)
     renameFlag = Column(Integer)
     
-    character = relation(Character, backref = "homunculus")
     
 

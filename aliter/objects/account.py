@@ -11,14 +11,14 @@ class Account(Base):
     __tablename__ = "accounts"
     
     id = Column(Integer, primary_key = True)
-    username = Column(String)
-    password = Column(String)
-    email = Column(String)
+    username = Column(String(24))
+    password = Column(String(40))
+    email = Column(String(60))
     lastLogin = Column(DateTime)
-    gender = Column(Binary)
+    gender = Column(Boolean)
     loginCount = Column(Integer)
     gmLevel = Column(Integer)
-    lastIP = Column(String)
+    lastIP = Column(String(100))
     banUntil = Column(DateTime)
 
     characters = relation(Character, backref = "account")
