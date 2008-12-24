@@ -5,9 +5,10 @@ from aliter import log
 
 
 Base = declarative_base()
+
 class Actor(Base):
     name = Column(String)
-
+    
     baseLevel = Column(Integer, default = 1)
     baseExp = Column(Integer)
     jobExp = Column(Integer)
@@ -31,3 +32,5 @@ class Actor(Base):
         self.walkPathOffset = 0
         self.speed = 150
         self.moveDelay = self.speed / 1000.0
+    
+

@@ -1,11 +1,11 @@
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
 
+Base = declarative_base()
 
 class Monster(Base):
     __tablename__ = "monsters"
-
+    
     id = Column(Integer, primary_key = True)
     cleanName = Column(String)
     translatedName = Column(String)
@@ -63,4 +63,5 @@ class Monster(Base):
     dropID9 = Column(Integer)
     dropRate9 = Column(Integer)
     dropCardID = Column(Integer)
+    
 

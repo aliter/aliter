@@ -1,11 +1,11 @@
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
 
+Base = declarative_base()
 
 class Item(Base):
     __tablename__ = "items"
-
+    
     id = Column(Integer, primary_key = True)
     name = Column(String)
     cleanName = Column(String)
@@ -28,4 +28,5 @@ class Item(Base):
     script = Column(String, default = None)
     equipScript = Column(String, default = None)
     unequipScript = Column(String, default = None)
+    
 

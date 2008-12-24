@@ -1,12 +1,13 @@
-from character import Character
 from sqlalchemy.ext.declarative import declarative_base
+
+from character import Character
+
 
 Base = declarative_base()
 
-
 class Guild(Base):
     __tablename__ = "guilds"
-
+    
     id = Column(Integer, primary_key = True)
     name = Column(String)
     masterID = Column(String, ForeignKey("users.id"))
@@ -19,7 +20,7 @@ class Guild(Base):
     skillPoints = Column(Integer)
     messageTitle = Column(String)
     messageBody = Column(String)
-
+    
     master = relation(Character, backref = "guild")
     members = relation(Character, order_by = Character.id, backref = "guild")
     emblem = relation(GuildEmblem, backref = "guild")
@@ -32,26 +33,26 @@ class GuildEmblem(Base):
     Guild emblems.
     """
     __tablename__ = "guildEmblems"
-
+    
     id = Column(Integer, primary_key = True)
     guildID = Column(Integer, ForeignKey("guilds.id"))
     data = Column(BLOB)
-
+    
     guild = relation(Guild, backref="guildEmblems")
-
+    
 
 class GuildRelation(Base):
     """
     Relationships between guilds, e.g. allies/oppositions.
     """
     __tablename__ = "guildRelations"
-
+    
     id = Column(Integer, primary_key = True)
     guildID = Column(Integer, ForeignKey("guilds.id"))
     relatedID = Column(Integer, ForeignKey("guilds.id"))
     type = Column(String)
     name = Column(String)
-
+    
     guild = relation(Guild, backref="guildRelations")
     
 
@@ -60,13 +61,14 @@ class GuildPosition(Base):
     Positions of a guild.
     """
     __tablename__ = "guildPositions"
-
+    
     id = Column(Integer, primary_key = True)
     guildID = Column(Integer, ForeignKey("guilds.id"))
     positionID = Column(Integer)
     name = Column(String, default = "Position")
     mode = Column(Integer)
     tax = Column(Integer)
-
+    
     guild = relation(Guild, backref="guildPositions")
+    
 

@@ -1,11 +1,13 @@
-from aliter.utils.hashcompat import sha_constructor
 from sqlalchemy.ext.declarative import declarative_base
+
+from aliter.utils.hashcompat import sha_constructor
+
 
 Base = declarative_base()
 
 class Account(Base):
     __tablename__ = "accounts"
-
+    
     id = Column(Integer, primary_key = True)
     username = Column(String)
     password = Column(String)
@@ -16,7 +18,7 @@ class Account(Base):
     gmLevel = Column(Integer)
     lastIP = Column(String)
     banUntil = Column(DateTime)
-
+    
     def __init__(self, username, password, email)
         self.username = username
         self.password = password
@@ -28,6 +30,6 @@ class Account(Base):
     def verifyPassword(self, password):
         if not self.password or not password:
             return False
-        
         return self.password == self.hashPassword(password)
+    
 

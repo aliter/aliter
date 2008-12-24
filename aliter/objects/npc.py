@@ -17,3 +17,5 @@ class NPC(object):
         Executes the NPC's script.
         """
         self.script.run(actor)
+    
+

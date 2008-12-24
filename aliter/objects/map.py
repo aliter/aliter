@@ -69,3 +69,5 @@ class Map(object):
         lastKey[2] = walkPath[-1]
         
         return walkPath
+    
+

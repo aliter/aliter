@@ -1,11 +1,11 @@
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
 
+Base = declarative_base()
 
 class InventoryItem(Model):
     __tablename__ = "inventory"
-
+    
     id = Column(Integer, primary_key = True)
     characterID = Column(Integer, ForeignKey("characters.id"))
     itemID = Column(Integer, ForeignKey("items.id"))
@@ -21,4 +21,5 @@ class InventoryItem(Model):
     card2 = Column(Integer)
     card3 = Column(Integer)
     card4 = Column(Integer)
+    
 

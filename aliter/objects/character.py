@@ -1,16 +1,17 @@
+from aliter.exceptions import InvalidItem
+
 from actor import Actor
 from manager import Manager
 from account import Account
-from aliter.exceptions import InvalidItem
 
 
 class Character(Actor):
     __tablename__ = "characters"
-
+    
     id = Column(Integer, primary_key = True)
     accountID = Column(Integer, ForeignKey("accounts.id"))
     charNum = Column(Integer)
-
+    
     job = Column(Integer)
     jobLevel = Column(Integer, default = 1)
     zeny = Column(Integer)
@@ -38,7 +39,7 @@ class Character(Actor):
     fame = Column(Integer)
     guildPositionID = Column(Integer)
     guildTaxed = Column(Integer)
-
+    
     account = relation(Account, backref = "characters")
     guild = relation(Guild, backref = "characters")
     
@@ -281,20 +282,5 @@ class Character(Actor):
         from aliter.event import Event
         
         Event.warp(self, x, y, map)
+    
 
-class CharacterManager(Manager):
-    modelClass = Character
-    cacheDict  = {}
-    table  = "characters"
-    schema = [
-        "id", "accountID", "charNum", "name", "job", "baseLevel", "baseExp",
-        "jobLevel", "jobExp", "zeny", "str", "agi", "vit", "int", "dex",
-        "luk", "maxHP", "hp", "maxSP", "sp", "statusPoints", "skillPoints",
-        "partyID", "guildID", "petID", "homunculusID", "mercenaryID",
-        "hairStyle", "hairColor", "clothesColor", "viewWeapon", "viewShield",
-        "viewHeadTop", "viewHeadMiddle", "viewHeadBottom", "map", "x", "y",
-        "saveMap", "saveX", "saveY", "online", "fame", "guildPositionID",
-        "guildTaxed"
-    ]
-
-Characters = CharacterManager()
