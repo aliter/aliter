@@ -27,7 +27,7 @@ MAP_SERVER = {
         "address": {
             "host": "10.0.0.2",
             "port": 5121
-            }
+            },
         "sdata": "__dev/sdata.grf",
         "mapCache": "cache/maps",
         "visible": 17

@@ -19,7 +19,7 @@ class Account(Base):
     lastIP = Column(String)
     banUntil = Column(DateTime)
     
-    def __init__(self, username, password, email)
+    def __init__(self, username, password, email):
         self.username = username
         self.password = password
         self.email = email
