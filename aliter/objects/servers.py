@@ -7,11 +7,11 @@ from struct import pack, unpack, calcsize
 
 from twisted.internet import protocol, reactor
 
-from app import log, packets
-from app.constants import MAIN_THREAD
-from app.exceptions import IllegalPacket
-from app.packets import receivedPackets, sendPacket
-from app.misc import expandStruct, stringHex, fixTermination
+from aliter import log, packets
+from aliter.constants import MAIN_THREAD
+from aliter.exceptions import IllegalPacket
+from aliter.packets import receivedPackets, sendPacket
+from aliter.misc import expandStruct, stringHex, fixTermination
 
 
 class Server(protocol.ServerFactory):

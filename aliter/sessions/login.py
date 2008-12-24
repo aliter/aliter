@@ -2,11 +2,11 @@ import random
 import sys
 from socket import inet_aton
 
-from app import log
-from app.shared import config
-from app.objects import Session, Accounts, Characters
-from app.packets import receivedPackets, sendPacket
-from app.inter import setLoginID
+from aliter import log
+from aliter.shared import config
+from aliter.objects import Session, Accounts, Characters
+from aliter.packets import receivedPackets, sendPacket
+from aliter.inter import setLoginID
 
 
 class LoginSession(Session):

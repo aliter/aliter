@@ -1,7 +1,7 @@
 from twisted.internet import reactor
 
 from model import Model
-from app import log
+from aliter import log
 
 
 class Actor(Model):

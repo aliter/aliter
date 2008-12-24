@@ -1,4 +1,4 @@
-from app import db
+from aliter import db
 
 
 class Manager(object):

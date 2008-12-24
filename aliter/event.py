@@ -10,7 +10,7 @@ from stackless import channel, tasklet, run, schedule
 import log
 from shared import config, maps
 from constants import *
-from app.exceptions import ScriptError
+from aliter.exceptions import ScriptError
 from objects import Characters, Accounts
 from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition
 from misc import getTick, splitCommand

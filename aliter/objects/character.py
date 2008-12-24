@@ -1,7 +1,7 @@
 from actor import Actor
 from manager import Manager
 from account import Accounts
-from app.exceptions import InvalidItem
+from aliter.exceptions import InvalidItem
 
 
 class Character(Actor):
@@ -78,7 +78,7 @@ class Character(Actor):
         return GuildPositions.get(self.guildPositionID)
     
     def loadInventory(self):
-        from app.objects import Inventory, Items
+        from aliter.objects import Inventory, Items
         
         self.inventory = {}
         
@@ -140,11 +140,11 @@ class Character(Actor):
             )
     
     def load(self):
-        from app.event import Event
+        from aliter.event import Event
         Event.warp(self, self.saveX, self.saveY, self.saveMap)
     
     def save(self, map = None, x = None, y = None):
-        from app.event import Event
+        from aliter.event import Event
         self.saveMap = map or self.map
         self.saveX = x or self.x
         self.saveY = y or self.y
@@ -292,7 +292,7 @@ class Character(Actor):
         """
         Mask for Event.warp
         """
-        from app.event import Event
+        from aliter.event import Event
         
         Event.warp(self, x, y, map)
 

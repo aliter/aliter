@@ -1,4 +1,4 @@
-from app.constants import *
+from aliter.constants import *
 
 class KafraBase(object):
     """Base class, common to all Kafras."""

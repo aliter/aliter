@@ -2,14 +2,14 @@ from datetime import datetime
 from binascii import unhexlify, hexlify
 from stackless import tasklet, run
 
-from app import log
-from app.shared import config, maps
-from app.objects import Session, Accounts, Characters, Guilds, GuildPositions, GuildEmblems
-from app.exceptions import IllegalPacket
-from app.packets import generatePacket as _, receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
-from app.misc import getTick
-from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
-from app.event import Event
+from aliter import log
+from aliter.shared import config, maps
+from aliter.objects import Session, Accounts, Characters, Guilds, GuildPositions, GuildEmblems
+from aliter.exceptions import IllegalPacket
+from aliter.packets import generatePacket as _, receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
+from aliter.misc import getTick
+from aliter.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
+from aliter.event import Event
 
 
 class MapSession(Session):
@@ -516,7 +516,7 @@ class MapSession(Session):
                 tax = 0
             )
         
-        from app.objects import Inventory
+        from aliter.objects import Inventory
         
         self.character.takeItem(cleanName = "Emperium", amount = 1)
         

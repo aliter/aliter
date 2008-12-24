@@ -13,16 +13,16 @@ import socket
 from struct import unpack
 from twisted.internet import reactor
 
-from app import log
-from app.shared import config, maps
-from app.constants import *
-from app.exceptions import ScriptError
-from app.misc import ttysize
-from app.objects import Server, Map, NPC
-from app.sessions import LoginSession, CharSession, MapSession
-from app.script import Script
-from app.tools import grf
-from app.lib import yaml
+from aliter import log
+from aliter.shared import config, maps
+from aliter.constants import *
+from aliter.exceptions import ScriptError
+from aliter.misc import ttysize
+from aliter.objects import Server, Map, NPC
+from aliter.sessions import LoginSession, CharSession, MapSession
+from aliter.script import Script
+from aliter.tools import grf
+from aliter.lib import yaml
 
 class Aliter(object):
     def main(self):

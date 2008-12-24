@@ -1,7 +1,7 @@
 import zlib
 from struct import unpack
 
-from app.shared import config
+from aliter.shared import config
 
 
 class Map(object):

@@ -82,7 +82,7 @@ class GMCommand(EventObject):
         if name == None:
             return self._gmCommandHelper(actor, "Usage: @kick <name> [<reason>]")
         
-        from app.inter import unsetLoginID
+        from aliter.inter import unsetLoginID
         
         reason = " ".join(reason)
         

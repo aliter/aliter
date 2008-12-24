@@ -1,11 +1,11 @@
 from socket import inet_aton
 
-from app import log
-from app.shared import config
-from app.objects import Session, Accounts, Characters
-from app.exceptions import IllegalPacket
-from app.packets import receivedPackets, sendPacket
-from app.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
+from aliter import log
+from aliter.shared import config
+from aliter.objects import Session, Accounts, Characters
+from aliter.exceptions import IllegalPacket
+from aliter.packets import receivedPackets, sendPacket
+from aliter.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
 
 
 class CharSession(Session):

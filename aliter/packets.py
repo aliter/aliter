@@ -2,8 +2,8 @@ import re
 import thread
 from twisted.internet import reactor
 
-from app import log
-from app.constants import MAIN_THREAD
+from aliter import log
+from aliter.constants import MAIN_THREAD
 from exceptions import MissingArgument
 from misc import expandStruct
 from struct import pack, unpack, calcsize
