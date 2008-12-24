@@ -1,6 +1,6 @@
 VERSION = (0, 0, 0, 'alpha', 0)
 
-def get_version():
+def getVersion():
     version = '%s.%s' % (VERSION[0], VERSION[1])
     if VERSION[2]:
         version = '%s.%s' % (version, VERSION[2])
