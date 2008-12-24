@@ -1,4 +1,4 @@
-Maps = [
+MAPS = [
     "prontera"
     # "prt_are_in",
     # "prt_are01",

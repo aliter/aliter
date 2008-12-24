@@ -1,13 +1,16 @@
-Database = "sqlite://aliter.db"
+# Database connection information
+DATABASE_URI = "sqlite://aliter.db"
 
-LoginServer = {
+# Login server configuration
+LOGIN_SERVER = {
     "address": {
         "host": "10.0.0.2",
         "port": 6900
     }
 }
 
-CharServer = {
+# Character server configuration
+CHAR_SERVER = {
     "Aliter": {
         "address": {
             "host": "10.0.0.2",
@@ -18,7 +21,8 @@ CharServer = {
     }
 }
 
-MapServer = {
+# Map server configuration
+MAP_SERVER = {
     0: {
         "address": {
             "host": "10.0.0.2",

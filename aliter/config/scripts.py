@@ -1,4 +1,4 @@
-Scripts = [
+SCRIPTS = [
     "test",
     "kafras/prontera"
 ]
