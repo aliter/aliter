@@ -1,148 +1,64 @@
-from model import Model
-from manager import Manager
-from character import Characters
+from character import Character
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
-class Guild(Model):
-    required = [
-        "name", "masterID"
-    ]
-    optional = [
-        ("id", None),
-        ("level", 1),
-        ("connectedMembers", 0),
-        ("capacity", 0),
-        ("averageLevel", 0),
-        ("exp", 0),
-        ("nextExp", 2000000),
-        ("skillPoints", 0),
-        ("messageTitle", ""),
-        ("messageBody", "")
-    ]
-    saveData = [
-        "id", "name", "masterID", "level", "connectedMembers", "capacity",
-        "averageLevel", "exp", "nextExp", "skillPoints", "messageTitle",
-        "messageBody"
-    ]
+class Guild(Base):
+    id = Column(Integer, primary_key = True)
+    name = Column(String)
+    masterID = Column(String, ForeignKey("users.id"))
+    level = Column(Integer, default = 1)
+    connectedMembers = Column(Integer)
+    capacity = Column(Integer)
+    averageLevel = Column(Integer)
+    exp = Column(Integer)
+    nextExp = Column(Integer, default = 2000000)
+    skillPoints = Column(Integer)
+    messageTitle = Column(String)
+    messageBody = Column(String)
+
+    master = relation(Character, backref = "guild")
+    members = relation(Character, order_by = Character.id, backref = "guild")
+    emblem = relation(GuildEmblem, backref = "guild")
+    positions = relation(GuildPositions, backref = "guild")
+    relations = relation(GuildRelations, backref = "guild")
     
-    def master(self):
-        """
-        Returns the guild's master.
-        """
-        return Characters.get(self.masterID)
-    
-    def members(self):
-        """
-        Returns the guild's members.
-        """
-        return Characters.getAll(guildID = self.id)
-    
-    def emblem(self):
-        """
-        Returns the guild's emblem.
-        """
-        return GuildEmblems.get(guildID = self.id)
-    
-    def positions(self):
-        """
-        Returns the guild's positions.
-        """
-        return GuildPositions.getAll(guildID = self.id)
-    
-    def relations(self):
-        """
-        Returns the guild's relations.
-        """
-        return GuildRelations.getAll(guildID = self.id)
 
-class GuildManager(Manager):
-    modelClass = Guild
-    cacheDict  = {}
-    table  = "guilds"
-    schema = [
-        "id", "name", "masterID", "level", "connectedMembers", "capacity",
-        "averageLevel", "exp", "nextExp", "skillPoints", "messageTitle",
-        "messageBody"
-    ]
-
-Guilds = GuildManager()
-
-
-class GuildEmblem(Model):
+class GuildEmblem(Base):
     """
     Guild emblems.
     """
-    required = [
-        "guildID"
-    ]
-    optional = [
-        ("id", None),
-        ("data", "")
-    ]
-    saveData = [
-        "id", "guildID", "data"
-    ]
+    id = Column(Integer, primary_key = True)
+    guildID = Column(Integer, ForeignKey("guilds.id"))
+    data = Column(BLOB)
 
-class GuildEmblemManager(Manager):
-    modelClass = GuildEmblem
-    cacheDict  = {}
-    table  = "guildEmblems"
-    schema = [
-        "id", "guildID", "data"
-    ]
-
-GuildEmblems = GuildEmblemManager()
+    guild = relation(Guild, backref="guildEmblems")
 
 
-class GuildRelation(Model):
+class GuildRelation(Base):
     """
     Relationships between guilds, e.g. allies/oppositions.
     """
-    required = [
-        "guildID", "relatedID", "type"
-    ]
-    optional = [
-        ("id", None),
-        ("name", "")
-    ]
-    saveData = [
-        "id", "guildID", "relatedID", "name", "type"
-    ]
+    id = Column(Integer, primary_key = True)
+    guildID = Column(Integer, ForeignKey("guilds.id"))
+    relatedID = Column(Integer, ForeignKey("guilds.id"))
+    type = Column(String)
+    name = Column(String)
 
-class GuildRelationManager(Manager):
-    modelClass = GuildRelation
-    cacheDict  = {}
-    table  = "guildRelations"
-    schema = [
-        "id", "guildID", "relatedID", "name", "type"
-    ]
+    guild = relation(Guild, backref="guildRelations")
+    
 
-GuildRelations = GuildRelationManager()
-
-
-class GuildPosition(Model):
+class GuildPosition(Base):
     """
     Positions of a guild.
     """
-    required = [
-        "guildID", "positionID"
-    ]
-    optional = [
-        ("id", None),
-        ("name", "Position"),
-        ("mode", 0),
-        ("tax", 0)
-    ]
-    saveData = [
-        "id", "guildID", "positionID", "name", "mode", "tax"
-    ]
+    id = Column(Integer, primary_key = True)
+    guildID = Column(Integer, ForeignKey("guilds.id"))
+    positionID = Column(Integer)
+    name = Column(String, default = "Position")
+    mode = Column(Integer)
+    tax = Column(Integer)
 
-class GuildPositionManager(Manager):
-    modelClass = GuildPosition
-    cacheDict  = {}
-    table  = "guildPositions"
-    schema = [
-        "id", "guildID", "positionID", "name", "mode", "tax"
-    ]
+    guild = relation(Guild, backref="guildPositions")
 
-GuildPositions = GuildPositionManager()

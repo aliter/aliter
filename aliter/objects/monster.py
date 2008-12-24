@@ -1,31 +1,64 @@
-from model import Model
-from manager import Manager
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
-class Monster(Model):
-    required = [
-    ]
-    optional = [
-    ]
-    saveData = [
-    ]
+class Monster(Base):
+    id = Column(Integer, primary_key = True)
+    cleanName = Column(String)
+    translatedName = Column(String)
+    internationalName = Column(String)
+    level = Column(Integer)
+    hp = Column(Integer)
+    sp = Column(Integer)
+    baseExp = Column(Integer)
+    jobExp = Column(Integer)
+    atkMin = Column(Integer)
+    atkMax = Column(Integer)
+    physicalDef = Column(Integer)
+    magicDef = Column(Integer)
+    str = Column(Integer)
+    agi = Column(Integer)
+    vit = Column(Integer)
+    int = Column(Integer)
+    dex = Column(Integer)
+    luk = Column(Integer)
+    attackType = Column(Integer)
+    skillRange = Column(Integer)
+    sightRange = Column(Integer)
+    scale = Column(Integer)
+    race = Column(Integer)
+    element = Column(Integer)
+    mode = Column(Integer)
+    speed = Column(Integer)
+    attackDelay = Column(Integer)
+    attackAnimation = Column(Integer)
+    damageAnimation = Column(Integer)
+    mvpExp = Column(Integer)
+    mvpBonusExp = Column(Integer)
+    mvpdropID1 = Column(Integer)
+    mvpdropRate1 = Column(Integer)
+    mvpdropID2 = Column(Integer)
+    mvpdropRate2 = Column(Integer)
+    mvpdropID3 = Column(Integer)
+    mvpdropRate3 = Column(Integer)
+    dropID1 = Column(Integer)
+    dropRate1 = Column(Integer)
+    dropID2 = Column(Integer)
+    dropRate2 = Column(Integer)
+    dropID3 = Column(Integer)
+    dropRate3 = Column(Integer)
+    dropID4 = Column(Integer)
+    dropRate4 = Column(Integer)
+    dropID5 = Column(Integer)
+    dropRate5 = Column(Integer)
+    dropID6 = Column(Integer)
+    dropRate6 = Column(Integer)
+    dropID6 = Column(Integer)
+    dropRate7 = Column(Integer)
+    dropID8 = Column(Integer)
+    dropRate8 = Column(Integer)
+    dropID9 = Column(Integer)
+    dropRate9 = Column(Integer)
+    dropCardID = Column(Integer)
 
-class MonsterManager(Manager):
-    modelClass = Monster
-    cacheDict  = {}
-    table  = "monsters"
-    schema = [
-        "id", "cleanName", "translatedName", "internationalName", "level",
-        "hp", "sp", "baseExp", "jobExp", "atkMin", "atkMax", "physicalDef",
-        "magicDef", "str", "agi", "vit", "int", "dex", "luk", "attackType",
-        "skillRange", "sightRange", "scale", "race", "element", "mode",
-        "speed", "attackDelay", "attackAnimation", "damageAnimation",
-        "mvpExp", "mvpBonusExp", "mvpdropID1", "mvpdropRate1", "mvpdropID2",
-        "mvpdropRate2", "mvpdropID3", "mvpdropRate3", "dropID1", "dropRate1",
-        "dropID2", "dropRate2", "dropID3", "dropRate3", "dropID4",
-        "dropRate4", "dropID5", "dropRate5", "dropID6", "dropRate6",
-        "dropID6", "dropRate7", "dropID8", "dropRate8", "dropID9",
-        "dropRate9", "dropCardID"
-    ]
-
-Monsters = MonsterManager()

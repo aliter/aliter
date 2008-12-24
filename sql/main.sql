@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
   KEY `characterID` (`characterID`)
 );
 
-CREATE TABLE IF NOT EXISTS `mercenary` (
+CREATE TABLE IF NOT EXISTS `mercenaries` (
   `id` int(11) unsigned NOT NULL auto_increment,
   `characterID` int(11) NOT NULL,
   `class` mediumint(9) unsigned NOT NULL default '0',

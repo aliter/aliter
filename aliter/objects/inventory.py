@@ -1,40 +1,22 @@
-from model import Model
-from manager import Manager
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
 class InventoryItem(Model):
-    required = [
-        "characterID", "itemID"
-    ]
-    optional = [
-        ("id", None),
-        ("amount", 1),
-        ("equipLocation", 0),
-        ("identified", 1),
-        ("refine", 0),
-        ("broken", 0),
-        ("forger", 0),
-        ("element", 0),
-        ("very", 0),
-        ("card1", 0),
-        ("card2", 0),
-        ("card3", 0),
-        ("card4", 0)
-    ]
-    saveData = [
-        "id", "characterID", "itemID", "amount", "equipLocation",
-        "identified", "refine", "broken", "forger", "element", "very",
-        "card1", "card2", "card3", "card4"
-    ]
+    id = Column(Integer, primary_key = True)
+    characterID = Column(Integer, ForeignKey("characters.id"))
+    itemID = Column(Integer, ForeignKey("items.id"))
+    amount = Column(Integer, default = 1)
+    equipLocation = Column(Integer)
+    identified = Column(Boolean, default = True)
+    refine = Column(Integer)
+    broken = Column(Integer)
+    forger = Column(Integer, ForeignKey("characters.id"))
+    element = Column(Integer)
+    very = Column(Integer)
+    card1 = Column(Integer)
+    card2 = Column(Integer)
+    card3 = Column(Integer)
+    card4 = Column(Integer)
 
-class InventoryManager(Manager):
-    modelClass = InventoryItem
-    cacheDict  = {}
-    table  = "inventory"
-    schema = [
-        "id", "characterID", "itemID", "amount", "equipLocation",
-        "identified", "refine", "broken", "forger", "element", "very",
-        "card1", "card2", "card3", "card4"
-    ]
-
-Inventory = InventoryManager()

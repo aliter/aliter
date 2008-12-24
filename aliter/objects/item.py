@@ -1,49 +1,29 @@
-from model import Model
-from manager import Manager
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
-class Item(Model):
-    required = [
-        "name", "cleanName"
-    ]
-    optional = [
-        ("id", None),
-        ("type", 0),
-        ("priceBuy", 0),
-        ("priceSell", None),
-        ("weight", 0),
-        ("attack", None),
-        ("defence", None),
-        ("range", None),
-        ("slots", None),
-        ("equipJobs", 4294967295),
-        ("equipUpper", 7),
-        ("equipGeners", 2),
-        ("equipLocations", None),
-        ("weaponLevel", None),
-        ("equipLevel", None),
-        ("refineable", None),
-        ("view", None),
-        ("script", None),
-        ("equipScript", None),
-        ("unequipScript", None)
-    ]
-    saveData = [
-        "name", "type", "priceBuy", "priceSell", "weight", "attack",
-        "defence", "range", "slots", "equipJobs", "equipUpper",
-        "equipGenders", "equipLocations", "weaponLevel", "equipLevel",
-        "refineable", "view", "script", "equipScript", "unequipScript"
-    ]
+class Item(Base):
+    id = Column(Integer, primary_key = True)
+    name = Column(String)
+    cleanName = Column(String)
+    type = Column(Integer)
+    priceBuy = Column(Integer)
+    priceSell = Column(Integer, default = None)
+    weight = Column(Integer)
+    attack = Column(Integer, default = None)
+    defence = Column(Integer, default = None)
+    range = Column(Integer, default = None)
+    slots = Column(Integer, default = None)
+    equipJobs = Column(Integer, default = 4294967295)
+    equipUpper = Column(Integer, default = 7)
+    equipGenders = Column(Integer, default = 2)
+    equipLocations = Column(Integer, default = None)
+    weaponLevel = Column(Integer, default = None)
+    equipLevel = Column(Integer, default = None)
+    refineable = Column(Boolean, default = None)
+    view = Column(Integer, default = None)
+    script = Column(String, default = None)
+    equipScript = Column(String, default = None)
+    unequipScript = Column(String, default = None)
 
-class ItemManager(Manager):
-    modelClass = Item
-    cacheDict  = {}
-    table  = "items"
-    schema = [
-        "id", "cleanName", "name", "type", "priceBuy", "priceSell", "weight",
-        "attack", "defence", "range", "slots", "equipJobs", "equipUpper",
-        "equipGenders", "equipLocations", "weaponLevel", "equipLevel",
-        "refineable", "view", "script", "equipScript", "unequipScript"
-    ]
-
-Items = ItemManager()
