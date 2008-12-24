@@ -1,67 +1,53 @@
 from actor import Actor
 from manager import Manager
-from account import Accounts
+from account import Account
 from aliter.exceptions import InvalidItem
 
 
 class Character(Actor):
-    required = [
-        "accountID", "charNum",
-    ]
-    optional = [
-        ("id", None),
-        ("job", 0),
-        ("jobLevel", 1),
-        ("zeny", 0),
-        ("maxSP", 11),
-        ("sp", 11),
-        ("statusPoints", 0),
-        ("skillPoints", 0),
-        ("partyID", 0),
-        ("guildID", 0),
-        ("petID", 0),
-        ("homunculusID", 0),
-        ("mercenaryID", 0),
-        ("hairStyle", 0),
-        ("hairColor", 0),
-        ("clothesColor", 0),
-        ("viewWeapon", 1),
-        ("viewShield", 0),
-        ("viewHeadTop", 0),
-        ("viewHeadMiddle", 0),
-        ("viewHeadBottom", 0),
-        ("saveMap", "new_zone01"),
-        ("saveX", 53),
-        ("saveY", 111),
-        ("online", 0),
-        ("fame", 0),
-        ("guildPositionID", 0),
-        ("guildTaxed", 0)
-    ]
-    saveData = [
-        "id", "accountID", "charNum", "job", "jobLevel", "zeny", "maxSP",
-        "sp", "statusPoints", "skillPoints", "partyID", "guildID", "petID",
-        "homunculusID", "mercenaryID", "hairStyle", "hairColor",
-        "clothesColor", "viewWeapon", "viewShield", "viewHeadTop",
-        "viewHeadMiddle", "viewHeadBottom", "saveMap", "saveX", "saveY",
-        "online", "fame", "guildPositionID", "guildTaxed"
-    ]
+    __tablename__ = "characters"
+
+    id = Column(Integer, primary_key = True)
+    accountID = Column(Integer, ForeignKey("accounts.id"))
+    charNum = Column(Integer)
+
+    job = Column(Integer)
+    jobLevel = Column(Integer, default = 1)
+    zeny = Column(Integer)
+    maxSP = Column(Integer, default = 11)
+    sp = Column(Integer, default = 11)
+    statusPoints = Column(Integer)
+    skillPoints = Column(Integer)
+    partyID = Column(Integer, ForeignKey("parties.id"))
+    guildID = Column(Integer, ForeignKey("guilds.id"))
+    petID = Column(Integer, ForeignKey("pets.id"))
+    homunculusID = Column(Integer, ForeignKey("homonculi.id"))
+    mercenaryID = Column(Integer, ForeignKey("mercenaries.id"))
+    hairStyle = Column(Integer)
+    hairColor = Column(Integer)
+    clothesColor = Column(Integer)
+    viewWeapon = Column(Integer, default = 1)
+    viewShield = Column(Integer)
+    viewHeadTop = Column(Integer)
+    viewHeadMiddle = Column(Integer)
+    viewHeadBottom = Column(Integer)
+    saveMap = Column(String)
+    saveX = Column(Integer)
+    saveY = Column(Integer)
+    online = Column(Boolean)
+    fame = Column(Integer)
+    guildPositionID = Column(Integer)
+    guildTaxed = Column(Integer)
+
+    account = relation(Account, backref = "characters")
+    guild = relation(Guild, backref = "characters")
     
     inventory = {}
     
-    def __init__(self, **kwargs):
-        self.required.extend(super(Character, self).required)
-        self.optional.extend(super(Character, self).optional)
-        self.saveData.extend(super(Character, self).saveData)
-        super(Character, self).__init__(**kwargs)
-        
-        self.gameID = self.accountID
-    
-    def account(self):
-        """
-        Returns the character's account.
-        """
-        return Accounts.get(self.accountID)
+    def __init__(self, name, accountID, charNum):
+        self.name = name
+        self.accountID = accountID
+        self.charNum = charNum
     
     def guild(self):
         """

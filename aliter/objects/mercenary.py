@@ -1,38 +1,17 @@
-from model import Model
-from manager import Manager
-from character import Characters
+from character import Character
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
-class Mercenary(Model):
-    required = [
-        "characterID"
-    ]
-    optional = [
-        ("id", None),
-        ("class", 0),
-        ("hp", 1),
-        ("sp", 1),
-        ("killCounter", 0),
-        ("timeRemaining", 0)
-    ]
-    saveData = [
-        "id", "characterID", "class", "hp", "sp", "killCounter", 
-        "timeRemaining"
-    ]
-    
-    def master(self):
-        """
-        Returns the mercenary's master.
-        """
-        return Characters.get(self.characterID)
+class Mercenary(Base):
+    id = Column(Integer, primary_key = True)
+    characterID = Column(Integer, ForeignKey("characters.id"))
+    classID = Column(Integer)
+    hp = Column(Integer, default = 1)
+    sp = Column(Integer, default = 1)
+    killCounter = Column(Integer)
+    timeRemaining = Column(Integer)
 
-class MercenaryManager(Manager):
-    modelClass = Mercenary
-    cacheDict  = {}
-    table  = "mercenaries"
-    schema = [
-        "id", "characterID", "class", "hp", "sp", "killCounter", 
-        "timeRemaining"
-    ]
+    character = relation(Character, backref = "mercenaries")
 
-Mercenaries = MercenaryManager()
