@@ -3,7 +3,7 @@ import pickle
 from struct import pack, unpack, calcsize
 
 from aliter.constants import MAP_CACHE_VERSION
-from aliter.shared import config
+from aliter.config import main
 
 
 # MAP cache format: "MAP".3s <version>.b <width>.l <height>.l {<walkable>.B[w*h] <snipable>.B[w*h]}.zLib

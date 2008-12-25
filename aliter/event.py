@@ -8,7 +8,7 @@ from twisted.internet.task import LoopingCall
 from stackless import channel, tasklet, run, schedule
 
 import log
-from shared import config, maps
+from config import main
 from constants import *
 from aliter.exceptions import ScriptError
 from packets import generatePacket as _, encodePositionMove, encodePosition, decodePosition

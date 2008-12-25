@@ -3,7 +3,10 @@ from binascii import unhexlify, hexlify
 from stackless import tasklet, run
 
 from aliter import log
-from aliter.objects import Session, Accounts, Characters, Guilds, GuildPositions, GuildEmblems
+from aliter.objects.servers import Session
+from aliter.objects.account import Account
+from aliter.objects.character import Character
+from aliter.objects.guild import Guild, GuildPosition, GuildEmblem
 from aliter.exceptions import IllegalPacket
 from aliter.packets import generatePacket as _, receivedPackets, sendPacket, encodePosition, encodePositionMove, decodePosition
 from aliter.misc import getTick

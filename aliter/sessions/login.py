@@ -4,7 +4,7 @@ from socket import inet_aton
 
 from aliter import log
 from aliter.config.main import CHAR_SERVER
-from aliter.objects import Session
+from aliter.objects.servers import Session
 from aliter.packets import receivedPackets, sendPacket
 from aliter.inter import setLoginID
 

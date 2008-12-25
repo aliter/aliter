@@ -13,8 +13,12 @@ from aliter.config import main as settings, maps, scripts
 from aliter.constants import *
 from aliter.exceptions import ScriptError
 from aliter.misc import ttysize
-from aliter.objects import Server, Map, NPC
-from aliter.sessions import LoginSession, CharSession, MapSession, maps
+from aliter.objects.servers import Server
+from aliter.objects.map import Map
+from aliter.objects.npc import NPC
+from aliter.sessions.login import LoginSession
+from aliter.sessions.char import CharSession
+from aliter.sessions.map import MapSession, maps
 from aliter.script import Script
 from aliter.tools import grf
 from aliter.lib import yaml

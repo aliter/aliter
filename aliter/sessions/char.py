@@ -3,7 +3,9 @@ from sqlalchemy import and_
 
 from aliter import log
 from aliter.config.main import MAP_SERVER
-from aliter.objects import Session, Account, Character
+from aliter.objects.servers import Session
+from aliter.objects.account import Account
+from aliter.objects.character import Character
 from aliter.exceptions import IllegalPacket
 from aliter.packets import receivedPackets, sendPacket
 from aliter.inter import checkLoginID, unsetLoginID, getLoginIDa, getLoginIDb
