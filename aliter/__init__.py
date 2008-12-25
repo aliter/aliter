@@ -10,3 +10,4 @@ def getVersion():
         version = '%s %s' % (version, VERSION[3])
         if VERSION[3] != 'final':
             version = '%s %s' % (version, VERSION[4])
+    return version
