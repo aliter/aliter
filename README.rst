@@ -1,3 +1,4 @@
-# Aliter
+Aliter
+======
 
 Aliter is awesome.
