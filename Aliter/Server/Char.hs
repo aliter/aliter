@@ -1,5 +1,7 @@
 module Aliter.Server.Char where
 
+import Aliter.Config
+import Aliter.Config.Main (zone)
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Pack
@@ -18,7 +20,7 @@ identify l s id a b r = do send s (unhex (intToH 4 id)) --sendPacket s 0x283 [UI
                            return ()
 
 selectChar :: Log -> Socket -> Int -> IO ()
-selectChar l s o = do sendPacket s 0x71 [UInteger 150000, UString "new_1-1.gat", UString (aton "192.168.1.234"), UInt 5122]
+selectChar l s o = do sendPacket s 0x71 [UInteger 150000, UString "new_1-1.gat", UString (aton (serverHost zone)), UInt (fromIntegral (serverPort zone))]
                       logMsg l Debug ("Sending " ++ green (show 150000) ++ " to " ++ cyan "new_1-1.gat" ++ "...")
                       return ()
 

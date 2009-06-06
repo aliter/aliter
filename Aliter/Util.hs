@@ -4,60 +4,73 @@ module Aliter.Util (
     rpad,
     lpad,
     passwordHash,
-    color,
-    black,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white
+    getTick,
+    encodePosition,
+    encodePositionMove,
+    decodePosition
 ) where
 
+import Data.Bits
+import Data.Char
+import Data.IORef
 import Data.Word
 import Data.Binary
 import Data.Digest.OpenSSL.MD5 (md5sum)
 import Debug.Trace
-import System.Console.ANSI
+import System.IO.Unsafe
 import qualified Data.ByteString.Char8 as B
 
 
+-- Debugging
 dump s x = trace (s ++ ": " ++ show x) (return ())
 debug x = trace (show x) x
 
+
+-- Padding
 rpad :: Int -> a -> [a] -> [a]
 rpad n p xs = xs ++ replicate (n - length xs) p
 
 lpad :: Int -> a -> [a] -> [a]
 lpad n p s = (replicate (n - length s) p) ++ s
 
+
+-- Password hashing
 passwordHash :: String -> String
 passwordHash s = md5sum (B.pack s)
 
-color :: String -> Color -> String
-color s c = setSGRCode [SetColor Foreground Dull c] ++ s ++ setSGRCode [Reset]
 
-black :: String -> String
-black s = color s Black
+-- Tick
+tick :: IORef Integer
+tick = unsafePerformIO (newIORef 0)
 
-red :: String -> String
-red s = color s Red
+getTick :: IO Integer
+getTick = do t <- readIORef tick
+             writeIORef tick (t + 1)
+             return (t + 1)
 
-green :: String -> String
-green s = color s Green
 
-yellow :: String -> String
-yellow s = color s Yellow
+-- Positions
+encodePosition :: Int -> Int -> Int -> [Char]
+encodePosition x y d = map chr [a, b, c]
+                       where
+                           a = (x `shiftR` 2) .&. 0xFF
+                           b = ((x `shiftL` 6) .|. ((y `shiftR` 4) .&. 0x3F)) .&. 0xFF
+                           c = ((y `shiftL` 4) .|. (d .&. 0x0F)) .&. 0xFF
 
-blue :: String -> String
-blue s = color s Blue
+encodePositionMove :: Int -> Int -> Int -> Int -> [Char]
+encodePositionMove x y toX toY = map chr [a, b, c, d, e, f]
+                                 where
+                                     a = (x `shiftR` 2) .&. 0xFF
+                                     b = ((x `shiftL` 6) .|. ((y `shiftR` 4) .&. 0x3F)) .&. 0xFF
+                                     c = ((y `shiftL` 4) .|. ((toX `shiftR` 6) .&. 0x0F)) .&. 0xFF
+                                     d = ((toX `shiftL` 2) .|. ((toY `shiftR` 8) .&. 0x03)) .&. 0xFF
+                                     e = toY .&. 0xFF
+                                     f = ((8 `shiftL` 4) .|. (8 .&. 0x0F)) .&. 0xFF
 
-magenta :: String -> String
-magenta s = color s Magenta
-
-cyan :: String -> String
-cyan s = color s Cyan
-
-white :: String -> String
-white s = color s White
+decodePosition :: [Char] -> (Int, Int, Int)
+decodePosition pos = (x, y, d)
+                     where
+                         [xNum, yNum, dNum] = map ord pos
+                         x = (xNum `shiftL` 2) .|. ((yNum .&. 0xC0) `shiftR` 6)
+                         y = (((yNum .&. 0x3F) `shiftL` 4) .|. ((dNum .&. 0xF0) `shiftR` 4))
+                         d = dNum .&. 0x0F

@@ -32,22 +32,25 @@ data Pack = UChar Char
           deriving (Eq, Show)
 
 fromUChar (UChar c) = c
-fromUChar a = error ("Not a char: " ++ show a)
+fromUChar a = error ("Not an UChar: " ++ show a)
 
 fromUInt (UInt i) = i
-fromUInt a = error ("Not an int: " ++ show a)
+fromUInt a = error ("Not an UInt: " ++ show a)
 
 fromUInteger (UInteger i) = i
-fromUInteger a = error ("Not an integer: " ++ show a)
+fromUInteger a = error ("Not an UInteger: " ++ show a)
 
 fromUFloat (UFloat f) = f
-fromUFloat a = error ("Not a float: " ++ show a)
+fromUFloat a = error ("Not an UFloat: " ++ show a)
 
 fromUDouble (UDouble d) = d
-fromUDouble a = error ("Not a double: " ++ show a)
+fromUDouble a = error ("Not an UDouble: " ++ show a)
 
-fromUString (UString s) = takeWhile (/= '\0') s
-fromUString a = error ("Not a string: " ++ show a)
+fromUString (UString s) = s
+fromUString a = error ("Not an UString: " ++ show a)
+
+fromUString' (UString s) = takeWhile (/= '\0') s
+fromUString' a = error ("Not an UString: " ++ show a)
 
 
 class Packable a where
@@ -113,7 +116,6 @@ unpack (x:xs) ss | isDigit x = if target == 's'
                      rep = unpack (replicate num target) ss
 
 pack :: String -> [Pack] -> String
-pack _ [] = []
 pack [] _ = []
 pack ('x':xs) us = "00" ++ pack xs us
 pack ('c':xs) ((UChar c):us) = intToH 1 (fromEnum c) ++ pack xs us

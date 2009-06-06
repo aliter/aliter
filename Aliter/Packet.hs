@@ -31,6 +31,9 @@ sent = [
        , (0x71, ("l16s4sh", [])) -- Character selected
 
        -- Zone server
+       , (0x73, ("l3sxx", [])) -- Login successful
+       , (0x87, ("l6sl", [])) -- Actor movement
+       , (0x95, ("l24s", []))
        , (0x283, ("l", [])) -- Acknowledge connection
        ]
 
@@ -42,14 +45,25 @@ subPack = [ ("servers", "4sh20shhh")
 received :: [(Int, (String, [String]))]
 received = [
            -- Login server
-             (0x64, ("l24s24sB", ["packetVersion", "username", "password", "region"]))
+             (0x64, ("l24s24sB", ["packetVersion", "username", "password", "region"])) -- Request connection
 
            -- Character server
-           , (0x65, ("lLLxxB", ["accountID", "loginIDa", "loginIDb", "gender"]))
-           , (0x66, ("b", ["charNum"]))
-           , (0x67, ("24s8BxBx", ["name", "str", "agi", "vit", "int", "dex", "luk", "charNum", "hairStyle", "hairColor"]))
-           , (0x68, ("l40s", ["characterID", "email"]))
-           , (0x187, ("l", ["kaAccountID"]))
+           , (0x65, ("lLLxxB", ["accountID", "loginIDa", "loginIDb", "gender"])) -- Request connection
+           , (0x66, ("b", ["charNum"])) -- Character select
+           , (0x67, ("24s8BxBx", ["name", "str", "agi", "vit", "int", "dex", "luk", "charNum", "hairStyle", "hairColor"])) -- Character create
+           , (0x68, ("l40s", ["characterID", "email"])) -- Delete request
+           , (0x187, ("l", ["kaAccountID"])) -- keepAlive
+
+           -- Map server
+           , (0x7d, ("", [])) -- Map finished loading
+           , (0x89, ("xxl", ["clientTick"]))
+           , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor name
+           , (0xa7, ("xxx3s", ["position"])) -- Walk request
+           , (0x14d, ("", [])) -- Request guild status
+           , (0x14f, ("l", ["page"])) -- Request guild info for given page
+           , (0x21d, ("l", ["effect"])) -- Client's /effect state
+           , (0x436, ("llllB", ["accountID", "charID", "loginIDa", "loginIDb", "gender"])) -- Request connection
+           , (0x44a, ("l", ["?"])) -- Unsure
            ]
 
 sendPacket :: Socket -> Int -> [Pack] -> IO Int
