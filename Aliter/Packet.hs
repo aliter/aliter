@@ -24,7 +24,7 @@ sent = [
        -- Char server
        , (0x6b, ("h20s", ["character"])) -- List characters
        , (0x6c, ("h", [])) -- Character selection failed / char server error
-       , (0x6d, ("?", ["character"])) -- Character creation
+       , (0x6d, ("h?", ["character"])) -- Character creation
        , (0x6e, ("h", [])) -- Character creation failed
        , (0x6f, ("", [])) -- Character deleted
        , (0x70, ("h", [])) -- Character deletion failed

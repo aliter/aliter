@@ -8,6 +8,7 @@ import Aliter.Util
 
 import Control.Concurrent
 import Network.Socket hiding (Debug)
+import System.IO.Unsafe
 import qualified Aliter.Server.Login as L
 import qualified Aliter.Server.Char as C
 import qualified Aliter.Server.Zone as Z

@@ -23,7 +23,7 @@ data Account = Account { aID :: Integer
 
 data Character = Character { cID :: Integer
                            , cAccountID :: Integer
-                           , cNum :: Integer
+                           , cNum :: Int
                            , cName :: String
                            , cJob :: Int
                            , cBLevel :: Int
@@ -37,9 +37,9 @@ data Character = Character { cID :: Integer
                            , cInt :: Int
                            , cDex :: Int
                            , cLuk :: Int
-                           , cMHP :: Int
+                           , cMaxHP :: Int
                            , cHP :: Int
-                           , cMSP :: Int
+                           , cMaxSP :: Int
                            , cSP :: Int
                            , cStatusPoints :: Int
                            , cSkillPoints :: Int
@@ -69,6 +69,22 @@ data Character = Character { cID :: Integer
                            }
                            deriving (Eq, Show)
 
+data Map = Map { name :: String
+               , width :: Int
+               , height :: Int
+               , tiles :: [[Int]]
+               , players :: [Character]
+               {- , monsters :: [Monster] -}
+               {- , npcs :: [NPC] -}
+               {- , warps :: [Warp] -}
+               }
+
+
+pathfind :: Map -> Int -> Int -> Int -> Int -> [(Int, Int, Int)]
+pathfind m x y toX toY | x == toX && y == toY = []
+                       | otherwise = [] -- TODO
+
+
 
 getAccount :: Integer -> IO (Maybe Account)
 getAccount id = do c <- connect
@@ -79,7 +95,7 @@ getAccount id = do c <- connect
 
 getAccountBy :: [(String, SqlValue)] -> IO (Maybe Account)
 getAccountBy vs = do c <- connect
-                     res <- quickQuery' c ("SELECT * FROM accounts WHERE " ++ w) (map snd vs)
+                     res <- quickQuery' c ("SELECT * FROM accounts WHERE " ++ w ++ " LIMIT 1") (map snd vs)
                      case res of
                           [] -> return Nothing
                           [attr] -> return (Just $ mkAccount attr)
@@ -92,6 +108,22 @@ getCharacter id = do c <- connect
                      case res of
                           [] -> return Nothing -- logMsg l Error ("Cannot find charactor " ++ red (show id))
                           [attr] -> return (Just $ mkCharacter attr)
+
+getCharacterBy :: [(String, SqlValue)] -> IO (Maybe Character)
+getCharacterBy vs = do c <- connect
+                       res <- quickQuery' c ("SELECT * FROM characters WHERE " ++ w ++ " LIMIT 1") (map snd vs)
+                       case res of
+                            [] -> return Nothing
+                            [attr] -> return (Just $ mkCharacter attr)
+                    where
+                        w = intercalate " AND " (map (\(s, _) -> s ++ " = ?") vs)
+
+getCharactersBy :: [(String, SqlValue)] -> IO [Character]
+getCharactersBy vs = do c <- connect
+                        res <- quickQuery' c ("SELECT * FROM characters WHERE " ++ w) (map snd vs)
+                        return (map mkCharacter res)
+                     where
+                         w = intercalate " AND " (map (\(s, _) -> s ++ " = ?") vs)
 
 mkAccount as = Account { aID = fromSql (as !! 0)
                        , aUsername = fromSql (as !! 1)
@@ -121,9 +153,9 @@ mkCharacter as = Character { cID = fromSql (as !! 0)
                            , cInt = fromSql (as !! 13)
                            , cDex = fromSql (as !! 14)
                            , cLuk = fromSql (as !! 15)
-                           , cMHP = fromSql (as !! 16)
+                           , cMaxHP = fromSql (as !! 16)
                            , cHP = fromSql (as !! 17)
-                           , cMSP = fromSql (as !! 18)
+                           , cMaxSP = fromSql (as !! 18)
                            , cSP = fromSql (as !! 19)
                            , cStatusPoints = fromSql (as !! 20)
                            , cSkillPoints = fromSql (as !! 21)

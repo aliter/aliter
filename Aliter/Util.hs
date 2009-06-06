@@ -7,7 +7,9 @@ module Aliter.Util (
     getTick,
     encodePosition,
     encodePositionMove,
-    decodePosition
+    decodePosition,
+    setLoginIDs,
+    getLoginIDs
 ) where
 
 import Data.Bits
@@ -74,3 +76,16 @@ decodePosition pos = (x, y, d)
                          x = (xNum `shiftL` 2) .|. ((yNum .&. 0xC0) `shiftR` 6)
                          y = (((yNum .&. 0x3F) `shiftL` 4) .|. ((dNum .&. 0xF0) `shiftR` 4))
                          d = dNum .&. 0x0F
+
+-- Login IDs
+loginIDs :: IORef [(Integer, (Integer, Integer))]
+loginIDs = unsafePerformIO (newIORef [])
+
+setLoginIDs :: Integer -> (Integer, Integer) -> IO ()
+setLoginIDs a ids = do all <- readIORef loginIDs
+                       writeIORef loginIDs ((a, ids) : all)
+
+getLoginIDs :: Integer -> IO (Maybe (Integer, Integer))
+getLoginIDs a = do all <- readIORef loginIDs
+                   case lookup a all of
+                        maybe -> return maybe

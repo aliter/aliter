@@ -12,7 +12,7 @@ import Aliter.Log
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
-import Aliter.Util (debug, passwordHash)
+import Aliter.Util (debug, passwordHash, setLoginIDs, getLoginIDs)
 
 
 authorize :: Log -> Socket -> Integer -> String -> String -> Int -> IO ()
@@ -22,10 +22,16 @@ authorize l s _ n p _ = do auth <- getAccountBy [ ("username", toSql n)
                            case auth of
                                 Just a -> do c <- connect
                                              now <- getCurrentTime
+
+                                             -- Generate and store login IDs
                                              lIDa <- randomRIO (0, 4294967295)
                                              lIDb <- randomRIO (0, 4294967295)
+                                             setLoginIDs (aID a) (lIDa, lIDb)
+
                                              quickQuery c "UPDATE accounts SET lastLogin = ? WHERE id = ?" [SqlString (toSqlString now), toSql (aID a)]
+
                                              logMsg l Normal ("Accepted connection of " ++ red n)
+
                                              sendPacketSub s 0x69 [UInteger lIDa, UInteger (aID a), UInteger lIDb, UInteger 0, UString "", UInt 0, UInt (aGender a)] [servers]
                                 Nothing -> do name <- getAccountBy [("username", toSql n)]
                                               case name of
