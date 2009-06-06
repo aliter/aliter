@@ -1,9 +1,11 @@
 module Main where
 
+import Config.Main (connect, login, char, zone)
+
 import Aliter.Config
-import Aliter.Config.Main (connect, login, char, zone)
 import Aliter.Hex
 import Aliter.Log
+import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
 import Aliter.Server
@@ -36,31 +38,28 @@ main = do chan <- newChan -- Logging channel
 
 
 startLogin :: Log -> IO ()
-startLogin l = do host <- inet_addr (serverHost login)
-                  startServer l host (fromIntegral (serverPort login)) "Login"
+startLogin l = startServer l (fromIntegral (serverPort login)) "Login"
 
 startChars :: Log -> IO ()
-startChars l = mapM_ (\(n, (s, _)) -> do host <- inet_addr (serverHost s)
-                                         forkIO (startServer l host (fromIntegral (serverPort s)) n)) char
+startChars l = mapM_ (\(n, (s, _)) -> forkIO (startServer l (fromIntegral (serverPort s)) ("Char (" ++ n ++ ")"))) char
 
 startZone :: Log -> IO ()
-startZone l = do host <- inet_addr (serverHost zone)
-                 startServer l host (fromIntegral (serverPort zone)) "Zone"
+startZone l = startServer l (fromIntegral (serverPort zone)) "Zone"
 
-startServer :: Log -> HostAddress -> PortNumber -> String -> IO ()
-startServer l h p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on port " ++ magenta (show p) ++ "...")
+startServer :: Log -> PortNumber -> String -> IO ()
+startServer l p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on port " ++ magenta (show p) ++ "...")
 
-                         chan <- newChan
-                         sock <- socket AF_INET Stream 0
-                         setSocketOption sock ReuseAddr 1
-                         bindSocket sock (SockAddrInet p h)
-                         listen sock 5
+                       chan <- newChan
+                       sock <- socket AF_INET Stream 0
+                       setSocketOption sock ReuseAddr 1
+                       bindSocket sock (SockAddrInet p iNADDR_ANY)
+                       listen sock 5
 
-                         logMsg l Normal (cyan n ++ " server started.")
+                       logMsg l Normal (cyan n ++ " server started.")
 
-                         forkIO (waitPackets l chan)
+                       forkIO (waitPackets l chan)
 
-                         wait sock l chan
+                       wait sock l chan
 
 waitPackets :: Log -> Packets -> IO ()
 waitPackets l c = do (s, p, vs) <- readChan c

@@ -1,4 +1,4 @@
-module Aliter.Config.Main where
+module Config.Main where
 
 import Aliter.Config
 
@@ -6,22 +6,20 @@ import Database.HDBC
 import Database.HDBC.MySQL
 
 
-{- connect :: IO IConnection -}
+-- Set database info
 connect = connectMySQL (defaultMySQLConnectInfo { mysqlHost = "localhost"
-                                                , mysqlUser = "root"
-                                                , mysqlPassword = "root"
-                                                , mysqlDatabase = "aliter"
+                                                , mysqlUser = ""
+                                                , mysqlPassword = ""
+                                                , mysqlDatabase = ""
                                                 , mysqlUnixSocket = "/tmp/mysql.sock"
                                                 })
 
-login :: ServerConf
-login = ServerConf { serverHost = "127.0.0.1"
+login = ServerConf { serverHost = "" -- Public IP here
                    , serverPort = 6900
                    }
 
-char :: [(String, (ServerConf, [(String, Int)]))]
 char = [ ( "Aliter" -- Character server name
-         , ( ServerConf { serverHost = "127.0.0.1" -- Character server address info
+         , ( ServerConf { serverHost = "" -- Public IP here
                         , serverPort = 6121
                         }
            , [ ("maintenance", 0) -- Server options
@@ -31,8 +29,7 @@ char = [ ( "Aliter" -- Character server name
          )
        ]
 
-zone :: ServerConf
-zone = ServerConf { serverHost = "127.0.0.1"
+zone = ServerConf { serverHost = "" -- Public IP here
                   , serverPort = 5121
                   }
 

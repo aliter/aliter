@@ -1,7 +1,8 @@
 module Aliter.Server.Char where
 
+import Config.Main (zone)
+
 import Aliter.Config
-import Aliter.Config.Main (zone)
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Pack
@@ -16,7 +17,7 @@ identify :: Log -> Socket -> Integer -> Integer -> Integer -> Int -> IO ()
 identify l s id a b r = do send s (unhex (intToH 4 id)) --sendPacket s 0x283 [UInteger id]
                            logMsg l Normal ("Acknowledged login for `" ++ green (show id) ++ "'")
                            logMsg l Debug "Sending character list..."
-                           sendPacketSub s 0x6b [UString ""] [[[UInteger 15000, UInteger 0, UInteger 1337, UInteger 0, UInteger 1, UString "Blah", UInteger 0, UInteger 0, UInteger 0, UInt 0, UInt 42, UInt 60, UInt 30, UInt 40, UInt 100, UInt 1, UInt 5, UInt 0, UInt 40, UInt 0, UInt 0, UInt 0, UInt 0, UInt 0, UInt 1, UInt 1, UString "Alex", UInt 1, UInt 1, UInt 1, UInt 1, UInt 1, UInt 1, UInt 1, UInt 1]]]
+                           sendPacketSub s 0x6b [UString ""] [[[UInteger 15000, UInteger 0, UInteger 1337, UInteger 0, UInteger 1, UString "Blah", UInteger 0, UInteger 0, UInteger 0, UInt 0, UInt 42, UInt 60, UInt 30, UInt 40, UInt 140, UInt 1, UInt 5, UInt 0, UInt 40, UInt 0, UInt 0, UInt 0, UInt 0, UInt 0, UInt 1, UInt 1, UString "Alex", UInt 1, UInt 1, UInt 1, UInt 1, UInt 1, UInt 1, UInt 1, UInt 1]]]
                            return ()
 
 selectChar :: Log -> Socket -> Int -> IO ()

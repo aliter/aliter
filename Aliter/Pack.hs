@@ -54,33 +54,42 @@ fromUString' a = error ("Not an UString: " ++ show a)
 
 
 class Packable a where
+    fromPackRaw :: Pack -> a
     fromPack :: Pack -> a
     toPack :: a -> Pack
+    getRaw :: String -> [(String, Pack)] -> a
     get :: String -> [(String, Pack)] -> a
 
+    getRaw n vs = fromPackRaw (fromJust (lookup n vs))
     get n vs = fromPack (fromJust (lookup n vs))
 
 instance Packable Integer where
+    fromPackRaw = fromUInteger
     fromPack = fromUInteger
     toPack = UInteger
 
 instance Packable Int where
+    fromPackRaw = fromUInt
     fromPack = fromUInt
     toPack = UInt
 
 instance Packable String where
-    fromPack = fromUString
+    fromPackRaw = fromUString
+    fromPack = takeWhile (/= '\0') . fromUString
     toPack = UString
 
 instance Packable Char where
+    fromPackRaw = fromUChar
     fromPack = fromUChar
     toPack = UChar
 
 instance Packable Float where
+    fromPackRaw = fromUFloat
     fromPack = fromUFloat
     toPack = UFloat
 
 instance Packable Double where
+    fromPackRaw = fromUDouble
     fromPack = fromUDouble
     toPack = UDouble
 
