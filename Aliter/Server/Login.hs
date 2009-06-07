@@ -48,7 +48,13 @@ authorize w _ n p _ = do state <- readIORef w
                          return ()
 
 servers :: [[Pack]]
-servers = map (\(n, (s, os)) -> [UString (aton $ serverHost s), UInt (fromIntegral $ serverPort s), UString n, UInt 0, UInt (maint os), UInt (new os)]) char
+servers = map (\(n, (s, os)) -> [ UString (aton $ serverHost s)
+                                , UInt (fromIntegral $ serverPort s)
+                                , UString n
+                                , UInt 0
+                                , UInt (maint os)
+                                , UInt (new os)
+                                ]) char
           where
               maint os = case lookup "maintenance" os of
                               Just v -> v

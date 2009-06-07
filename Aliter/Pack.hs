@@ -20,7 +20,6 @@ import Aliter.Hex
 import Aliter.Util (rpad)
 
 import Data.Char (isDigit, intToDigit)
-import Data.Maybe (fromJust)
 
 
 data Pack = UChar Char

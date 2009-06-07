@@ -68,17 +68,6 @@ waitPackets l c = do (w, p, vs) <- readChan c
                      handle w p vs
                      waitPackets l c
 
-hGet :: Handle -> Int -> IO (Maybe [Char])
-hGet h 0 = return (Just [])
-hGet h i = do done <- hIsEOF h
-              if done
-                 then return Nothing
-                 else do c <- hGetChar h
-                         rest <- hGet h (i - 1)
-                         case rest of
-                              Nothing -> return Nothing
-                              Just cs -> return (Just (c : cs))
-
 wait :: Socket -> Log -> Packets -> IO ()
 wait s l c = do (s', a) <- accept s
 

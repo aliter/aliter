@@ -10,7 +10,8 @@ module Aliter.Util (
     decodePosition,
     setLoginIDs,
     getLoginIDs,
-    deleteLoginIDs
+    deleteLoginIDs,
+    hGet
 ) where
 
 import Data.Bits
@@ -20,6 +21,7 @@ import Data.Word
 import Data.Binary
 import Data.Digest.OpenSSL.MD5 (md5sum)
 import Debug.Trace
+import System.IO
 import System.IO.Unsafe
 import qualified Data.ByteString.Char8 as B
 
@@ -84,6 +86,7 @@ decodePosition pos = (x, y, d)
                          y = (((yNum .&. 0x3F) `shiftL` 4) .|. ((dNum .&. 0xF0) `shiftR` 4))
                          d = dNum .&. 0x0F
 
+
 -- Login IDs
 loginIDs :: IORef [(Integer, (Integer, Integer))]
 loginIDs = unsafePerformIO (newIORef [])
@@ -99,3 +102,18 @@ getLoginIDs a = do all <- readIORef loginIDs
 deleteLoginIDs :: Integer -> IO ()
 deleteLoginIDs a = do all <- readIORef loginIDs
                       writeIORef loginIDs (deleteKey a all)
+
+
+-- Get N chars
+hGet :: Handle -> Int -> IO (Maybe [Char])
+hGet h 0 = return (Just [])
+hGet h i = do done <- hIsEOF h
+              if done
+                 then return Nothing
+                 else do c <- hGetChar h
+                         rest <- hGet h (i - 1)
+                         case rest of
+                              Nothing -> return Nothing
+                              Just cs -> return (Just (c : cs))
+
+

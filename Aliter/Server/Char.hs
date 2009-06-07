@@ -65,7 +65,7 @@ selectChar w n = do state <- readIORef w
 createChar :: IORef State -> String -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> IO ()
 createChar w name str agi vit int dex luk num hStyle hColor =
     do state <- readIORef w
-       char <- addCharacter [ ("accountID", toSql (1 :: Integer)) -- TODO
+       char <- addCharacter [ ("accountID", toSql (aID (sAccount state))) -- TODO
                             , ("name", toSql name)
                             , ("str", toSql str)
                             , ("agi", toSql agi)

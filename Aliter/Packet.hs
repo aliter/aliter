@@ -59,6 +59,7 @@ received = [
            , (0x89, ("xxl", ["clientTick"]))
            , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor names
            , (0xa7, ("xxx3s", ["position"])) -- Walk request
+           , (0xf3, ("h!", ["packetLen", "data"])) -- Speech
            , (0x14d, ("", [])) -- Request guild status
            , (0x14f, ("l", ["page"])) -- Request guild info for given page
            , (0x21d, ("l", ["effect"])) -- Client's /effect state

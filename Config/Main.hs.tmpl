@@ -14,10 +14,12 @@ connect = connectMySQL (defaultMySQLConnectInfo { mysqlHost = "localhost"
                                                 , mysqlUnixSocket = "/tmp/mysql.sock"
                                                 })
 
+login :: ServerConf
 login = ServerConf { serverHost = "" -- Public IP here
                    , serverPort = 6900
                    }
 
+char :: [(String, (ServerConf, [(String, Int)]))]
 char = [ ( "Aliter" -- Character server name
          , ( ServerConf { serverHost = "" -- Public IP here
                         , serverPort = 6121
@@ -29,6 +31,7 @@ char = [ ( "Aliter" -- Character server name
          )
        ]
 
+zone :: ServerConf
 zone = ServerConf { serverHost = "" -- Public IP here
                   , serverPort = 5121
                   }
