@@ -24,7 +24,7 @@ sent = [
        -- Char server
        , (0x6b, ("h20s", ["character"])) -- List characters
        , (0x6c, ("h", [])) -- Character selection failed / char server error
-       , (0x6d, ("h?", ["character"])) -- Character creation
+       , (0x6d, ("h", ["character"])) -- Character creation
        , (0x6e, ("h", [])) -- Character creation failed
        , (0x6f, ("", [])) -- Character deleted
        , (0x70, ("h", [])) -- Character deletion failed
@@ -50,19 +50,19 @@ received = [
            -- Character server
            , (0x65, ("lLLxxB", ["accountID", "loginIDa", "loginIDb", "gender"])) -- Request connection
            , (0x66, ("b", ["charNum"])) -- Character select
-           , (0x67, ("24s8BxBx", ["name", "str", "agi", "vit", "int", "dex", "luk", "charNum", "hairStyle", "hairColor"])) -- Character create
+           , (0x67, ("24s8BxBx", ["name", "str", "agi", "vit", "int", "dex", "luk", "charNum", "hairColor", "hairStyle"])) -- Character create
            , (0x68, ("l40s", ["characterID", "email"])) -- Delete request
            , (0x187, ("l", ["kaAccountID"])) -- keepAlive
 
            -- Map server
            , (0x7d, ("", [])) -- Map finished loading
            , (0x89, ("xxl", ["clientTick"]))
-           , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor name
+           , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor names
            , (0xa7, ("xxx3s", ["position"])) -- Walk request
            , (0x14d, ("", [])) -- Request guild status
            , (0x14f, ("l", ["page"])) -- Request guild info for given page
            , (0x21d, ("l", ["effect"])) -- Client's /effect state
-           , (0x436, ("llllB", ["accountID", "charID", "loginIDa", "loginIDb", "gender"])) -- Request connection
+           , (0x436, ("lll4xB", ["accountID", "characterID", "loginIDa", "gender"])) -- Request connection
            , (0x44a, ("l", ["?"])) -- Unsure
            ]
 

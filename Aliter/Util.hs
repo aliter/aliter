@@ -9,7 +9,8 @@ module Aliter.Util (
     encodePositionMove,
     decodePosition,
     setLoginIDs,
-    getLoginIDs
+    getLoginIDs,
+    deleteLoginIDs
 ) where
 
 import Data.Bits
@@ -40,6 +41,12 @@ lpad n p s = (replicate (n - length s) p) ++ s
 passwordHash :: String -> String
 passwordHash s = md5sum (B.pack s)
 
+
+-- Delete an element from an associative list based on index
+deleteKey :: Eq a => a -> [(a, b)] -> [(a, b)]
+deleteKey _ [] = []
+deleteKey x ((a, b):ys) | x == a = ys
+                        | otherwise = (a, b) : deleteKey x ys
 
 -- Tick
 tick :: IORef Integer
@@ -87,5 +94,8 @@ setLoginIDs a ids = do all <- readIORef loginIDs
 
 getLoginIDs :: Integer -> IO (Maybe (Integer, Integer))
 getLoginIDs a = do all <- readIORef loginIDs
-                   case lookup a all of
-                        maybe -> return maybe
+                   return (lookup a all)
+
+deleteLoginIDs :: Integer -> IO ()
+deleteLoginIDs a = do all <- readIORef loginIDs
+                      writeIORef loginIDs (deleteKey a all)

@@ -60,8 +60,12 @@ class Packable a where
     getRaw :: String -> [(String, Pack)] -> a
     get :: String -> [(String, Pack)] -> a
 
-    getRaw n vs = fromPackRaw (fromJust (lookup n vs))
-    get n vs = fromPack (fromJust (lookup n vs))
+    getRaw n vs = case lookup n vs of
+                       Nothing -> error ("Cannot get `" ++ n ++ "' from " ++ show vs)
+                       Just v -> fromPackRaw v
+    get n vs = case lookup n vs of
+                    Nothing -> error ("Cannot get `" ++ n ++ "' from " ++ show vs)
+                    Just v -> fromPack v
 
 instance Packable Integer where
     fromPackRaw = fromUInteger

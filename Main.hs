@@ -14,12 +14,13 @@ import Aliter.Util
 import Control.Concurrent
 import Control.Monad (replicateM)
 import Data.Function (fix)
+import Data.IORef
 import Network.Socket hiding (Debug)
 import System.Console.ANSI
 import System.IO
 
 
-type Packets = Chan (Socket, Int, [(String, Pack)])
+type Packets = Chan (IORef State, Int, [(String, Pack)])
 
 main = do chan <- newChan -- Logging channel
 
@@ -62,9 +63,9 @@ startServer l p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on por
                        wait sock l chan
 
 waitPackets :: Log -> Packets -> IO ()
-waitPackets l c = do (s, p, vs) <- readChan c
+waitPackets l c = do (w, p, vs) <- readChan c
                      logMsg l Debug (red (intToH 2 p) ++ ": " ++ show vs)
-                     handle s l p vs
+                     handle w p vs
                      waitPackets l c
 
 hGet :: Handle -> Int -> IO (Maybe [Char])
@@ -80,22 +81,34 @@ hGet h i = do done <- hIsEOF h
 
 wait :: Socket -> Log -> Packets -> IO ()
 wait s l c = do (s', a) <- accept s
+
+                -- Pop the initial state in an IORef for further evolution
+                state <- newIORef (InitState { sClient = s'
+                                             , sLog = l })
+   
+                -- Log the connection
                 me <- getSocketName s
-                logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me))
+                logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me) ++ " established.")
+   
+                -- Make the client socket read/writeable
                 h <- socketToHandle s' ReadWriteMode
                 hSetBuffering h NoBuffering
-                forkIO (runConn s' h l c)
+   
+                -- Run the connection
+                forkIO (runConn state h c)
+   
                 wait s l c
 
-runConn :: Socket -> Handle -> Log -> Packets -> IO ()
-runConn s h l c = do packet <- hGet h 2
+runConn :: IORef State -> Handle -> Packets -> IO ()
+runConn w h c = do packet <- hGet h 2
+                   state <- readIORef w
 
-                     case packet of
-                          Nothing -> return ()
-                          Just p -> do case lookup (hToInt (hex p)) received of
-                                            Nothing -> logMsg l Warning ("Unknown packet " ++ red (hex p))
-                                            Just (f, names) -> do rest <- hGet h (needed f)
-                                                                  case rest of
-                                                                       Nothing -> logMsg l Warning ("Incomplete packet " ++ red (hex p) ++ "; ignored")
-                                                                       Just cs -> writeChan c (s, hToInt (hex p), zip names (unpack f (hex cs)))
-                                       runConn s h l c
+                   case packet of
+                        Nothing -> return ()
+                        Just p -> do case lookup (hToInt (hex p)) received of
+                                          Nothing -> logMsg (sLog state) Warning ("Unknown packet " ++ red (hex p))
+                                          Just (f, names) -> do rest <- hGet h (needed f)
+                                                                case rest of
+                                                                     Nothing -> logMsg (sLog state) Warning ("Incomplete packet " ++ red (hex p) ++ "; ignored")
+                                                                     Just cs -> writeChan c (w, hToInt (hex p), zip names (unpack f (hex cs)))
+                                     runConn w h c

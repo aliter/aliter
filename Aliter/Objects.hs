@@ -3,10 +3,26 @@ module Aliter.Objects where
 import Config.Main (connect)
 
 import Aliter.Log
+import Aliter.Util (dump)
 
 import Data.List (intercalate)
+import Data.Maybe (fromJust)
 import Database.HDBC
+import Network.Socket (Socket)
 
+
+data State = InitState { sClient :: Socket
+                       , sLog :: Log
+                       }
+           | MidState { sClient :: Socket
+                      , sLog :: Log
+                      , sAccount :: Account
+                      }
+           | State { sClient :: Socket
+                   , sLog :: Log
+                   , sAccount :: Account
+                   , sActor :: Character
+                   }
 
 data Account = Account { aID :: Integer
                        , aUsername :: String
@@ -73,7 +89,7 @@ data Map = Map { name :: String
                , width :: Int
                , height :: Int
                , tiles :: [[Int]]
-               , players :: [Character]
+               , players :: [(Integer, Character)]
                {- , monsters :: [Monster] -}
                {- , npcs :: [NPC] -}
                {- , warps :: [Warp] -}
@@ -124,6 +140,18 @@ getCharactersBy vs = do c <- connect
                         return (map mkCharacter res)
                      where
                          w = intercalate " AND " (map (\(s, _) -> s ++ " = ?") vs)
+
+addCharacter :: [(String, SqlValue)] -> IO Character
+addCharacter vs = do c <- connect
+                     quickQuery c ("INSERT INTO characters (" ++ cols ++ ") VALUES (" ++ intercalate ", " (replicate (length vs) "?") ++ ")") (map snd vs)
+                     case (lookup "accountID" vs, lookup "charNum" vs) of
+                          (Just a, Just c) -> do c <- getCharacterBy [ ("accountId", a)
+                                                                     , ("charNum", c)
+                                                                     ]
+                                                 return (fromJust c)
+                  where
+                      cols = intercalate ", " (map (\(n, _) -> "`" ++ n ++ "`") vs)
+
 
 mkAccount as = Account { aID = fromSql (as !! 0)
                        , aUsername = fromSql (as !! 1)
