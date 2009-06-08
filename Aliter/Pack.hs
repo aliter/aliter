@@ -17,9 +17,11 @@ module Aliter.Pack (
 ) where
 
 import Aliter.Hex
-import Aliter.Util (rpad)
+import Aliter.Util (rpad, toBS, fromBS)
 
 import Data.Char (isDigit, intToDigit)
+import Data.Word
+import qualified Data.ByteString.Lazy as B
 
 
 data Pack = UChar Char
@@ -96,8 +98,8 @@ instance Packable Double where
     fromPack = fromUDouble
     toPack = UDouble
 
-unpack :: String -> String -> [Pack]
-unpack _ [] = []
+unpack :: String -> B.ByteString -> [Pack]
+unpack _ ss | ss == B.empty = []
 unpack [] _ = []
 unpack ('x':xs) ss = unpack xs (hDrop 1 ss)
 unpack ('c':xs) ss = UChar (toEnum $ hToInt (hHead ss)) : unpack xs (hTail ss)
@@ -116,35 +118,35 @@ unpack ('d':xs) ss = UInt (hToInt (hTake 8 ss)) : unpack xs (hDrop 8 ss)
 unpack ('s':xs) ss = UChar (toEnum $ hToInt (hHead ss)) : unpack xs (hTail ss)
 unpack ('p':xs) ss = UChar (toEnum $ hToInt (hHead ss)) : unpack xs (hTail ss)
 unpack (x:xs) ss | isDigit x = if target == 's'
-                                  then UString (map fromUChar rep) : unpack remain (hDrop offset ss)
-                                  else rep ++ unpack remain (hDrop offset ss)
+                                  then UString (map fromUChar rep) : unpack remain (hDrop (fromIntegral offset) ss)
+                                  else rep ++ unpack remain (hDrop (fromIntegral offset) ss)
                  | otherwise = error ("Unknown token: " ++ show x)
                  where
                      split = span isDigit (x:xs)
-                     num = read (fst split) :: Int
+                     num = read (fst split)
                      target = head (snd split)
                      remain = tail (snd split)
                      offset = len target * num
                      rep = unpack (replicate num target) ss
 
-pack :: String -> [Pack] -> String
-pack [] _ = []
-pack ('x':xs) us = "00" ++ pack xs us
-pack ('c':xs) ((UChar c):us) = intToH 1 (fromEnum c) ++ pack xs us
-pack ('b':xs) ((UInt i):us) = intToH 1 i ++ pack xs us
-pack ('B':xs) ((UInt i):us) = intToH 1 i ++ pack xs us
-pack ('h':xs) ((UInt i):us) = intToH 2 i ++ pack xs us
-pack ('H':xs) ((UInt i):us) = intToH 2 i ++ pack xs us
-pack ('i':xs) ((UInt i):us) = intToH 4 i ++ pack xs us
-pack ('I':xs) ((UInt i):us) = intToH 4 i ++ pack xs us
-pack ('l':xs) ((UInteger i):us) = intToH 4 i ++ pack xs us
-pack ('L':xs) ((UInteger i):us) = intToH 4 i ++ pack xs us
-pack ('q':xs) ((UInteger i):us) = intToH 8 i ++ pack xs us
-pack ('Q':xs) ((UInteger i):us) = intToH 8 i ++ pack xs us
-pack ('s':xs) ((UChar c):us) = intToH 1 (fromEnum c) ++ pack xs us
-pack ('p':xs) ((UChar c):us) = intToH 1 (fromEnum c) ++ pack xs us
+pack :: String -> [Pack] -> B.ByteString
+pack [] _ = B.empty
+pack ('x':xs) us = B.pack [48, 48] `B.append` pack xs us
+pack ('c':xs) ((UChar c):us) = intToH 1 (fromEnum c) `B.append` pack xs us
+pack ('b':xs) ((UInt i):us) = intToH 1 i `B.append` pack xs us
+pack ('B':xs) ((UInt i):us) = intToH 1 i `B.append` pack xs us
+pack ('h':xs) ((UInt i):us) = intToH 2 i `B.append` pack xs us
+pack ('H':xs) ((UInt i):us) = intToH 2 i `B.append` pack xs us
+pack ('i':xs) ((UInt i):us) = intToH 4 i `B.append` pack xs us
+pack ('I':xs) ((UInt i):us) = intToH 4 i `B.append` pack xs us
+pack ('l':xs) ((UInteger i):us) = intToH 4 i `B.append` pack xs us
+pack ('L':xs) ((UInteger i):us) = intToH 4 i `B.append` pack xs us
+pack ('q':xs) ((UInteger i):us) = intToH 8 i `B.append` pack xs us
+pack ('Q':xs) ((UInteger i):us) = intToH 8 i `B.append` pack xs us
+pack ('s':xs) ((UChar c):us) = intToH 1 (fromEnum c) `B.append` pack xs us
+pack ('p':xs) ((UChar c):us) = intToH 1 (fromEnum c) `B.append` pack xs us
 pack (x:xs) (u:us) | isDigit x = if target == 's'
-                                    then pack (replicate num target) (map UChar (rpad num '\0' (fromUString u))) ++ pack remain us
+                                    then pack (replicate num target) (map UChar (rpad num '\0' (fromUString u))) `B.append` pack remain us
                                     else pack (replicate num target ++ remain) (u:us)
                                  where
                                      (n, r) = span isDigit (x:xs)
@@ -153,18 +155,25 @@ pack (x:xs) (u:us) | isDigit x = if target == 's'
                                      remain = tail r
 pack a b = error ("Cannot pack: " ++ show (a, b))
 
-packMany :: String -> [[Pack]] -> String
-packMany f [] = ""
-packMany f (v:vs) = pack f v ++ packMany f vs
+packMany :: String -> [[Pack]] -> B.ByteString
+packMany f [] = B.empty
+packMany f (v:vs) = pack f v `B.append` packMany f vs
+
+wIsDigit :: Word8 -> Bool
+wIsDigit w = w >= 47 && w <= 57
 
 -- Convert an IP address to a four-char string representation
 aton :: String -> String
-aton xs = unhex (aton' xs)
+aton xs = fromBS (unhex (aton' (toBS xs)))
           where
-              aton' [] = ""
-              aton' (x:xs) | isDigit x = intToH 1 (read (takeWhile isDigit (x:xs)) :: Int) ++ aton' (dropWhile isDigit xs)
-                           | otherwise = aton' xs
+              aton' x | x == B.empty = B.empty
+                      | wIsDigit (B.head x) = intToH 1 (read (fromBS $ B.takeWhile wIsDigit x) :: Int) `B.append` aton' (B.dropWhile wIsDigit (B.tail x))
+                      | otherwise = aton' (B.tail x)
+              {- aton' [] = "" -}
+              {- aton' (x:xs) | isDigit x = fromBS (intToH 1 (read (takeWhile isDigit (x:xs)) :: Int)) ++ aton' (dropWhile isDigit xs) -}
+                           {- | otherwise = aton' xs -}
 
+len :: Num a => Char -> a
 len 'x' = 1
 len 'c' = 1
 len 'b' = 1

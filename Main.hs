@@ -3,6 +3,7 @@ module Main where
 import Config.Main (connect, login, char, zone)
 
 import Aliter.Config
+import Aliter.GRF
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Objects
@@ -64,7 +65,7 @@ startServer l p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on por
 
 waitPackets :: Log -> Packets -> IO ()
 waitPackets l c = do (w, p, vs) <- readChan c
-                     logMsg l Debug (red (intToH 2 p) ++ ": " ++ show vs)
+                     logMsg l Debug (red (fromBS $ intToH 2 p) ++ ": " ++ show vs)
                      handle w p vs
                      waitPackets l c
 
@@ -94,10 +95,12 @@ runConn w h c = do packet <- hGet h 2
 
                    case packet of
                         Nothing -> return ()
-                        Just p -> do case lookup (hToInt (hex p)) received of
-                                          Nothing -> logMsg (sLog state) Warning ("Unknown packet " ++ red (hex p))
+                        Just p -> do let bs = toBS p
+                                     case lookup (hToInt (hex bs)) received of
+                                          Nothing -> logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS $ hex bs))
                                           Just (f, names) -> do rest <- hGet h (needed f)
                                                                 case rest of
-                                                                     Nothing -> logMsg (sLog state) Warning ("Incomplete packet " ++ red (hex p) ++ "; ignored")
-                                                                     Just cs -> writeChan c (w, hToInt (hex p), zip names (unpack f (hex cs)))
+                                                                     Nothing -> logMsg (sLog state) Warning ("Incomplete packet " ++ red (fromBS $ hex bs) ++ "; ignored")
+                                                                     Just cs -> do let bcs = toBS cs
+                                                                                   writeChan c (w, hToInt (hex bs), zip names (unpack f (hex bcs)))
                                      runConn w h c

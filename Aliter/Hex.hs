@@ -9,63 +9,77 @@ module Aliter.Hex (
     hTail
 ) where
 
-import Aliter.Util (lpad)
+import Aliter.Util (lpad, toBS)
 
+import Data.Char (ord)
+import Data.Int (Int64)
+import Data.Word
 import Numeric (showHex)
+import qualified Data.ByteString.Lazy as B
 
 
-hex :: String -> String
-hex s = concatMap bit s
+hex :: B.ByteString -> B.ByteString
+hex s = B.concatMap bit s
         where
-            ch = "0123456789ABCDEF"
-            bit c = [ch !! (fromEnum c `div` 16), ch !! (fromEnum c `mod` 16)]
+            ch = map (fromIntegral . ord) "0123456789ABCDEF" :: [Word8]
+            bit c = B.pack [ch !! (fromEnum c `div` 16), ch !! (fromEnum c `mod` 16)]
 
-unhex :: String -> String
-unhex [] = []
-unhex (a:b:r) = toEnum ((h a * 16) + h b) : unhex r
+unhex :: B.ByteString -> B.ByteString
+unhex b | b == B.empty = B.empty
+unhex b = ((h fst * 16) + h snd) `B.cons` unhex rest
+          where
+              fst = B.head b
+              snd = b `B.index` 1
+              rest = B.tail . B.tail $ b
 
-h '0' = 0
-h '1' = 1
-h '2' = 2
-h '3' = 3
-h '4' = 4
-h '5' = 5
-h '6' = 6
-h '7' = 7
-h '8' = 8
-h '9' = 9
-h 'A' = 10
-h 'B' = 11
-h 'C' = 12
-h 'D' = 13
-h 'E' = 14
-h 'F' = 15
-h 'a' = 10
-h 'b' = 11
-h 'c' = 12
-h 'd' = 13
-h 'e' = 14
-h 'f' = 15
+h :: Word8 -> Word8
+h 48 = 0 -- '0' ..
+h 49 = 1
+h 50 = 2
+h 51 = 3
+h 52 = 4
+h 53 = 5
+h 54 = 6
+h 55 = 7
+h 56 = 8
+h 57 = 9
+h 65 = 10 -- 'A' ..
+h 66 = 11
+h 67 = 12
+h 68 = 13
+h 69 = 14
+h 70 = 15
+h 97 = 10 -- 'a' ..
+h 98 = 11
+h 99 = 12
+h 100 = 13
+h 101 = 14
+h 102 = 15
 h a = error ("Cannot get hex value of " ++ show a)
 
-intToH :: Integral a => Int -> a -> String
-intToH l i = swapEndian $ lpad (l * 2) '0' (showHex i "")
+intToH :: Integral a => Int -> a -> B.ByteString
+intToH l i = swapEndian $ toBS $ lpad (l * 2) '0' (showHex i "")
 
-hToInt :: Num a => String -> a
+hToInt :: Num a => B.ByteString -> a
 hToInt s = hToInt' s 0
            where
-               hToInt' [] _ = 0
-               hToInt' (a:b:cs) n = (h a * (16 ^ 1) + h b) * 16 ^ n + (hToInt' cs (n + 2))
+               hToInt' s _ | s == B.empty = 0
+               hToInt' s n = (fromIntegral (h fst) * (16 ^ 1) + fromIntegral (h snd)) * 16 ^ n + (hToInt' rest (n + 2))
+                             where
+                                 fst = B.head s
+                                 snd = s `B.index` 1
+                                 rest = B.tail . B.tail $ s
 
-swapEndian [] = []
-swapEndian x = swapEndian (drop 2 x) ++ take 2 x
+swapEndian :: B.ByteString -> B.ByteString
+swapEndian x | x == B.empty = B.empty
+             | otherwise = swapEndian (B.drop 2 x) `B.append` B.take 2 x
 
 hHead = hTake 1
 hTail = hDrop 1
 
-hTake :: Int -> String -> String
-hTake n s = take (n * 2) s
+hTake :: Int64 -> B.ByteString -> B.ByteString
+hTake n s = B.take (n * 2) s
 
-hDrop :: Int -> String -> String
-hDrop n s = drop (n * 2) s
+hDrop :: Int64 -> B.ByteString -> B.ByteString
+hDrop n s = B.drop (n * 2) s
 

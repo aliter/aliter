@@ -11,7 +11,11 @@ module Aliter.Util (
     setLoginIDs,
     getLoginIDs,
     deleteLoginIDs,
-    hGet
+    hGet,
+    toWord8,
+    fromWord8,
+    toBS,
+    fromBS
 ) where
 
 import Data.Bits
@@ -24,6 +28,7 @@ import Debug.Trace
 import System.IO
 import System.IO.Unsafe
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as L
 
 
 -- Debugging
@@ -58,6 +63,20 @@ getTick :: IO Integer
 getTick = do t <- readIORef tick
              writeIORef tick (t + 1)
              return (t + 1)
+
+
+-- To and from ByteStrings
+toWord8 :: String -> [Word8]
+toWord8 = map (fromIntegral . ord)
+
+fromWord8 :: [Word8] -> String
+fromWord8 = map (chr . fromIntegral)
+
+toBS :: String -> L.ByteString
+toBS = L.pack . toWord8
+
+fromBS :: L.ByteString -> String
+fromBS = fromWord8 . L.unpack
 
 
 -- Positions

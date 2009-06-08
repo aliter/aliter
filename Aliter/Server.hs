@@ -62,7 +62,7 @@ handle w 0xa7 vs = do state <- readIORef w
 
                       logMsg (sLog state) Debug ("Walking from " ++ red (show (fromX, fromY)) ++ " to " ++ red (show (toX, toY)))
 handle w n as = do state <- readIORef w
-                   logMsg (sLog state) Warning ("Not sure how to handle packet " ++ red (intToH 2 n))
+                   logMsg (sLog state) Warning ("Not sure how to handle packet " ++ red (fromBS $ intToH 2 n))
 
 updateActor :: IORef State -> Character -> IO ()
 updateActor w c = do state <- readIORef w

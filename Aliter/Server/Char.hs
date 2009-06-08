@@ -13,7 +13,8 @@ import Aliter.Util
 import Data.IORef
 import Data.Maybe (fromJust)
 import Database.HDBC
-import Network.Socket hiding (Debug)
+import Network.Socket hiding (Debug, send, sendTo, recv, recvFrom)
+import Network.Socket.ByteString.Lazy hiding (getContents)
 import System.IO
 
 
