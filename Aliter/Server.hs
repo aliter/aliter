@@ -47,7 +47,8 @@ handle w 0x436 vs = Z.identify w
                                (get "loginIDa" vs)
                                (get "gender" vs)
 handle w 0x8c vs = do state <- readIORef w
-                      let map = cMap (sActor state)
+                      char <- readIORef (sActor state)
+                      let map = cMap char
                           id = get "actorID" vs :: Integer
 
                       maps <- readIORef mapSess
@@ -60,13 +61,14 @@ handle w 0x8c vs = do state <- readIORef w
                                                           sendPacket (sClient state) 0x95 [UInteger id, UString (cName char)]
                                                           return ()
 handle w 0xa7 vs = do state <- readIORef w
+                      char <- readIORef (sActor state)
                       tick <- getTick
 
                       maps <- readIORef mapSess
                       let (toX, toY, _) = decodePosition (getRaw "position" vs)
-                          fromMap = cMap (sActor state)
-                          fromX = cX (sActor state)
-                          fromY = cY (sActor state)
+                          fromMap = cMap char
+                          fromX = cX char
+                          fromY = cY char
 
                       map <- readIORef (fromJust (lookup fromMap maps))
 
@@ -88,21 +90,23 @@ handle w n as = do state <- readIORef w
 walkLoop :: IORef State -> (Int, Int) -> [(Int, Int)] -> IO ()
 walkLoop w _ [] = return ()
 walkLoop w (fX, fY) ((tX, tY):ps) = do state <- readIORef w
+                                       char <- readIORef (sActor state)
                                        tick <- getTick
                                        sendPacket (sClient state) 0x87 [ UInteger (aID (sAccount state))
                                                                        , UString (encodePositionMove fX fY tX tY)
                                                                        , UInteger tick
                                                                        ]
-                                       updateActor w ((sActor state) { cX = tX, cY = tY })
+                                       updateActor w (char { cX = tX, cY = tY })
                                        logMsg (sLog state) Debug ("Walking from " ++ red (show (fX, fY)) ++ " to " ++ red (show (tX, tY)))
                                        threadDelay (150 * 1000)
                                        walkLoop w (tX, tY) ps
 
 updateActor :: IORef State -> Character -> IO ()
 updateActor w c = do state <- readIORef w
+                     charref <- newIORef c
                      writeIORef w (State { sClient = sClient state
                                          , sLog = sLog state
                                          , sAccount = sAccount state
-                                         , sActor = c
+                                         , sActor = charref
                                          })
 

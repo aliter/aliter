@@ -27,7 +27,7 @@ data State = InitState { sClient :: Socket
            | State { sClient :: Socket
                    , sLog :: Log
                    , sAccount :: Account
-                   , sActor :: Character
+                   , sActor :: IORef Character -- IORef so one ref in both the state and the map session can point to the same thing
                    }
 
 data Account = Account { aID :: Integer

@@ -22,10 +22,12 @@ identify w id c a g = do state <- readIORef w
                          if valid && acc /= Nothing && char /= Nothing
                             then do let fromA = fromJust acc
                                     let fromC = fromJust char
+
+                                    charref <- newIORef fromC
                                     writeIORef w (State { sClient = sClient state
                                                         , sLog = sLog state
                                                         , sAccount = fromA
-                                                        , sActor = fromC
+                                                        , sActor = charref
                                                         })
 
                                     logMsg (sLog state) Debug ("Acknowledged zone access for `" ++ green (show a) ++ "'")
@@ -37,7 +39,6 @@ identify w id c a g = do state <- readIORef w
                                     sess <- readIORef mapSess
                                     let mapref = fromJust (lookup (cMap fromC) sess)
                                     map <- readIORef mapref
-                                    charref <- newIORef fromC
                                     writeIORef mapref (map { players = (aID fromA, charref) : (players map) })
 
                                     -- Send successful packet
