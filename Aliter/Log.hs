@@ -2,6 +2,7 @@ module Aliter.Log (
     Level(..),
     Log,
     logMsg,
+    prettyLevel,
     black,
     red,
     green,
@@ -16,13 +17,20 @@ import Control.Concurrent
 import System.Console.ANSI
 
 
-data Level = Error | Warning | Debug | Normal
+data Level = Error | Warning | Debug | Normal | Update Level
              deriving (Eq, Show)
 
 type Log = Chan (Level, String)
 
 logMsg :: Log -> Level -> String -> IO ()
 logMsg c l s = writeChan c (l, s)
+
+prettyLevel :: Level -> String
+prettyLevel Error = red "ERROR  "
+prettyLevel Warning = yellow "WARNING"
+prettyLevel Debug = cyan "DEBUG  "
+prettyLevel Normal = green "STATUS "
+prettyLevel (Update l) = "\ESC[A\ESC[2K" ++ prettyLevel l
 
 color :: String -> Color -> String
 color s c = setSGRCode [SetColor Foreground Dull c] ++ s ++ setSGRCode [Reset]

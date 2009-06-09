@@ -135,4 +135,3 @@ hGet h i = do done <- hIsEOF h
                               Nothing -> return Nothing
                               Just cs -> return (Just (c : cs))
 
-

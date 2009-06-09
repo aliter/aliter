@@ -99,8 +99,8 @@ instance Packable Double where
     toPack = UDouble
 
 unpack :: String -> B.ByteString -> [Pack]
-unpack _ ss | ss == B.empty = []
 unpack [] _ = []
+unpack f ss | ss == B.empty = error ("Leftover: " ++ f)
 unpack ('x':xs) ss = unpack xs (hDrop 1 ss)
 unpack ('c':xs) ss = UChar (toEnum $ hToInt (hHead ss)) : unpack xs (hTail ss)
 unpack ('b':xs) ss = UInt (hToInt (hHead ss)) : unpack xs (hTail ss)

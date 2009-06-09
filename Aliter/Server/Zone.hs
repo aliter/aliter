@@ -1,6 +1,7 @@
 module Aliter.Server.Zone where
 
 import Aliter.Log
+import Aliter.Maps (mapSess)
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
@@ -19,10 +20,12 @@ identify w id c a g = do state <- readIORef w
                          valid <- authIDs
 
                          if valid && acc /= Nothing && char /= Nothing
-                            then do writeIORef w (State { sClient = sClient state
+                            then do let fromA = fromJust acc
+                                    let fromC = fromJust char
+                                    writeIORef w (State { sClient = sClient state
                                                         , sLog = sLog state
-                                                        , sAccount = fromJust acc
-                                                        , sActor = fromJust char
+                                                        , sAccount = fromA
+                                                        , sActor = fromC
                                                         })
 
                                     logMsg (sLog state) Debug ("Acknowledged zone access for `" ++ green (show a) ++ "'")
@@ -30,9 +33,16 @@ identify w id c a g = do state <- readIORef w
                                     -- Acknowledge connection
                                     sendPacket (sClient state) 0x283 [UInteger a]
 
+                                    -- Write character to map session
+                                    sess <- readIORef mapSess
+                                    let mapref = fromJust (lookup (cMap fromC) sess)
+                                    map <- readIORef mapref
+                                    charref <- newIORef fromC
+                                    writeIORef mapref (map { players = (aID fromA, charref) : (players map) })
+
                                     -- Send successful packet
                                     tick <- getTick
-                                    sendPacket (sClient state) 0x73 [UInteger tick, UString (encodePosition 53 111 0)]
+                                    sendPacket (sClient state) 0x73 [UInteger tick, UString (encodePosition (cX fromC) (cY fromC) 0)]
 
                                     return ()
                             else do logMsg (sLog state) Warning ("Map login failed for " ++ red (show id) ++": " ++ show (valid, acc /= Nothing, char /= Nothing))

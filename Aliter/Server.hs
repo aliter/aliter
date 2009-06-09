@@ -2,6 +2,7 @@ module Aliter.Server where
 
 import Aliter.Hex
 import Aliter.Log
+import Aliter.Maps
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
@@ -9,6 +10,7 @@ import Aliter.Util
 
 import Control.Concurrent
 import Data.IORef
+import Data.Maybe (fromJust)
 import Network.Socket hiding (Debug)
 import System.IO.Unsafe
 import qualified Aliter.Server.Login as L
@@ -45,24 +47,56 @@ handle w 0x436 vs = Z.identify w
                                (get "loginIDa" vs)
                                (get "gender" vs)
 handle w 0x8c vs = do state <- readIORef w
-                      sendPacket (sClient state) 0x95 [UInteger (get "actorID" vs), UString "NOT POOP BUTT"]
-                      return ()
+                      let map = cMap (sActor state)
+                          id = get "actorID" vs :: Integer
+
+                      maps <- readIORef mapSess
+                      case lookup map maps of
+                           Nothing -> return ()
+                           Just m -> do m <- readIORef m
+                                        case lookup id (players m) of
+                                             Nothing -> return ()
+                                             Just c -> do char <- readIORef c
+                                                          sendPacket (sClient state) 0x95 [UInteger id, UString (cName char)]
+                                                          return ()
 handle w 0xa7 vs = do state <- readIORef w
                       tick <- getTick
+
+                      maps <- readIORef mapSess
                       let (toX, toY, _) = decodePosition (getRaw "position" vs)
-                      let fromX = cX (sActor state)
-                      let fromY = cY (sActor state)
+                          fromMap = cMap (sActor state)
+                          fromX = cX (sActor state)
+                          fromY = cY (sActor state)
 
-                      sendPacket (sClient state) 0x87 [ UInteger (aID (sAccount state))
-                                                      , UString (encodePositionMove fromX fromY toX toY)
-                                                      , UInteger tick
-                                                      ]
+                      map <- readIORef (fromJust (lookup fromMap maps))
 
-                      updateActor w ((sActor state) { cX = toX, cY = toY })
+                      let path = pathfind map (fromX, fromY) (toX, toY)
 
-                      logMsg (sLog state) Debug ("Walking from " ++ red (show (fromX, fromY)) ++ " to " ++ red (show (toX, toY)))
+                      logMsg (sLog state) Debug ("Optimal path: " ++ yellow (show path))
+
+                      forkIO (walkLoop w (head path) (tail path))
+                      return ()
+
+handle w 0x89 _ = do state <- readIORef w
+                     tick <- getTick
+                     sendPacket (sClient state) 0x7f [UInteger tick]
+                     logMsg (sLog state) Debug ("Syncing... " ++ red (show tick))
+                     return ()
 handle w n as = do state <- readIORef w
                    logMsg (sLog state) Warning ("Not sure how to handle packet " ++ red (fromBS $ intToH 2 n))
+
+walkLoop :: IORef State -> (Int, Int) -> [(Int, Int)] -> IO ()
+walkLoop w _ [] = return ()
+walkLoop w (fX, fY) ((tX, tY):ps) = do state <- readIORef w
+                                       tick <- getTick
+                                       sendPacket (sClient state) 0x87 [ UInteger (aID (sAccount state))
+                                                                       , UString (encodePositionMove fX fY tX tY)
+                                                                       , UInteger tick
+                                                                       ]
+                                       updateActor w ((sActor state) { cX = tX, cY = tY })
+                                       logMsg (sLog state) Debug ("Walking from " ++ red (show (fX, fY)) ++ " to " ++ red (show (tX, tY)))
+                                       threadDelay (150 * 1000)
+                                       walkLoop w (tX, tY) ps
 
 updateActor :: IORef State -> Character -> IO ()
 updateActor w c = do state <- readIORef w

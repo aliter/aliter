@@ -2,13 +2,19 @@ module Aliter.Objects where
 
 import Config.Main (connect)
 
+import Aliter.Hex
 import Aliter.Log
-import Aliter.Util (dump)
+import Aliter.Pack
+import Aliter.Util (dump, fromBS)
 
+import Codec.Compression.Zlib
+import Data.IORef (IORef)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Database.HDBC
 import Network.Socket (Socket)
+import System.IO
+import qualified Data.ByteString.Lazy as B
 
 
 data State = InitState { sClient :: Socket
@@ -89,17 +95,16 @@ data Map = Map { name :: String
                , width :: Int
                , height :: Int
                , tiles :: [[Int]]
-               , players :: [(Integer, Character)]
+               , players :: [(Integer, IORef Character)]
                {- , monsters :: [Monster] -}
                {- , npcs :: [NPC] -}
                {- , warps :: [Warp] -}
                }
+               deriving (Eq)
 
 
-pathfind :: Map -> Int -> Int -> Int -> Int -> [(Int, Int, Int)]
-pathfind m x y toX toY | x == toX && y == toY = []
-                       | otherwise = [] -- TODO
-
+instance Show Map where
+    show m = "Map { name = " ++ show (name m) ++ ", width = " ++ show (width m) ++ ", height = " ++ show (height m) ++ ", ... }"
 
 
 getAccount :: Integer -> IO (Maybe Account)

@@ -1,9 +1,9 @@
 module Main where
 
-import Config.Main (connect, login, char, zone)
+import Config.Main (connect, login, char, zone, maps)
 
 import Aliter.Config
-import Aliter.GRF
+import Aliter.Maps
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Objects
@@ -17,7 +17,6 @@ import Control.Monad (replicateM)
 import Data.Function (fix)
 import Data.IORef
 import Network.Socket hiding (Debug)
-import System.Console.ANSI
 import System.IO
 
 
@@ -25,16 +24,16 @@ type Packets = Chan (IORef State, Int, [(String, Pack)])
 
 main = do chan <- newChan -- Logging channel
 
-          forkIO (startLogin chan)
-          startChars chan
-          forkIO (startZone chan)
+          forkIO (do loadMaps chan maps
+                     logMsg chan (Update Normal) "Maps loaded."
+
+                     forkIO (startLogin chan)
+                     startChars chan
+                     forkIO (startZone chan)
+                     return ())
 
           fix (\loop -> do (t, msg) <- readChan chan
-                           case t of
-                                Error -> putStrLn (red "ERROR" ++ "  : " ++ msg)
-                                Warning -> putStrLn (yellow "WARNING" ++ ": " ++ msg)
-                                Debug -> putStrLn (cyan "DEBUG" ++ "  : " ++ msg)
-                                Normal -> putStrLn (green "STATUS" ++ " : " ++ msg)
+                           putStrLn (prettyLevel t ++ ": " ++ msg)
                            loop)
 
 

@@ -7,7 +7,7 @@ import Aliter.Log
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
-import Aliter.Util (debug, passwordHash, setLoginIDs, getLoginIDs)
+import Aliter.Util (passwordHash, setLoginIDs, getLoginIDs)
 
 import Data.IORef
 import Data.DateTime (getCurrentTime, toSqlString)

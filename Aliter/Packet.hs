@@ -10,7 +10,7 @@ module Aliter.Packet (
 
 import Aliter.Hex
 import Aliter.Pack
-import Aliter.Util (debug, fromBS)
+import Aliter.Util (fromBS)
 
 import Data.Int (Int64)
 import Network.Socket hiding (send, sendTo, recv, recvFrom)
@@ -35,6 +35,7 @@ sent = [
 
        -- Zone server
        , (0x73, ("l3sxx", [])) -- Login successful
+       , (0x7f, ("l", [])) -- Sync
        , (0x87, ("l6sl", [])) -- Actor movement
        , (0x95, ("l24s", []))
        , (0x283, ("l", [])) -- Acknowledge connection
@@ -64,6 +65,7 @@ received = [
            , (0xa7, ("xxx3s", ["position"])) -- Walk request
            , (0xf3, ("h!", ["packetLen", "data"])) -- Speech
            , (0x14d, ("", [])) -- Request guild status
+           , (0x18a, ("xx", [])) -- Quit
            , (0x14f, ("l", ["page"])) -- Request guild info for given page
            , (0x21d, ("l", ["effect"])) -- Client's /effect state
            , (0x436, ("lll4xB", ["accountID", "characterID", "loginIDa", "gender"])) -- Request connection
