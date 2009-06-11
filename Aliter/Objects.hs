@@ -5,7 +5,7 @@ import Config.Main (connect)
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Pack
-import Aliter.Util (dump, fromBS)
+import Aliter.Util (fromBS)
 
 import Codec.Compression.Zlib
 import Data.IORef (IORef)
@@ -27,8 +27,9 @@ data State = InitState { sClient :: Socket
            | State { sClient :: Socket
                    , sLog :: Log
                    , sAccount :: Account
-                   , sActor :: IORef Character -- IORef so one ref in both the state and the map session can point to the same thing
+                   , sActor :: Character
                    }
+           deriving (Eq, Show)
 
 data Account = Account { aID :: Integer
                        , aUsername :: String
@@ -95,7 +96,7 @@ data Map = Map { name :: String
                , width :: Int
                , height :: Int
                , tiles :: [[Int]]
-               , players :: [(Integer, IORef Character)]
+               , players :: [(Integer, IORef State)]
                {- , monsters :: [Monster] -}
                {- , npcs :: [NPC] -}
                {- , warps :: [Warp] -}

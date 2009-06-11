@@ -33,7 +33,7 @@ import qualified Data.ByteString.Lazy as L
 
 -- Debugging
 dump s x = trace (s ++ ": " ++ show x) (return ())
-debug x = trace (show x) x
+debug s x = trace (s ++ ": " ++ show x) x
 
 
 -- Padding

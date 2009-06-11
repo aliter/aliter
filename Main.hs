@@ -16,6 +16,7 @@ import Control.Concurrent
 import Control.Monad (replicateM)
 import Data.Function (fix)
 import Data.IORef
+import Data.Maybe (fromJust)
 import Network.Socket hiding (Debug)
 import System.IO
 
@@ -94,12 +95,22 @@ runConn w h c = do packet <- hGet h 2
 
                    case packet of
                         Nothing -> return ()
-                        Just p -> do let bs = toBS p
-                                     case lookup (hToInt (hex bs)) received of
-                                          Nothing -> logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS $ hex bs))
-                                          Just (f, names) -> do rest <- hGet h (needed f)
-                                                                case rest of
-                                                                     Nothing -> logMsg (sLog state) Warning ("Incomplete packet " ++ red (fromBS $ hex bs) ++ "; ignored")
-                                                                     Just cs -> do let bcs = toBS cs
-                                                                                   writeChan c (w, hToInt (hex bs), zip names (unpack f (hex bcs)))
-                                     runConn w h c
+                        Just p -> do let p = fromJust packet
+                                         bs = toBS p
+                                         hexed = hex bs
+                                      
+                                     case lookup (hToInt hexed) received of
+                                          Nothing -> logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS hexed))
+                                          Just (f, names) -> handleP state p f names
+                where
+                    handleP s p f ns = do let bs = toBS p
+                                              hexed = hex bs
+                                          
+                                          need <- neededRec h (hToInt hexed) f
+                                          rest <- hGet h need
+
+                                          case rest of
+                                               Nothing -> logMsg (sLog s) Warning ("Incomplete packet " ++ red (fromBS hexed))
+                                               Just cs -> writeChan c (w, hToInt hexed, zip ns (unpack f . hex . toBS $ cs))
+
+                                          runConn w h c

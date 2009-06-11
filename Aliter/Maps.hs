@@ -4,17 +4,24 @@ module Aliter.Maps (
     mapSess,
     pathfind,
     findPath,
-    keyPoints
+    keyPoints,
+    playersInSight,
+    otherPlayersInSight,
+    playersOnMap,
+    otherPlayersOnMap,
+    registerActorView,
+    showActors
 ) where
 
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Objects
 import Aliter.Pack
+import Aliter.Packet
 import Aliter.Util
 
 import Codec.Compression.Zlib
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, filterM)
 import Data.Char (chr, ord)
 import Data.Int (Int64)
 import Data.IORef
@@ -196,3 +203,159 @@ keyPoints ((fX, fY):(tX, tY):cs) = (fX, fY) : keyPoints' (tX - fX, tY - fY) (tX,
         keyPoints' (dX, dY) (pX, pY) ((tX, tY):cs)
             | tX - pX /= dX || tY - pY /= dY = (tX, tY) : keyPoints' (tX - pX, tY - pY) (tX, tY) cs
             | otherwise = keyPoints' (dX, dY) (tX, tY) cs
+
+
+playersInSight :: String -> Int -> Int -> IO [IORef State]
+playersInSight n x y = do sess <- readIORef mapSess
+                          case lookup n sess of
+                               Nothing -> return [] -- Map not loaded
+                               Just m -> do m' <- readIORef m
+                                            filterChars (players m')
+                       where
+                           filterChars [] = return []
+                           filterChars ((_, w):ws) = do state <- readIORef w
+                                                        rest <- filterChars ws
+                                                        if inRange state x y
+                                                          then return (w : rest)
+                                                          else return rest
+
+otherPlayersInSight :: Integer -> String -> Int -> Int -> IO [IORef State]
+otherPlayersInSight id n x y = do sess <- readIORef mapSess
+                                  case lookup n sess of
+                                       Nothing -> return [] -- Map not loaded
+                                       Just m -> do m' <- readIORef m
+                                                    filterChars (players m')
+                               where
+                                   filterChars [] = return []
+                                   filterChars ((_, w):ws) = do state <- readIORef w
+                                                                rest <- filterChars ws
+                                                                if aID (sAccount state) /= id && inRange state x y
+                                                                  then return (w : rest)
+                                                                  else return rest
+
+inRange :: State -> Int -> Int -> Bool
+inRange w x y = ((cX (sActor w)) - x < 17 &&
+                 (cX (sActor w)) - x > -17 &&
+                 (cY (sActor w)) - y < 17 &&
+                 (cY (sActor w)) - y > -17)
+
+playersOnMap :: String -> IO [IORef State]
+playersOnMap n = do sess <- readIORef mapSess
+                    case lookup n sess of
+                         Nothing -> return [] -- Map not loaded
+                         Just m -> do m' <- readIORef m
+                                      return (map snd (players m'))
+
+otherPlayersOnMap :: Integer -> String -> IO [IORef State]
+otherPlayersOnMap id n = do sess <- readIORef mapSess
+                            case lookup n sess of
+                                 Nothing -> return [] -- Map not loaded
+                                 Just m -> do m' <- readIORef m
+                                              return (map snd (filter ((/= id) . fst) (players m')))
+
+registerActorView :: IORef State -> IO ()
+registerActorView w = do s <- readIORef w
+                         
+                         let a = sAccount s
+                             c = sActor s
+                        
+                         others <- otherPlayersOnMap (cAccountID c) (cMap c)--InSight (cAccountID c) (cMap c) (cX c) (cY c)
+                         all <- playersInSight (cMap c) (cX c) (cY c)
+                         sendPacketTo others
+                                      0x1d7
+                                      [ UInteger (cAccountID c)
+                                      , UInt 2 -- Equip
+                                      , UInt (cViewWeapon c)
+                                      , UInt (cViewShield c)
+                                      ]
+
+                         sendPacketTo all
+                                      0x195
+                                      [ UInteger (cAccountID c)
+                                      , UString (cName c)
+                                      , UString "Party Name"
+                                      , UString "Guild Name"
+                                      , UString "Tester"
+                                      ]
+
+                         sendPacketTo others
+                                      0x22b
+                                      [ UInteger (cAccountID c)
+                                      , UInt 150 -- TODO: Make these real.
+                                      , UInt 0
+                                      , UInt 0
+                                      , UInt 0
+                                      , UInt (cJob c)
+                                      , UInt (cHairStyle c)
+                                      , UInt (cViewWeapon c)
+                                      , UInt (cViewShield c)
+                                      , UInt (cViewHeadBot c)
+                                      , UInt (cViewHeadTop c)
+                                      , UInt (cViewHeadMid c)
+                                      , UInt (cHairColor c)
+                                      , UInt (cClothesColor c)
+                                      , UInt 0 -- Test this?
+                                      , UInteger 0 -- guild ID
+                                      , UInt 0 -- guild emblem
+                                      , UInt 0 -- Manners
+                                      , UInt 0 -- Effect
+                                      , UInt 0 -- Karma
+                                      , UInt (aGender a)
+                                      , UString (encodePosition (cX c) (cY c) 0 ++ "\x05\x05")
+                                      , UInt (cBLevel c)
+                                      ]
+
+showActors :: IORef State -> IO ()
+showActors w = do s <- readIORef w
+                  
+                  let a = sAccount s
+                      c = sActor s
+                      p = sClient s
+
+                  others <- otherPlayersOnMap (aID a) (cMap c)--InSight (aID a) (cMap c) (cX c) (cY c)
+
+                  mapM_ (\w -> do state <- readIORef w
+
+                                  let a' = sAccount state
+                                      c' = sActor state
+
+                                  sendPacket p 0x1d7 [ UInteger (cAccountID c')
+                                                     , UInt 2
+                                                     , UInt (cViewWeapon c')
+                                                     , UInt (cViewShield c')
+                                                     ]
+
+                                  sendPacket p 0x195 [ UInteger (cAccountID c')
+                                                     , UString (cName c')
+                                                     , UString "Other Party"
+                                                     , UString "Other Guild"
+                                                     , UString "Other Position"
+                                                     ]
+
+                                  tick <- getTick
+                                  sendPacket p 0x22c [ UInteger (cAccountID c')
+                                                     , UInt 150 -- TODO: Make these real.
+                                                     , UInt 0
+                                                     , UInt 0
+                                                     , UInt 0
+                                                     , UInt (cJob c')
+                                                     , UInt (cHairStyle c')
+                                                     , UInt (cViewWeapon c')
+                                                     , UInt (cViewShield c')
+                                                     , UInt (cViewHeadBot c')
+                                                     , UInteger tick
+                                                     , UInt (cViewHeadTop c')
+                                                     , UInt (cViewHeadMid c')
+                                                     , UInt (cHairColor c')
+                                                     , UInt (cClothesColor c')
+                                                     , UInt 0 -- Test this?
+                                                     , UInteger 0 -- guild ID
+                                                     , UInt 0 -- guild emblem
+                                                     , UInt 0 -- Manners
+                                                     , UInt 0 -- Effect
+                                                     , UInt 0 -- Karma
+                                                     , UInt (aGender a')
+                                                     , UString (encodePosition (cX c') (cY c') 0 ++ "\x05\x05")
+                                                     , UInt (cBLevel c')
+                                                     ]) others
+

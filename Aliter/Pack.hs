@@ -11,8 +11,11 @@ module Aliter.Pack (
     Packable(..),
     pack,
     unpack,
+    packSub,
     packMany,
     needed,
+    neededAll,
+    neededSub,
     aton
 ) where
 
@@ -117,6 +120,8 @@ unpack ('f':xs) ss = UInt (hToInt (hTake 4 ss)) : unpack xs (hDrop 4 ss)
 unpack ('d':xs) ss = UInt (hToInt (hTake 8 ss)) : unpack xs (hDrop 8 ss)
 unpack ('s':xs) ss = UChar (toEnum $ hToInt (hHead ss)) : unpack xs (hTail ss)
 unpack ('p':xs) ss = UChar (toEnum $ hToInt (hHead ss)) : unpack xs (hTail ss)
+unpack ('!':xs) ss = UString (fromBS $ B.takeWhile (/= 0) (unhex ss)) : unpack xs (hex (B.tail (B.dropWhile (/= 0) (unhex ss))))
+unpack ('~':xs) ss = unpack xs ss -- Ignore ~ when unpacking since it is only used to determine the length of the packet when receiving it
 unpack (x:xs) ss | isDigit x = if target == 's'
                                   then UString (map fromUChar rep) : unpack remain (hDrop (fromIntegral offset) ss)
                                   else rep ++ unpack remain (hDrop (fromIntegral offset) ss)
@@ -145,6 +150,8 @@ pack ('q':xs) ((UInteger i):us) = intToH 8 i `B.append` pack xs us
 pack ('Q':xs) ((UInteger i):us) = intToH 8 i `B.append` pack xs us
 pack ('s':xs) ((UChar c):us) = intToH 1 (fromEnum c) `B.append` pack xs us
 pack ('p':xs) ((UChar c):us) = intToH 1 (fromEnum c) `B.append` pack xs us
+pack ('!':xs) ((UString s):us) = pack ((show (length s + 1)) ++ "s" ++ xs) (UString (s ++ "\0"):us)
+pack ('~':xs) us = intToH 2 (neededAll xs us + 4) `B.append` pack xs us
 pack (x:xs) (u:us) | isDigit x = if target == 's'
                                     then pack (replicate num target) (map UChar (rpad num '\0' (fromUString u))) `B.append` pack remain us
                                     else pack (replicate num target ++ remain) (u:us)
@@ -155,9 +162,27 @@ pack (x:xs) (u:us) | isDigit x = if target == 's'
                                      remain = tail r
 pack a b = error ("Cannot pack: " ++ show (a, b))
 
+packSub :: String -> [Pack] -> [(String, [[Pack]])] -> B.ByteString
+packSub [] _ _ = B.empty
+packSub ('~':xs) us ss = intToH 2 (neededSub xs us ss) `B.append` packSub xs us ss
+packSub ('?':xs) us ((f, ps):ss) = packMany f ps `B.append` packSub xs us ss
+packSub (x:xs) (u:us) ss = pack unit [u] `B.append` packSub remain us ss
+                         where
+                             unit = if isDigit x
+                                       then num ++ [target]
+                                       else [x]
+                             (num, r) = span isDigit (x:xs)
+                             target = head r
+                             remain = tail r
+
 packMany :: String -> [[Pack]] -> B.ByteString
 packMany f [] = B.empty
 packMany f (v:vs) = pack f v `B.append` packMany f vs
+
+neededSub :: String -> [Pack] -> [(String, [[Pack]])] -> Int
+neededSub f ps ss = neededAll f ps + neededSub' + 4 -- 4 = length of packet "identifier" (2) + length of length (2)
+                    where
+                        neededSub' = sum (map (\(n, pps) -> sum (map (neededAll n) pps)) ss)
 
 wIsDigit :: Word8 -> Bool
 wIsDigit w = w >= 47 && w <= 57
@@ -169,9 +194,6 @@ aton xs = fromBS (unhex (aton' (toBS xs)))
               aton' x | x == B.empty = B.empty
                       | wIsDigit (B.head x) = intToH 1 (read (fromBS $ B.takeWhile wIsDigit x) :: Int) `B.append` aton' (B.dropWhile wIsDigit (B.tail x))
                       | otherwise = aton' (B.tail x)
-              {- aton' [] = "" -}
-              {- aton' (x:xs) | isDigit x = fromBS (intToH 1 (read (takeWhile isDigit (x:xs)) :: Int)) ++ aton' (dropWhile isDigit xs) -}
-                           {- | otherwise = aton' xs -}
 
 len :: Num a => Char -> a
 len 'x' = 1
@@ -190,6 +212,7 @@ len 'f' = 4
 len 'd' = 8
 len 's' = 1
 len 'p' = 1
+len '~' = 2
 len a = error ("Cannot get length for token " ++ show a ++ ".")
 
 needed [] = 0
@@ -200,3 +223,15 @@ needed (x:xs) | isDigit x = len target * num + needed remain
                   num = read (fst split) :: Int
                   target = head (snd split)
                   remain = tail (snd split)
+
+neededAll :: String -> [Pack] -> Int
+neededAll [] _ = 0
+neededAll _ [] = 0
+neededAll ('!':xs) (UString s:us) = (length s + 1) + neededAll xs us
+neededAll (x:xs) (_:us) | isDigit x = len target * num + neededAll remain us
+                        | otherwise = len x + neededAll xs us
+                        where
+                            split = span isDigit (x:xs)
+                            num = read (fst split) :: Int
+                            target = head (snd split)
+                            remain = tail (snd split)

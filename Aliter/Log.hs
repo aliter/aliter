@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Aliter.Log (
     Level(..),
     Log,
@@ -21,6 +23,13 @@ data Level = Error | Warning | Debug | Normal | Update Level
              deriving (Eq, Show)
 
 type Log = Chan (Level, String)
+
+-- Largely useless, but good for debugging
+instance Show Log where
+    show _ = "<Log>"
+
+instance Eq Log where
+    (==) _ _ = True
 
 logMsg :: Log -> Level -> String -> IO ()
 logMsg c l s = writeChan c (l, s)

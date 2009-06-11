@@ -1,7 +1,7 @@
 module Aliter.Server.Zone where
 
 import Aliter.Log
-import Aliter.Maps (mapSess)
+import Aliter.Maps (mapSess, registerActorView, showActors)
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
@@ -23,11 +23,10 @@ identify w id c a g = do state <- readIORef w
                             then do let fromA = fromJust acc
                                     let fromC = fromJust char
 
-                                    charref <- newIORef fromC
                                     writeIORef w (State { sClient = sClient state
                                                         , sLog = sLog state
                                                         , sAccount = fromA
-                                                        , sActor = charref
+                                                        , sActor = fromC
                                                         })
 
                                     logMsg (sLog state) Debug ("Acknowledged zone access for `" ++ green (show a) ++ "'")
@@ -39,11 +38,17 @@ identify w id c a g = do state <- readIORef w
                                     sess <- readIORef mapSess
                                     let mapref = fromJust (lookup (cMap fromC) sess)
                                     map <- readIORef mapref
-                                    writeIORef mapref (map { players = (aID fromA, charref) : (players map) })
+                                    writeIORef mapref (map { players = (aID fromA, w) : (players map) })
 
                                     -- Send successful packet
                                     tick <- getTick
                                     sendPacket (sClient state) 0x73 [UInteger tick, UString (encodePosition (cX fromC) (cY fromC) 0)]
+
+                                    -- Say something
+                                    sendPacket (sClient state) 0x8e [UString "Welcome to Aliter!"]
+
+                                    registerActorView w
+                                    showActors w
 
                                     return ()
                             else do logMsg (sLog state) Warning ("Map login failed for " ++ red (show id) ++": " ++ show (valid, acc /= Nothing, char /= Nothing))

@@ -39,7 +39,14 @@ authorize w _ n p _ = do state <- readIORef w
 
                                            logMsg (sLog state) Normal ("Accepted connection of " ++ red n)
 
-                                           sendPacketSub (sClient state) 0x69 [UInteger lIDa, UInteger (aID a), UInteger lIDb, UInteger 0, UString "", UInt 0, UInt (aGender a)] [servers]
+                                           sendPacketSub (sClient state) 0x69 [ UInteger lIDa
+                                                                              , UInteger (aID a)
+                                                                              , UInteger lIDb
+                                                                              , UInteger 0
+                                                                              , UString ""
+                                                                              , UInt 0
+                                                                              , UInt (aGender a)
+                                                                              ] [servers]
                               Nothing -> do name <- getAccountBy [("username", toSql n)]
                                             case name of
                                                  Nothing -> sendPacket (sClient state) 0x6a [UInt 0, UString ""]
