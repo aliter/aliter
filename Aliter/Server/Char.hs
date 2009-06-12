@@ -1,6 +1,6 @@
 module Aliter.Server.Char where
 
-import Config.Main (zone)
+import qualified Config.Main C
 
 import Aliter.Config
 import Aliter.Hex
@@ -55,8 +55,8 @@ selectChar w n = do state <- readIORef w
                     case char of
                          Just c -> do sendPacket (sClient state) 0x71 [ UInteger (cID c)
                                                                       , UString (cMap c ++ ".gat")
-                                                                      , UString (aton (serverHost zone))
-                                                                      , UInt (fromIntegral (serverPort zone))
+                                                                      , UString (aton (serverHost C.zone))
+                                                                      , UInt (fromIntegral (serverPort C.zone))
                                                                       ]
 
                                       logMsg (sLog state) Debug ("Sending " ++ green (show (cID c)) ++ " to " ++ cyan "new_1-1.gat" ++ "...")

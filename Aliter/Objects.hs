@@ -1,6 +1,6 @@
 module Aliter.Objects where
 
-import Config.Main (connect)
+import qualified Config.Main as C
 
 import Aliter.Hex
 import Aliter.Log
@@ -109,14 +109,14 @@ instance Show Map where
 
 
 getAccount :: Integer -> IO (Maybe Account)
-getAccount id = do c <- connect
+getAccount id = do c <- C.connect
                    res <- quickQuery' c "SELECT * FROM accounts WHERE id = ? LIMIT 1" [toSql id]
                    case res of
                         [] -> return Nothing
                         [attr] -> return (Just $ mkAccount attr)
 
 getAccountBy :: [(String, SqlValue)] -> IO (Maybe Account)
-getAccountBy vs = do c <- connect
+getAccountBy vs = do c <- C.connect
                      res <- quickQuery' c ("SELECT * FROM accounts WHERE " ++ w ++ " LIMIT 1") (map snd vs)
                      case res of
                           [] -> return Nothing
@@ -125,14 +125,14 @@ getAccountBy vs = do c <- connect
                       w = intercalate " AND " (map (\(s, _) -> s ++ " = ?") vs)
 
 getCharacter :: Integer -> IO (Maybe Character)
-getCharacter id = do c <- connect
+getCharacter id = do c <- C.connect
                      res <- quickQuery' c "SELECT * FROM characters WHERE id = ? LIMIT 1" [toSql id]
                      case res of
                           [] -> return Nothing -- logMsg l Error ("Cannot find charactor " ++ red (show id))
                           [attr] -> return (Just $ mkCharacter attr)
 
 getCharacterBy :: [(String, SqlValue)] -> IO (Maybe Character)
-getCharacterBy vs = do c <- connect
+getCharacterBy vs = do c <- C.connect
                        res <- quickQuery' c ("SELECT * FROM characters WHERE " ++ w ++ " LIMIT 1") (map snd vs)
                        case res of
                             [] -> return Nothing
@@ -141,14 +141,14 @@ getCharacterBy vs = do c <- connect
                         w = intercalate " AND " (map (\(s, _) -> s ++ " = ?") vs)
 
 getCharactersBy :: [(String, SqlValue)] -> IO [Character]
-getCharactersBy vs = do c <- connect
+getCharactersBy vs = do c <- C.connect
                         res <- quickQuery' c ("SELECT * FROM characters WHERE " ++ w) (map snd vs)
                         return (map mkCharacter res)
                      where
                          w = intercalate " AND " (map (\(s, _) -> s ++ " = ?") vs)
 
 addCharacter :: [(String, SqlValue)] -> IO Character
-addCharacter vs = do c <- connect
+addCharacter vs = do c <- C.connect
                      quickQuery c ("INSERT INTO characters (" ++ cols ++ ") VALUES (" ++ intercalate ", " (replicate (length vs) "?") ++ ")") (map snd vs)
                      case (lookup "accountID" vs, lookup "charNum" vs) of
                           (Just a, Just c) -> do c <- getCharacterBy [ ("accountId", a)

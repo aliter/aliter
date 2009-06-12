@@ -1,6 +1,6 @@
 module Aliter.Server.Login where
 
-import Config.Main (connect, char)
+import qualified Config.Main as C
 
 import Aliter.Config
 import Aliter.Log
@@ -12,7 +12,7 @@ import Aliter.Util (passwordHash, setLoginIDs, getLoginIDs)
 import Data.IORef
 import Data.DateTime (getCurrentTime, toSqlString)
 import Database.HDBC
-import Network.Socket hiding (connect)
+import Network.Socket
 import System.Random (randomRIO)
 
 
@@ -27,7 +27,7 @@ authorize w _ n p _ = do state <- readIORef w
                                                                   , sAccount = a
                                                                   })
 
-                                           c <- connect
+                                           c <- C.connect
                                            now <- getCurrentTime
 
                                            -- Generate and store login IDs
@@ -61,7 +61,7 @@ servers = map (\(n, (s, os)) -> [ UString (aton $ serverHost s)
                                 , UInt 0
                                 , UInt (maint os)
                                 , UInt (new os)
-                                ]) char
+                                ]) C.char
           where
               maint os = case lookup "maintenance" os of
                               Just v -> v
