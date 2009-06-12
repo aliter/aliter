@@ -1,14 +1,12 @@
 module Aliter.Server.Char where
 
-import qualified Config.Main as C
-
-import Aliter.Config
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
 import Aliter.Util
+import qualified Aliter.Config as C
 
 import Data.IORef
 import Data.Maybe (fromJust)
@@ -51,12 +49,13 @@ selectChar w n = do state <- readIORef w
                     char <- getCharacterBy [ ("accountID", toSql (aID (sAccount state)))
                                            , ("charNum", toSql n)
                                            ]
+                    zoneConf <- C.zone
 
                     case char of
                          Just c -> do sendPacket (sClient state) 0x71 [ UInteger (cID c)
                                                                       , UString (cMap c ++ ".gat")
-                                                                      , UString (aton (serverHost C.zone))
-                                                                      , UInt (fromIntegral (serverPort C.zone))
+                                                                      , UString (aton (C.serverHost zoneConf))
+                                                                      , UInt (fromIntegral (C.serverPort zoneConf))
                                                                       ]
 
                                       logMsg (sLog state) Debug ("Sending " ++ green (show (cID c)) ++ " to " ++ cyan "new_1-1.gat" ++ "...")

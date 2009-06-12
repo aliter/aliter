@@ -1,13 +1,12 @@
 module Aliter.Server.Login where
 
-import qualified Config.Main as C
-
 import Aliter.Config
 import Aliter.Log
 import Aliter.Objects
 import Aliter.Pack
 import Aliter.Packet
 import Aliter.Util (passwordHash, setLoginIDs, getLoginIDs)
+import qualified Aliter.Config as C
 
 import Data.IORef
 import Data.DateTime (getCurrentTime, toSqlString)
@@ -39,6 +38,7 @@ authorize w _ n p _ = do state <- readIORef w
 
                                            logMsg (sLog state) Normal ("Accepted connection of " ++ red n)
 
+                                           chars <- servers
                                            sendPacketSub (sClient state) 0x69 [ UInteger lIDa
                                                                               , UInteger (aID a)
                                                                               , UInteger lIDb
@@ -46,7 +46,7 @@ authorize w _ n p _ = do state <- readIORef w
                                                                               , UString ""
                                                                               , UInt 0
                                                                               , UInt (aGender a)
-                                                                              ] [servers]
+                                                                              ] [chars]
                               Nothing -> do name <- getAccountBy [("username", toSql n)]
                                             case name of
                                                  Nothing -> sendPacket (sClient state) 0x6a [UInt 0, UString ""]
@@ -54,14 +54,15 @@ authorize w _ n p _ = do state <- readIORef w
 
                          return ()
 
-servers :: [[Pack]]
-servers = map (\(n, (s, os)) -> [ UString (aton $ serverHost s)
-                                , UInt (fromIntegral $ serverPort s)
-                                , UString n
-                                , UInt 0
-                                , UInt (maint os)
-                                , UInt (new os)
-                                ]) C.char
+servers :: IO [[Pack]]
+servers = do srv <- C.char
+             return $ map (\(n, (s, os)) -> [ UString (aton $ C.serverHost s)
+                                            , UInt (fromIntegral $ C.serverPort s)
+                                            , UString n
+                                            , UInt 0
+                                            , UInt (maint os)
+                                            , UInt (new os)
+                                            ]) srv
           where
               maint os = case lookup "maintenance" os of
                               Just v -> v

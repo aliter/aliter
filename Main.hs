@@ -1,7 +1,5 @@
 module Main where
 
-import qualified Config.Main as C
-
 import Aliter.Config
 import Aliter.Maps
 import Aliter.Hex
@@ -11,6 +9,7 @@ import Aliter.Pack
 import Aliter.Packet
 import Aliter.Server
 import Aliter.Util
+import qualified Aliter.Config as C
 
 import Control.Concurrent
 import Control.Monad (replicateM, filterM)
@@ -25,6 +24,7 @@ import qualified Data.ByteString.Lazy as B
 
 type Packets = Chan (IORef State, Int, [(String, Pack)])
 
+main :: IO ()
 main = do chan <- newChan -- Logging channel
 
           forkIO (do contents <- getDirectoryContents "MapCache"
@@ -35,11 +35,14 @@ main = do chan <- newChan -- Logging channel
                                                   [_, version, _, _] = unpack "3sBll" (hex h)
                                               return (version == UInt cacheVer)) caches
 
+                     sdata <- C.sdata
+                     maps <- C.maps
+
                      if not (and latest) || null caches
-                        then readMaps chan C.sdata
+                        then readMaps chan sdata
                         else return ()
 
-                     loadMaps chan C.maps
+                     loadMaps chan maps
                      logMsg chan (Update Normal) "Maps loaded."
 
                      forkIO (startLogin chan)
@@ -54,13 +57,16 @@ main = do chan <- newChan -- Logging channel
 
 
 startLogin :: Log -> IO ()
-startLogin l = startServer l (fromIntegral (serverPort C.login)) "Login"
+startLogin l = do login <- C.login
+                  startServer l (fromIntegral (serverPort login)) "Login"
 
 startChars :: Log -> IO ()
-startChars l = mapM_ (\(n, (s, _)) -> forkIO (startServer l (fromIntegral (serverPort s)) ("Char (" ++ n ++ ")"))) C.char
+startChars l = do char <- C.char
+                  mapM_ (\(n, (s, _)) -> forkIO (startServer l (fromIntegral (serverPort s)) ("Char (" ++ n ++ ")"))) char
 
 startZone :: Log -> IO ()
-startZone l = startServer l (fromIntegral (serverPort C.zone)) "Zone"
+startZone l = do zone <- C.zone
+                 startServer l (fromIntegral (serverPort zone)) "Zone"
 
 startServer :: Log -> PortNumber -> String -> IO ()
 startServer l p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on port " ++ magenta (show p) ++ "...")

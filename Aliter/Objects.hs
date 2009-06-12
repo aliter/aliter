@@ -1,11 +1,10 @@
 module Aliter.Objects where
 
-import qualified Config.Main as C
-
 import Aliter.Hex
 import Aliter.Log
 import Aliter.Pack
 import Aliter.Util (fromBS)
+import qualified Aliter.Config as C
 
 import Codec.Compression.Zlib
 import Data.IORef (IORef)

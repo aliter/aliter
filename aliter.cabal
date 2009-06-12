@@ -1,0 +1,38 @@
+Name:           aliter
+Version:        0.0
+Synopsis:       A fast, efficient server backend for the Ragnarok Online MMORPG.
+Category:       Game
+Stability:      experimental
+License:        BSD3
+License-file:   LICENSE
+Author:         Alex Suraci
+Maintainer:     i.am@toogeneric.com
+Copyright:      (c) 2009 Alex Suraci
+Build-Type:     Simple
+Cabal-Version:  >=1.2
+
+Library
+    Exposed-modules: Aliter.Config
+                     Aliter.Hex
+                     Aliter.Pack
+
+Executable aliter
+    Main-is:        Main.hs
+    Build-depends:  base,
+                    ansi-terminal,
+                    binary,
+                    bytestring,
+                    ConfigFile,
+                    datetime,
+                    directory,
+                    HDBC,
+                    HDBC-mysql,
+                    MissingH,
+                    nano-md5,
+                    network,
+                    network-bytestring,
+                    process,
+                    random,
+                    unix,
+                    zlib
+
