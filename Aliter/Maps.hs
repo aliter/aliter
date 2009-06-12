@@ -21,7 +21,6 @@ import Aliter.Packet
 import Aliter.Util
 
 import Codec.Compression.Zlib
-import Control.Monad (replicateM, filterM)
 import Data.Char (chr, ord)
 import Data.Int (Int64)
 import Data.IORef
@@ -104,7 +103,7 @@ generateCache l f (n, m) = do hSeek f AbsoluteSeek (46 + fromUInteger (m !! 4))
 
                               cache <- openBinaryFile ("MapCache/" ++ (fromBS $ getName n) ++ ".map") WriteMode
                               B.hPutStr cache (unhex $ pack "3sBll" [ UString "MAP"
-                                                                    , UInt 0 -- TODO: Map cache versions
+                                                                    , UInt cacheVer
                                                                     , gatHeader !! 1
                                                                     , gatHeader !! 2
                                                                     ])
@@ -203,6 +202,7 @@ keyPoints ((fX, fY):(tX, tY):cs) = (fX, fY) : keyPoints' (tX - fX, tY - fY) (tX,
         keyPoints' (dX, dY) (pX, pY) ((tX, tY):cs)
             | tX - pX /= dX || tY - pY /= dY = (tX, tY) : keyPoints' (tX - pX, tY - pY) (tX, tY) cs
             | otherwise = keyPoints' (dX, dY) (tX, tY) cs
+keyPoints _ = []
 
 
 playersInSight :: String -> Int -> Int -> IO [IORef State]

@@ -1,6 +1,7 @@
 module Aliter.Util (
     dump,
     debug,
+    cacheVer,
     rpad,
     lpad,
     passwordHash,
@@ -34,6 +35,11 @@ import qualified Data.ByteString.Lazy as L
 -- Debugging
 dump s x = trace (s ++ ": " ++ show x) (return ())
 debug s x = trace (s ++ ": " ++ show x) x
+
+
+-- Map cache version
+cacheVer :: Int
+cacheVer = 0
 
 
 -- Padding
@@ -134,4 +140,3 @@ hGet h i = do done <- hIsEOF h
                          case rest of
                               Nothing -> return Nothing
                               Just cs -> return (Just (c : cs))
-

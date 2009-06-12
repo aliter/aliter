@@ -21,7 +21,7 @@ identify w id c a g = do state <- readIORef w
 
                          if valid && acc /= Nothing && char /= Nothing
                             then do let fromA = fromJust acc
-                                    let fromC = fromJust char
+                                        fromC = fromJust char
 
                                     writeIORef w (State { sClient = sClient state
                                                         , sLog = sLog state
