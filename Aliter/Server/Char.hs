@@ -1,6 +1,6 @@
 module Aliter.Server.Char where
 
-import qualified Config.Main C
+import qualified Config.Main as C
 
 import Aliter.Config
 import Aliter.Hex

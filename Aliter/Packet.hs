@@ -46,6 +46,7 @@ sent = [
        , (0x8d, ("~l!", [])) -- Chat message (from player)
        , (0x8e, ("~!", [])) -- Message
        , (0x95, ("l24s", [])) -- Display actor name
+       , (0x18b, ("l", [])) -- Quit response (0=success, 1=fail)
        , (0x195, ("l24s24s24s24s", [])) -- Name info (name, party, guild, position)
        , (0x1d7, ("lbhh", [])) -- Equip view
        , (0x22b, ("l4h2x10hl3h2x2b5sh", [])) -- User info (to others)
@@ -72,8 +73,8 @@ received = [
            , (0xa7, ("xxx3s", ["position"])) -- Walk request
            , (0xf3, ("~!", ["message"])) -- Speech
            , (0x14d, ("", [])) -- Request guild status
-           , (0x18a, ("xx", [])) -- Quit
            , (0x14f, ("l", ["page"])) -- Request guild info for given page
+           , (0x18a, ("xx", [])) -- Quit
            , (0x21d, ("l", ["effect"])) -- Client's /effect state
            , (0x436, ("lll4xB", ["accountID", "characterID", "loginIDa", "gender"])) -- Request connection
            , (0x44a, ("l", ["?"])) -- Unsure

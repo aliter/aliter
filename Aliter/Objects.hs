@@ -31,6 +31,81 @@ data State = InitState { sClient :: Socket
                    }
            deriving (Eq, Show)
 
+class Object a where
+    save :: a -> IO ()
+
+
+instance Object Account where
+    save a = do d <- C.connect
+                q <- prepare d ("UPDATE accounts SET " ++ intercalate ", " (map (\c -> "`" ++ c ++ "` = ?") ["username", "password", "email", "gender", "loginCount", "lastLogin", "lastIP", "gmLevel", "banUntil"]) ++ " \
+                                \WHERE id = ?")
+                execute q [ toSql $ aUsername a
+                          , toSql $ aPassword a
+                          , toSql $ aEmail a
+                          , toSql $ aGender a
+                          , toSql $ aLoginCount a
+                          , toSql $ aLastLogin a
+                          , toSql $ aLastIP a
+                          , toSql $ aGMLevel a
+                          , toSql $ aBanUntil a
+                          , toSql $ aID a
+                          ]
+                commit d
+
+instance Object Character where
+    save c = do d <- C.connect
+                q <- prepare d ("UPDATE characters SET " ++ intercalate ", " (map (\c -> "`" ++ c ++ "` = ?") ["accountID", "charNum", "name", "job", "baseLevel", "baseExp", "jobLevel", "jobExp", "zeny", "str", "agi", "vit", "int", "dex", "luk", "maxHP", "hp", "maxSP", "sp", "statusPoints", "skillPoints", "partyID", "guildID", "petID", "homunculusID", "mercenaryID", "hairStyle", "hairColor", "clothesColor", "viewWeapon", "viewShield", "viewHeadTop", "viewHeadMiddle", "viewHeadBottom", "map", "x", "y", "saveMap", "saveX", "saveY", "online", "fame", "guildPositionID", "guildTaxed"]) ++ " \
+                                \WHERE id = ?")
+                execute q [ toSql $ cAccountID c
+                          , toSql $ cNum c
+                          , toSql $ cName c
+                          , toSql $ cJob c
+                          , toSql $ cBLevel c
+                          , toSql $ cBExp c
+                          , toSql $ cJLevel c
+                          , toSql $ cJExp c
+                          , toSql $ cZeny c
+                          , toSql $ cStr c
+                          , toSql $ cAgi c
+                          , toSql $ cVit c
+                          , toSql $ cInt c
+                          , toSql $ cDex c
+                          , toSql $ cLuk c
+                          , toSql $ cMaxHP c
+                          , toSql $ cHP c
+                          , toSql $ cMaxSP c
+                          , toSql $ cSP c
+                          , toSql $ cStatusPoints c
+                          , toSql $ cSkillPoints c
+                          , toSql $ cPartyID c
+                          , toSql $ cGuildID c
+                          , toSql $ cPetID c
+                          , toSql $ cHomunculusID c
+                          , toSql $ cMercenaryID c
+                          , toSql $ cHairStyle c
+                          , toSql $ cHairColor c
+                          , toSql $ cClothesColor c
+                          , toSql $ cViewWeapon c
+                          , toSql $ cViewShield c
+                          , toSql $ cViewHeadTop c
+                          , toSql $ cViewHeadMid c
+                          , toSql $ cViewHeadBot c
+                          , toSql $ cMap c
+                          , toSql $ cX c
+                          , toSql $ cY c
+                          , toSql $ cSaveMap c
+                          , toSql $ cSaveX c
+                          , toSql $ cSaveY c
+                          , toSql $ cOnline c
+                          , toSql $ cFame c
+                          , toSql $ cGuildPositionID c
+                          , toSql $ cGuildTaxed c
+                          , toSql $ cID c
+                          ]
+                commit d
+
+
+
 data Account = Account { aID :: Integer
                        , aUsername :: String
                        , aPassword :: String

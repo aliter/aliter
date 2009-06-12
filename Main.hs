@@ -106,9 +106,11 @@ wait s l c = do (s', a) <- accept s
 runConn :: IORef State -> Handle -> Packets -> IO ()
 runConn w h c = do packet <- hGet h 2
                    state <- readIORef w
+                   them <- getSocketName (sClient state)
 
                    case packet of
-                        Nothing -> return ()
+                        Nothing -> do hClose h
+                                      logMsg (sLog state) Normal ("Disconnected from " ++ green (show them))
                         Just p -> do let p = fromJust packet
                                          bs = toBS p
                                          hexed = hex bs

@@ -92,6 +92,10 @@ handle w 0xf3 vs = do state <- readIORef w
                       sendPacketTo others 0x8d [UInteger a, UString (get "message" vs)]
                       sendPacket (sClient state) 0x8e [UString (get "message" vs)]
                       return ()
+handle w 0x18a _ = do state <- readIORef w
+                      sendPacket (sClient state) 0x18b [UInteger 0]
+                      save (sActor state)
+                      save (sAccount state)
 handle w n as = do state <- readIORef w
                    logMsg (sLog state) Warning ("Not sure how to handle packet " ++ red (fromBS $ intToH 2 n))
 
