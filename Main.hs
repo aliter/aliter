@@ -115,7 +115,13 @@ runConn w h c = do packet <- hGet h 2
                    them <- getSocketName (sClient state)
 
                    case packet of
-                        Nothing -> do hClose h
+                        Nothing -> do case state of
+                                           State _ _ _ _ -> do save (sActor state)
+                                                               save (sAccount state)
+                                           MidState _ _ _ -> save (sAccount state)
+                                           _ -> return ()
+
+                                      hClose h
                                       logMsg (sLog state) Normal ("Disconnected from " ++ green (show them))
                         Just p -> do let p = fromJust packet
                                          bs = toBS p

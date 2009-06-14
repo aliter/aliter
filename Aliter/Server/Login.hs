@@ -21,20 +21,17 @@ authorize w _ n p _ = do state <- readIORef w
                                               , ("password", toSql (passwordHash p))
                                               ]
                          case auth of
-                              Just a -> do writeIORef w (MidState { sClient = sClient state
+                              Just a -> do now <- getCurrentTime
+                                           
+                                           writeIORef w (MidState { sClient = sClient state
                                                                   , sLog = sLog state
-                                                                  , sAccount = a
+                                                                  , sAccount = a { aLastLogin = toSqlString now }
                                                                   })
-
-                                           c <- C.connect
-                                           now <- getCurrentTime
 
                                            -- Generate and store login IDs
                                            lIDa <- randomRIO (0, 4294967295)
                                            lIDb <- randomRIO (0, 4294967295)
                                            setLoginIDs (aID a) (lIDa, lIDb)
-
-                                           quickQuery c "UPDATE accounts SET lastLogin = ? WHERE id = ?" [SqlString (toSqlString now), toSql (aID a)]
 
                                            logMsg (sLog state) Normal ("Accepted connection of " ++ red n)
 

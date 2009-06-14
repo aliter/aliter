@@ -7,7 +7,7 @@ import Aliter.Util (fromBS)
 import qualified Aliter.Config as C
 
 import Codec.Compression.Zlib
-import Data.IORef (IORef)
+import Data.IORef
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
 import Database.HDBC
@@ -29,6 +29,15 @@ data State = InitState { sClient :: Socket
                    , sActor :: Character
                    }
            deriving (Eq, Show)
+
+updateActor :: IORef State -> Character -> IO ()
+updateActor w c = do state <- readIORef w
+                     writeIORef w (state { sActor = c })
+
+updateAccount :: IORef State -> Account -> IO ()
+updateAccount w a = do state <- readIORef w
+                       writeIORef w (state { sAccount = a })
+
 
 class Object a where
     save :: a -> IO ()
