@@ -122,7 +122,8 @@ runConn w h c = do packet <- hGet h 2
                                          hexed = hex bs
                                       
                                      case lookup (hToInt hexed) received of
-                                          Nothing -> logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS hexed))
+                                          Nothing -> do logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS hexed))
+                                                        runConn w h c
                                           Just (f, names) -> handleP state p f names
                 where
                     handleP s p f ns = do let bs = toBS p

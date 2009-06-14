@@ -10,6 +10,7 @@ import Aliter.Util
 
 import Control.Concurrent
 import Data.IORef
+import Data.List (delete)
 import Data.Maybe (fromJust)
 import Network.Socket hiding (Debug)
 import System.IO.Unsafe
@@ -68,15 +69,14 @@ handle w 0xa7 vs = do state <- readIORef w
                           fromX = cX (sActor state)
                           fromY = cY (sActor state)
 
-                      map <- readIORef (fromJust (lookup fromMap maps))
-
-                      let path = pathfind map (fromX, fromY) (toX, toY)
-
-                      logMsg (sLog state) Debug ("Optimal path: " ++ yellow (show path))
-
-                      forkIO (walkLoop w (head path) ([(toX, toY)]))--tail path))
-                      return ()
-
+                      walking <- readIORef walkRef
+                      dump "Walking" walking
+                      case lookup (aID (sAccount state)) walking of
+                           Nothing -> do modifyIORef walkRef (++ [(aID (sAccount state), (toX, toY))])
+                                         forkIO (walkLoop w)
+                                         return ()
+                           _ -> do logMsg (sLog state) Debug ("Adding to queue...")
+                                   modifyIORef walkRef (++ [(aID (sAccount state), (toX, toY))])
 handle w 0x89 _ = do state <- readIORef w
                      tick <- getTick
                      sendPacket (sClient state) 0x7f [UInteger tick]
@@ -99,41 +99,55 @@ handle w 0x18a _ = do state <- readIORef w
 handle w n as = do state <- readIORef w
                    logMsg (sLog state) Warning ("Not sure how to handle packet " ++ red (fromBS $ intToH 2 n))
 
-walkLoop :: IORef State -> (Int, Int) -> [(Int, Int)] -> IO ()
-walkLoop w _ [] = return ()
-walkLoop w (fX, fY) ((tX, tY):ps) = do state <- readIORef w
-                                       players <- playersInSight (cMap (sActor state)) fX fY
-                                    
-                                       let walked = sActor state
-                                           walkedAcc = sAccount state
-                                           position = encodePositionMove fX fY tX tY
+walkRef :: IORef [(Integer, (Int, Int))]
+walkRef = unsafePerformIO (newIORef [])
 
-                                       mapM_ (\w -> do st <- readIORef w
-                                                       tick <- getTick
-                                                       let char = sActor st
+walkLoop :: IORef State -> IO ()
+walkLoop w = do state <- readIORef w
+                walking <- readIORef walkRef
 
-                                                       if cID char == cID walked
-                                                          then sendPacket (sClient state)
-                                                                          0x87
-                                                                          [ UInteger (aID walkedAcc)
-                                                                          , UString position
-                                                                          , UInteger tick
-                                                                          ]
-                                                          else do sendPacket (sClient st)
-                                                                             0x86
-                                                                             [ UInteger (aID walkedAcc)
-                                                                             , UString (position ++ "\x88")
-                                                                             , UInteger tick
-                                                                             ]
-                                                                  tick <- getTick
-                                                                  sendPacket (sClient st) 0x7f [UInteger tick])
-                                             players
-                                        
-                                       updateActor w ((sActor state) { cX = tX, cY = tY })
+                case lookup (aID (sAccount state)) walking of
+                     Nothing -> return ()
+                     Just (toX, toY) -> do let walked = sActor state
+                                               walkedAcc = sAccount state
+                                               fromX = cX (sActor state)
+                                               fromY = cY (sActor state)
+                                               ss = steps [] (fromX, fromY) (toX, toY)
+                                               position = encodePositionMove fromX fromY toX toY
 
-                                       logMsg (sLog state) Debug ("Walking from " ++ red (show (fX, fY)) ++ " to " ++ red (show (tX, tY)))
-                                       {- threadDelay (150 * 1000) -}
-                                       walkLoop w (tX, tY) ps
+                                           players <- playersInSight (cMap (sActor state)) fromX fromY
+
+                                           logMsg (sLog state) Debug ("Walking from " ++ red (show (fromX, fromY)) ++ " to " ++ red (show (toX, toY)))
+                                           logMsg (sLog state) Debug ("Steps: " ++ yellow (show ss))
+
+                                           mapM_ (\w -> do st <- readIORef w
+                                                           tick <- getTick
+                                                           let char = sActor st
+
+                                                           if cID char == cID walked
+                                                              then sendPacket (sClient state)
+                                                                              0x87
+                                                                              [ UInteger (aID walkedAcc)
+                                                                              , UString position
+                                                                              , UInteger tick
+                                                                              ]
+                                                              else do sendPacket (sClient st)
+                                                                                 0x86
+                                                                                 [ UInteger (aID walkedAcc)
+                                                                                 , UString (position ++ "\x88")
+                                                                                 , UInteger tick
+                                                                                 ]
+                                                                      tick <- getTick
+                                                                      sendPacket (sClient st) 0x7f [UInteger tick])
+                                                 players
+                                            
+                                           updateActor w ((sActor state) { cX = toX, cY = toY })
+
+                                           threadDelay (150 * 725 * round (fromIntegral ss ** 1.1))
+
+                                           modifyIORef walkRef (delete (aID (sAccount state), (toX, toY)))
+
+                                           walkLoop w
 
 updateActor :: IORef State -> Character -> IO ()
 updateActor w c = do state <- readIORef w

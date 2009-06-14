@@ -4,6 +4,7 @@ module Aliter.Maps (
     mapSess,
     pathfind,
     findPath,
+    steps,
     keyPoints,
     playersInSight,
     otherPlayersInSight,
@@ -176,6 +177,7 @@ loadMaps l (n:ns) = do cache <- openFile ("MapCache/" ++ n ++ ".map") ReadMode
 pathfind :: Map -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
 pathfind m from to = keyPoints $ findPath (tiles m) from to
 
+findPath :: [[Int]] -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
 findPath ts (fX, fY) (tX, tY)
     | fX == tX && fY == tY = [(tX, tY)]
     | otherwise = (fX, fY) : findPath ts (newX, newY) (tX, tY)
@@ -192,6 +194,22 @@ findPath ts (fX, fY) (tX, tY)
                   then fY - 1
                   else fY + 1
 
+steps :: [[Int]] -> (Int, Int) -> (Int, Int) -> Int
+steps ts (fX, fY) (tX, tY)
+    | fX == tX && fY == tY = 0
+    | otherwise = 1 + steps ts (newX, newY) (tX, tY)
+    where
+        newX = if fX == tX
+                  then fX
+                  else if fX > tX
+                  then fX - 1
+                  else fX + 1
+
+        newY = if fY == tY
+                  then fY
+                  else if fY > tY
+                  then fY - 1
+                  else fY + 1
 
 -- Find the key points (directional changes) in a given path
 keyPoints :: [(Int, Int)] -> [(Int, Int)]

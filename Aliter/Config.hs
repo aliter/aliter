@@ -21,13 +21,13 @@ config n = do dir <- getAppUserDataDirectory "aliter"
               return (forceEither conf)
 
 connect = do conf <- config "main"
-             let inter = forceEither (get conf "database" "interface") :: String
-                 host = forceEither (get conf "database" "host") :: String
-                 user = forceEither (get conf "database" "username") :: String
-                 pass = forceEither (get conf "database" "password") :: String
-                 db = forceEither (get conf "database" "database") :: String
+             let inter = forceEither (get conf "database" "interface")
+                 host = forceEither (get conf "database" "host")
+                 user = forceEither (get conf "database" "username")
+                 pass = forceEither (get conf "database" "password")
+                 db = forceEither (get conf "database" "database")
                  sock = if has_option conf "database" "socket"
-                           then forceEither (get conf "database" "socket") :: String
+                           then forceEither (get conf "database" "socket")
                            else "/tmp/mysql.sock"
 
              case inter of
@@ -46,17 +46,17 @@ login = do conf <- config "main"
 
 char :: IO [(String, (ServerConf, [(String, Int)]))]
 char = do conf <- config "main"
-          let names = lines (forceEither (get conf "char" "name") :: String)
-              hosts = lines (forceEither (get conf "char" "host") :: String)
-              ports = map (\p -> read p :: Word16) $ lines (forceEither (get conf "char" "port") :: String)
-              maints = lines (forceEither (get conf "char" "maintenance") :: String)
-              news = lines (forceEither (get conf "char" "new") :: String)
+          let names = lines (forceEither (get conf "char" "name"))
+              hosts = lines (forceEither (get conf "char" "host"))
+              ports = map (\p -> read p :: Word16) $ lines (forceEither (get conf "char" "port"))
+              maints = lines (forceEither (get conf "char" "maintenance"))
+              news = lines (forceEither (get conf "char" "new"))
               servers = zip5 names hosts ports maints news
 
           return (map (\(n, h, p, m, new) -> (n, (ServerConf { serverHost = h
                                                              , serverPort = p
-                                                             }, [ ("maintenance", read m :: Int)
-                                                                , ("new", read new :: Int)
+                                                             }, [ ("maintenance", read m)
+                                                                , ("new", read new)
                                                                 ]))) servers)
 
 zone :: IO ServerConf

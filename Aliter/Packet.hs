@@ -68,6 +68,7 @@ received = [
 
            -- Map server
            , (0x7d, ("", [])) -- Map finished loading
+           , (0x85, ("5xb2xb", ["head", "body"])) -- Change direction (shift+click)
            , (0x89, ("xxl", ["clientTick"]))
            , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor names
            , (0xa7, ("xxx3s", ["position"])) -- Walk request
