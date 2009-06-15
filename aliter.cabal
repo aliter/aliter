@@ -33,6 +33,7 @@ Executable aliter
                     network-bytestring,
                     process,
                     random,
+                    time,
                     unix,
                     zlib
 

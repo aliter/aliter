@@ -8,9 +8,11 @@ import Aliter.Packet
 import Aliter.Util
 
 import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent.Chan (newChan)
 import Data.IORef
 import Data.List (delete)
 import Data.Maybe (fromJust)
+import Data.Time.Clock (UTCTime, NominalDiffTime, diffUTCTime, getCurrentTime)
 import Network.Socket hiding (Debug)
 import System.IO.Unsafe
 
@@ -26,10 +28,13 @@ identify w id c a g = do state <- readIORef w
                             then do let fromA = fromJust acc
                                         fromC = fromJust char
 
+                                    waitChan <- newChan
                                     writeIORef w (State { sClient = sClient state
                                                         , sLog = sLog state
                                                         , sAccount = fromA
                                                         , sActor = fromC
+                                                        , sWait = waitChan
+                                                        , sLastWalk = Nothing
                                                         })
 
                                     logMsg (sLog state) Debug ("Acknowledged zone access for `" ++ green (show a) ++ "'")
@@ -77,19 +82,38 @@ actorName w id = do state <- readIORef w
 
 move :: IORef State -> (Int, Int) -> IO ()
 move w (toX, toY) = do state <- readIORef w
-                       tick <- getTick
+                       now <- getCurrentTime
 
-                       let fromMap = cMap (sActor state)
-                           fromX = cX (sActor state)
-                           fromY = cY (sActor state)
+                       maps <- readIORef mapSess
+                       case lookup (cMap (sActor state)) maps of
+                            Nothing -> return ()
+                            Just m -> do map <- readIORef m
+                                         case sLastWalk state of
+                                              Nothing -> do let fromPos = (cX (sActor state), cY (sActor state))
+                                                                path = pathfind map fromPos (toX, toY)
 
-                       walking <- readIORef walkRef
-                       case lookup (aID (sAccount state)) walking of
-                            Nothing -> do modifyIORef walkRef (++ [(aID (sAccount state), (toX, toY))])
-                                          forkIO (walkLoop w)
-                                          return ()
-                            _ -> do logMsg (sLog state) Debug ("Adding " ++ magenta (show (aID (sAccount state), (toX, toY))) ++ " to queue...")
-                                    modifyIORef walkRef (++ [(aID (sAccount state), (toX, toY))])
+                                                            updateLastWalk w (Just (now, path))
+                                                            walk w fromPos (toX, toY)
+                                              Just l -> do let lastWalked = fst l
+                                                               lastPath = snd l
+                                                               timeDiff = diffUTCTime now lastWalked
+                                                               steps = stepsTaken timeDiff 150
+                                                               initialFrom = if length lastPath <= steps
+                                                                                then (cX (sActor state), cY (sActor state))
+                                                                                else lastPath !! steps
+                                                               initialPath = findPath (tiles map) initialFrom (toX, toY)
+                                                               from = if length lastPath <= steps || straightStep initialFrom (initialPath !! 1)
+                                                                         then initialFrom
+                                                                         else lastPath !! (steps - 1)
+                                                               path = if length lastPath <= steps || straightStep initialFrom (initialPath !! 1)
+                                                                         then initialPath
+                                                                         else findPath (tiles map) from (toX, toY)
+
+                                                           logMsg (sLog state) Debug ("Steps taken in " ++ green (show timeDiff) ++ ": " ++ cyan (show steps))
+
+                                                           updateLastWalk w (Just (now, path))
+
+                                                           walk w from (toX, toY)
 
 sync :: IORef State -> IO ()
 sync w = do state <- readIORef w
@@ -98,16 +122,16 @@ sync w = do state <- readIORef w
             logMsg (sLog state) Debug ("Syncing... " ++ red (show tick))
 
 speak :: IORef State -> String -> IO ()
-speak w m = do state <- readIORef w
-               let a = cAccountID (sActor state)
-                   m = cMap (sActor state)
-                   x = cX (sActor state)
-                   y = cY (sActor state)
+speak w msg = do state <- readIORef w
+                 let a = cAccountID (sActor state)
+                     m = cMap (sActor state)
+                     x = cX (sActor state)
+                     y = cY (sActor state)
 
-               others <- otherPlayersInSight a m x y
-               sendPacketTo others 0x8d [UInteger a, UString m]
-               sendPacket (sClient state) 0x8e [UString m]
-               return ()
+                 others <- otherPlayersInSight a m x y
+                 sendPacketTo others 0x8d [UInteger a, UString msg]
+                 sendPacket (sClient state) 0x8e [UString msg]
+                 return ()
 
 quit :: IORef State -> IO ()
 quit w = do state <- readIORef w
@@ -115,52 +139,46 @@ quit w = do state <- readIORef w
             return ()
 
 
-walkRef :: IORef [(Integer, (Int, Int))]
-walkRef = unsafePerformIO (newIORef [])
+-- Walking helper
+stepsTaken :: NominalDiffTime -> Int -> Int
+stepsTaken t s = ceiling (t / (fromIntegral s / 1000))
 
-walkLoop :: IORef State -> IO ()
-walkLoop w = do state <- readIORef w
-                walking <- readIORef walkRef
+straightStep :: (Int, Int) -> (Int, Int) -> Bool
+straightStep (fX, fY) (tX, tY) = tX - fX == 0 || tY - fY == 0
 
-                case lookup (aID (sAccount state)) walking of
-                     Nothing -> return ()
-                     Just (toX, toY) -> do let walked = sActor state
-                                               walkedAcc = sAccount state
-                                               fromX = cX (sActor state)
-                                               fromY = cY (sActor state)
-                                               ss = steps [] (fromX, fromY) (toX, toY)
-                                               position = encodePositionMove fromX fromY toX toY
+walk :: IORef State -> (Int, Int) -> (Int, Int) -> IO ()
+walk w (fromX, fromY) (toX, toY)
+    = do state <- readIORef w
 
-                                           players <- playersInSight (cMap (sActor state)) fromX fromY
+         let walked = sActor state
+             walkedAcc = sAccount state
+             ss = steps [] (fromX, fromY) (toX, toY)
+             position = encodePositionMove fromX fromY toX toY
 
-                                           logMsg (sLog state) Debug ("Walking from " ++ red (show (fromX, fromY)) ++ " to " ++ red (show (toX, toY)))
-                                           logMsg (sLog state) Debug ("Steps: " ++ yellow (show ss))
+         players <- playersInSight (cMap (sActor state)) fromX fromY
 
-                                           mapM_ (\w -> do st <- readIORef w
-                                                           tick <- getTick
-                                                           let char = sActor st
+         logMsg (sLog state) Debug ("Walking from " ++ red (show (fromX, fromY)) ++ " to " ++ red (show (toX, toY)))
+         logMsg (sLog state) Debug ("Steps: " ++ yellow (show ss))
 
-                                                           if cID char == cID walked
-                                                              then sendPacket (sClient state)
-                                                                              0x87
-                                                                              [ UInteger (aID walkedAcc)
-                                                                              , UString position
-                                                                              , UInteger tick
-                                                                              ]
-                                                              else do sendPacket (sClient st)
-                                                                                 0x86
-                                                                                 [ UInteger (aID walkedAcc)
-                                                                                 , UString (position ++ "\x88")
-                                                                                 , UInteger tick
-                                                                                 ]
-                                                                      tick <- getTick
-                                                                      sendPacket (sClient st) 0x7f [UInteger tick])
-                                                 players
-                                            
-                                           updateActor w ((sActor state) { cX = toX, cY = toY })
+         mapM_ (\w -> do st <- readIORef w
+                         tick <- getTick
+                         let char = sActor st
 
-                                           threadDelay (150 * 725 * round (fromIntegral ss ** 1.1))
-
-                                           modifyIORef walkRef (delete (aID (sAccount state), (toX, toY)))
-
-                                           walkLoop w
+                         if cID char == cID walked
+                            then sendPacket (sClient state)
+                                            0x87
+                                            [ UInteger (aID walkedAcc)
+                                            , UString position
+                                            , UInteger tick
+                                            ]
+                            else do sendPacket (sClient st)
+                                               0x86
+                                               [ UInteger (aID walkedAcc)
+                                               , UString (position ++ "\x88")
+                                               , UInteger tick
+                                               ]
+                                    tick <- getTick
+                                    sendPacket (sClient st) 0x7f [UInteger tick])
+               players
+          
+         updateActor w ((sActor state) { cX = toX, cY = toY })

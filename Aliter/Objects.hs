@@ -6,16 +6,19 @@ import Aliter.Pack
 import Aliter.Util (fromBS)
 import qualified Aliter.Config as C
 
+import Control.Concurrent.Chan (Chan)
 import Codec.Compression.Zlib
 import Data.IORef
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
+import Data.Time.Clock (UTCTime)
 import Database.HDBC
 import Network.Socket (Socket)
 import System.IO
 import qualified Data.ByteString.Lazy as B
 
 
+-- State
 data State = InitState { sClient :: Socket
                        , sLog :: Log
                        }
@@ -27,18 +30,21 @@ data State = InitState { sClient :: Socket
                    , sLog :: Log
                    , sAccount :: Account
                    , sActor :: Character
+                   , sWait :: Chan Int
+                   , sLastWalk :: Maybe (UTCTime, [(Int, Int)])
                    }
-           deriving (Eq, Show)
 
 updateActor :: IORef State -> Character -> IO ()
-updateActor w c = do state <- readIORef w
-                     writeIORef w (state { sActor = c })
+updateActor w c = modifyIORef w (\s -> s { sActor = c })
 
 updateAccount :: IORef State -> Account -> IO ()
-updateAccount w a = do state <- readIORef w
-                       writeIORef w (state { sAccount = a })
+updateAccount w a = modifyIORef w (\s -> s { sAccount = a })
+
+updateLastWalk :: IORef State -> Maybe (UTCTime, [(Int, Int)]) -> IO ()
+updateLastWalk w l = modifyIORef w (\s -> s { sLastWalk = l })
 
 
+-- Objects
 class Object a where
     save :: a -> IO ()
 

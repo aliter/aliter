@@ -116,10 +116,10 @@ runConn w h c = do packet <- hGet h 2
 
                    case packet of
                         Nothing -> do case state of
-                                           State _ _ _ _ -> do save (sActor state)
-                                                               save (sAccount state)
+                                           InitState _ _ -> return ()
                                            MidState _ _ _ -> save (sAccount state)
-                                           _ -> return ()
+                                           _ -> do save (sActor state)
+                                                   save (sAccount state)
 
                                       hClose h
                                       logMsg (sLog state) Normal ("Disconnected from " ++ green (show them))
