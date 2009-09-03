@@ -51,7 +51,9 @@ main = do chan <- newChan -- Logging channel
                      return ())
 
           fix (\loop -> do (t, msg) <- readChan chan
-                           putStrLn (prettyLevel t ++ ": " ++ msg)
+                           case t of
+                             Line -> putChar '\n'
+                             _ -> putStrLn (prettyLevel t ++ ": " ++ msg)
                            loop)
 
 
@@ -95,18 +97,18 @@ wait s l c = do (s', a) <- accept s
                 -- Pop the initial state in an IORef for further evolution
                 state <- newIORef (InitState { sClient = s'
                                              , sLog = l })
-   
+
                 -- Log the connection
                 me <- getSocketName s
                 logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me) ++ " established.")
-   
+
                 -- Make the client socket read/writeable
                 h <- socketToHandle s' ReadWriteMode
                 hSetBuffering h NoBuffering
-   
+
                 -- Run the connection
                 forkIO (runConn state h c)
-   
+
                 wait s l c
 
 runConn :: IORef State -> Handle -> Packets -> IO ()
@@ -126,7 +128,7 @@ runConn w h c = do packet <- hGet h 2
                         Just p -> do let p = fromJust packet
                                          bs = toBS p
                                          hexed = hex bs
-                                      
+
                                      case lookup (hToInt hexed) received of
                                           Nothing -> do logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS hexed))
                                                         runConn w h c
@@ -134,7 +136,7 @@ runConn w h c = do packet <- hGet h 2
                 where
                     handleP s p f ns = do let bs = toBS p
                                               hexed = hex bs
-                                          
+
                                           need <- neededRec h (hToInt hexed) f
                                           rest <- hGet h need
 

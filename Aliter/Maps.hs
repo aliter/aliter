@@ -21,7 +21,6 @@ import Aliter.Pack
 import Aliter.Packet
 import Aliter.Util
 
-import Codec.Compression.Zlib
 import Data.Char (chr, ord)
 import Data.Int (Int64)
 import Data.IORef
@@ -29,7 +28,10 @@ import Data.Maybe (fromJust)
 import Data.Word (Word8)
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Codec.Compression.Zlib as Z
+import qualified Codec.Compression.Zlib.Internal as ZI
 import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Internal as BI
 
 
 -- Loaded map session
@@ -56,7 +58,7 @@ readMaps l f = do grf <- openFile f ReadMode
                              let size = unpack "ll" (hex s)
 
                              b <- B.hGet grf (fromIntegral $ fromUInteger (size !! 0))
-                             let buffer = decompress b
+                             let buffer = Z.decompress b
                                  maps = takeGats buffer
                                  totalMaps = length maps
 
@@ -83,16 +85,25 @@ takeGats s = if ext /= ".gat"
 generateCache :: Log -> Handle -> (B.ByteString, [Pack]) -> IO ()
 generateCache l f (n, m) = do hSeek f AbsoluteSeek (46 + fromUInteger (m !! 4))
                               g <- B.hGet f (fromIntegral $ fromUInteger (m !! 0))
-                              let gat = decompress g
+
+                              logMsg l (Update Normal) ("Attempting to cache " ++ fromBS (getName n) ++ "...")
+
+                              let unzip = ZI.decompressWithErrors ZI.Zlib ZI.defaultDecompressParams g
+
+                              if isError unzip
+                                 then logLine l (Update Warning) ("Could not decompress " ++ fromBS (getName n))
+                                 else do
+
+                              let gat = fromDecompress unzip
 
                               if (B.length gat) /= (fromIntegral $ fromUInteger (m !! 2))
-                                 then logMsg l Error ("Invalid .gat file for " ++ red (fromBS $ getName n) ++ "\n")
+                                 then logLine l Error ("Invalid .gat file for " ++ red (fromBS $ getName n))
                                  else do
 
                               let gatHeader = unpack "6sll" (hex $ B.take 14 gat)
 
                               if gatHeader !! 0 /= UString "GRAT\x01\x02"
-                                 then logMsg l Error ("Invalid .gat file for " ++ red (fromBS $ getName n) ++ "\n")
+                                 then logLine l Error ("Invalid .gat file for " ++ red (fromBS $ getName n))
                                  else do
 
                               logMsg l (Update Normal) ("Caching " ++ fromBS (getName n) ++ "...")
@@ -108,8 +119,14 @@ generateCache l f (n, m) = do hSeek f AbsoluteSeek (46 + fromUInteger (m !! 4))
                                                                     , gatHeader !! 1
                                                                     , gatHeader !! 2
                                                                     ])
-                              B.hPutStr cache (compress tiles)
+                              B.hPutStr cache (Z.compress tiles)
                               hClose cache
+                           where
+                             fromDecompress ZI.StreamEnd = BI.Empty
+                             fromDecompress (ZI.StreamChunk bs st) = BI.Chunk bs (fromDecompress st)
+
+                             isError (ZI.StreamError _ _) = True
+                             isError _ = False
 
 
 getName :: B.ByteString -> B.ByteString
@@ -140,7 +157,7 @@ loadMap :: Log -> Handle -> String -> Int -> Int -> IO ()
 loadMap l m n w h = do logMsg l (Update Normal) ("Loading map " ++ green n ++ "...")
 
                        rest <- B.hGetContents m
-                       let blocks = decompress rest
+                       let blocks = Z.decompress rest
                            tiles = readTiles blocks (fromIntegral h)
 
                        sess <- readIORef mapSess
@@ -273,10 +290,10 @@ otherPlayersOnMap id n = do sess <- readIORef mapSess
 
 registerActorView :: IORef State -> IO ()
 registerActorView w = do s <- readIORef w
-                         
+
                          let a = sAccount s
                              c = sActor s
-                        
+
                          others <- otherPlayersOnMap (cAccountID c) (cMap c)--InSight (cAccountID c) (cMap c) (cX c) (cY c)
                          all <- playersInSight (cMap c) (cX c) (cY c)
                          sendPacketTo others
@@ -325,7 +342,7 @@ registerActorView w = do s <- readIORef w
 
 showActors :: IORef State -> IO ()
 showActors w = do s <- readIORef w
-                  
+
                   let a = sAccount s
                       c = sActor s
                       p = sClient s

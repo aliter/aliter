@@ -4,6 +4,8 @@ module Aliter.Log (
     Level(..),
     Log,
     logMsg,
+    logLine,
+    logEmptyLine,
     prettyLevel,
     black,
     red,
@@ -19,7 +21,7 @@ import Control.Concurrent
 import System.Console.ANSI
 
 
-data Level = Error | Warning | Debug | Normal | Update Level
+data Level = Error | Warning | Debug | Normal | Update Level | Line
              deriving (Eq, Show)
 
 type Log = Chan (Level, String)
@@ -33,6 +35,12 @@ instance Eq Log where
 
 logMsg :: Log -> Level -> String -> IO ()
 logMsg c l s = writeChan c (l, s)
+
+logLine :: Log -> Level -> String -> IO ()
+logLine c l s = writeChan c (l, s) >> logEmptyLine c
+
+logEmptyLine :: Log -> IO ()
+logEmptyLine c = writeChan c (Line, "")
 
 prettyLevel :: Level -> String
 prettyLevel Error = red "ERROR  "
