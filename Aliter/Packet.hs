@@ -83,7 +83,7 @@ received = [
 
 subPack :: [(String, String)]
 subPack = [ ("servers", "4sh20shhh")
-          , ("character", "5l8s3l17h24s6Bhh")
+          , ("character", "10l1h2l14h24s6Bhh")
           ]
 
 sendPacket :: Socket -> Int -> [Pack] -> IO Int64

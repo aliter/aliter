@@ -149,8 +149,8 @@ data Character = Character { cID :: Integer
                            , cInt :: Int
                            , cDex :: Int
                            , cLuk :: Int
-                           , cMaxHP :: Int
-                           , cHP :: Int
+                           , cMaxHP :: Integer
+                           , cHP :: Integer
                            , cMaxSP :: Int
                            , cSP :: Int
                            , cStatusPoints :: Int

@@ -97,13 +97,14 @@ packChar c = [ UInteger (cID c)
              , UInteger (cZeny c)
              , UInteger (cJExp c)
              , UInteger (toInteger $ cJLevel c)
-             , UString "WUT" -- ?
+             , UInteger 0 -- ?
+             , UInteger 0 -- ?
              , UInteger 0 -- Option
              , UInteger 0 -- Karma
              , UInteger 0 -- Manner
              , UInt (cStatusPoints c)
-             , UInt (cHP c)
-             , UInt (cMaxHP c)
+             , UInteger (cHP c)
+             , UInteger (cMaxHP c)
              , UInt (cSP c)
              , UInt (cMaxSP c)
              , UInt 150 -- TODO: Calculate this

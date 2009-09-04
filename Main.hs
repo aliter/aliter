@@ -25,7 +25,7 @@ import qualified Data.ByteString.Lazy as B
 type Packets = Chan (IORef State, Int, [(String, Pack)])
 
 main :: IO ()
-main = do chan <- newChan -- Logging channel
+main = do log <- newChan -- Logging channel
 
           forkIO (do contents <- getDirectoryContents "MapCache"
                      caches <- filterM (doesFileExist . ("MapCache/" ++ )) contents
@@ -39,51 +39,66 @@ main = do chan <- newChan -- Logging channel
                      maps <- C.maps
 
                      if not (and latest) || null caches
-                        then readMaps chan sdata
+                        then readMaps log sdata
                         else return ()
 
-                     loadMaps chan maps
-                     logMsg chan (Update Normal) "Maps loaded."
+                     loadMaps log maps
+                     logMsg log (Update Normal) "Maps loaded."
 
-                     forkIO (startLogin chan)
-                     startChars chan
-                     forkIO (startZone chan)
-                     return ())
+                     startServers log)
 
-          fix (\loop -> do (t, msg) <- readChan chan
+          fix (\loop -> do (t, msg) <- readChan log
                            case t of
                              Line -> putChar '\n'
                              _ -> putStrLn (prettyLevel t ++ ": " ++ msg)
                            loop)
 
 
+startServers :: Log -> IO ()
+startServers l = do startup <- newChan
 
-startLogin :: Log -> IO ()
-startLogin l = do login <- C.login
-                  startServer l (fromIntegral (serverPort login)) "Login"
+                    forkIO (startLogin startup l)
+                    login <- readChan startup
 
-startChars :: Log -> IO ()
-startChars l = do char <- C.char
-                  mapM_ (\(n, (s, _)) -> forkIO (startServer l (fromIntegral (serverPort s)) ("Char (" ++ n ++ ")"))) char
+                    forkIO (startChars startup l)
+                    char <- readChan startup
 
-startZone :: Log -> IO ()
-startZone l = do zone <- C.zone
-                 startServer l (fromIntegral (serverPort zone)) "Zone"
+                    forkIO (startZone startup l)
+                    zone <- readChan startup
 
-startServer :: Log -> PortNumber -> String -> IO ()
-startServer l p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on port " ++ magenta (show p) ++ "...")
+                    logMsg l Normal ("Servers started.")
 
-                       chan <- newChan
-                       sock <- socket AF_INET Stream 0
-                       setSocketOption sock ReuseAddr 1
-                       bindSocket sock (SockAddrInet p iNADDR_ANY)
-                       listen sock 5
+startLogin :: Chan Bool -> Log -> IO ()
+startLogin s l = do login <- C.login
+                    startServer s l (fromIntegral (serverPort login)) "Login"
 
-                       logMsg l Normal (cyan n ++ " server started.")
+startChars :: Chan Bool -> Log -> IO ()
+startChars s l = do char <- C.char
+                    mapM_ (\(n, (c, _)) -> do forkIO (startServer s l (fromIntegral (serverPort c)) ("Char (" ++ n ++ ")"))
+                                              srv <- readChan s
+                                              return ()) char
+                    writeChan s True
 
-                       forkIO (waitPackets l chan)
+startZone :: Chan Bool -> Log -> IO ()
+startZone s l = do zone <- C.zone
+                   startServer s l (fromIntegral (serverPort zone)) "Zone"
 
-                       wait sock l chan
+startServer :: Chan Bool -> Log -> PortNumber -> String -> IO ()
+startServer s l p n = do logMsg l Normal ("Starting " ++ cyan n ++ " server on port " ++ magenta (show p) ++ "...")
+
+                         chan <- newChan
+                         sock <- socket AF_INET Stream 0
+                         setSocketOption sock ReuseAddr 1
+                         bindSocket sock (SockAddrInet p iNADDR_ANY)
+                         listen sock 5
+
+                         logMsg l (Update Normal) (cyan n ++ " server started on port " ++ magenta (show p) ++ ".")
+
+                         writeChan s True
+
+                         forkIO (waitPackets l chan)
+
+                         wait sock l chan
 
 waitPackets :: Log -> Packets -> IO ()
 waitPackets l c = do (w, p, vs) <- readChan c
@@ -99,8 +114,9 @@ wait s l c = do (s', a) <- accept s
                                              , sLog = l })
 
                 -- Log the connection
-                me <- getSocketName s
-                logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me) ++ " established.")
+                -- TEMPORARILY DISABLED: Seems to cause a segfault when trying to show the SockAddr.
+                -- me <- getSocketName s
+                -- logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me) ++ " established.")
 
                 -- Make the client socket read/writeable
                 h <- socketToHandle s' ReadWriteMode
@@ -124,7 +140,7 @@ runConn w h c = do packet <- hGet h 2
                                                    save (sAccount state)
 
                                       hClose h
-                                      logMsg (sLog state) Normal ("Disconnected from " ++ green (show them))
+                                      logMsg (sLog state) Normal ("Disconnected from (TODO)")--" ++ green (show them)) (TEMPORARILY DISABLED)
                         Just p -> do let p = fromJust packet
                                          bs = toBS p
                                          hexed = hex bs
