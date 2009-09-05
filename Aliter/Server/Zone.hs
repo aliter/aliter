@@ -85,41 +85,53 @@ move w (toX, toY) = do state <- readIORef w
                        now <- getCurrentTime
 
                        maps <- readIORef mapSess
-                       case lookup (cMap (sActor state)) maps of
-                            Nothing -> return ()
-                            Just m -> do map <- readIORef m
-                                         case sLastWalk state of
-                                              Nothing -> do let fromPos = (cX (sActor state), cY (sActor state))
-                                                                path = pathfind map fromPos (toX, toY)
 
-                                                            updateLastWalk w (Just (now, path))
-                                                            walk w fromPos (toX, toY)
-                                              Just l -> do let lastWalked = fst l
-                                                               lastPath = snd l
-                                                               timeDiff = diffUTCTime now lastWalked
-                                                               steps = stepsTaken timeDiff 150
-                                                               initialFrom = if length lastPath <= steps
-                                                                                then (cX (sActor state), cY (sActor state))
-                                                                                else lastPath !! steps
-                                                               initialPath = findPath (tiles map) initialFrom (toX, toY)
-                                                               from = if length lastPath <= steps || straightStep initialFrom (initialPath !! 1)
-                                                                         then initialFrom
-                                                                         else lastPath !! (steps - 1)
-                                                               path = if length lastPath <= steps || straightStep initialFrom (initialPath !! 1)
-                                                                         then initialPath
-                                                                         else findPath (tiles map) from (toX, toY)
+                       let map = lookup (cMap (sActor state)) maps
+                       if map == Nothing -- Walking on an unknown map
+                          then return ()
+                          else do
 
-                                                           logMsg (sLog state) Debug ("Steps taken in " ++ green (show timeDiff) ++ ": " ++ cyan (show steps))
+                       map <- readIORef (fromJust map)
+                       case sLastWalk state of
+                            Nothing -> do let fromPos = (cX (sActor state), cY (sActor state))
+                                              path = pathfind map fromPos (toX, toY)
 
-                                                           updateLastWalk w (Just (now, path))
+                                          updateLastWalk w (Just (now, path))
+                                          walk w fromPos (toX, toY)
+                            Just l -> do let lastWalked = fst l
+                                             lastPath = snd l
+                                             timeDiff = diffUTCTime now lastWalked
+                                             steps = stepsTaken timeDiff 150
+                                             from = if length lastPath <= steps
+                                                       then (cX (sActor state), cY (sActor state))
+                                                       else lastPath !! steps
+                                             path = findPath (tiles map) from (toX, toY)
+                                             timeNeeded = fromIntegral steps * 0.15
 
-                                                           walk w from (toX, toY)
+                                         logMsg (sLog state) Debug ("Waiting " ++ green (show (timeNeeded - timeDiff)) ++ "... (" ++ green (show (ceiling ((timeNeeded - timeDiff) * 1000000))) ++ ")")
+
+                                         threadDelay (ceiling ((timeNeeded - timeDiff) * 1000000))
+
+                                         logMsg (sLog state) Debug ("Steps taken in " ++ green (show timeDiff) ++ ": " ++ cyan (show steps))
+
+                                         updateLastWalk w (Just (now, path))
+
+                                         walk w from (toX, toY)
 
 sync :: IORef State -> IO ()
 sync w = do state <- readIORef w
             tick <- getTick
             sendPacket (sClient state) 0x7f [UInteger tick]
             logMsg (sLog state) Debug ("Syncing... " ++ red (show tick))
+
+emote :: IORef State -> Int -> IO ()
+emote w e = do state <- readIORef w
+
+               let a = sActor state
+                   id = cAccountID a
+
+               players <- playersInSight (cMap a) (cX a) (cY a)
+               sendPacketTo players 0xc0 [UInteger id, UInt e]
 
 speak :: IORef State -> String -> IO ()
 speak w msg = do state <- readIORef w
@@ -180,5 +192,5 @@ walk w (fromX, fromY) (toX, toY)
                                     tick <- getTick
                                     sendPacket (sClient st) 0x7f [UInteger tick])
                players
-          
+
          updateActor w ((sActor state) { cX = toX, cY = toY })

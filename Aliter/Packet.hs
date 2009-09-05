@@ -46,6 +46,7 @@ sent = [
        , (0x8d, ("~l!", [])) -- Chat message (from player)
        , (0x8e, ("~!", [])) -- Message
        , (0x95, ("l24s", [])) -- Display actor name
+       , (0xc0, ("lB", ["actorID", "emotionID"])) -- Use emoticon (e.g. /gg)
        , (0x18b, ("l", [])) -- Quit response (0=success, 1=fail)
        , (0x195, ("l24s24s24s24s", [])) -- Name info (name, party, guild, position)
        , (0x1d7, ("lbhh", [])) -- Equip view
@@ -69,9 +70,10 @@ received = [
            -- Map server
            , (0x7d, ("", [])) -- Map finished loading
            , (0x85, ("5xb2xb", ["head", "body"])) -- Change direction (shift+click)
-           , (0x89, ("xxl", ["clientTick"]))
+           , (0x89, ("xxxxxl", ["clientTick"]))
            , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor name
            , (0xa7, ("xxxx3s", ["position"])) -- Walk request
+           , (0xbf, ("B", ["emotionID"])) -- Use emoticon (e.g. /gg)
            , (0xf3, ("~!", ["message"])) -- Speech
            , (0x14d, ("", [])) -- Request guild status
            , (0x14f, ("l", ["page"])) -- Request guild info for given page

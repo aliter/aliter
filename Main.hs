@@ -147,7 +147,8 @@ runConn w h c = do state <- readIORef w
                    secondAvail <- hReady h
 
                    if not secondAvail
-                      then runConn w h c
+                      then do logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS (hex (toBS [first]))))
+                              runConn w h c
                       else do
 
                    second <- hGetChar h

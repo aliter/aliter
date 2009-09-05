@@ -47,6 +47,7 @@ handle w 0x436 vs = Z.identify w
 handle w 0x8c vs = Z.actorName w (get "actorID" vs)
 handle w 0xa7 vs = Z.move w (toX, toY)
                    where (toX, toY, _) = decodePosition (getRaw "position" vs)
+handle w 0xbf vs = Z.emote w (get "emotionID" vs)
 handle w 0x89 _ = Z.sync w
 handle w 0xf3 vs = Z.speak w (get "message" vs)
 handle w 0x18a _ = Z.quit w
