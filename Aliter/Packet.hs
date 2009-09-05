@@ -71,7 +71,7 @@ received = [
            , (0x85, ("5xb2xb", ["head", "body"])) -- Change direction (shift+click)
            , (0x89, ("xxl", ["clientTick"]))
            , (0x8c, ("xxxxxl", ["actorID"])) -- Request actor name
-           , (0xa7, ("xxx3s", ["position"])) -- Walk request
+           , (0xa7, ("xxxx3s", ["position"])) -- Walk request
            , (0xf3, ("~!", ["message"])) -- Speech
            , (0x14d, ("", [])) -- Request guild status
            , (0x14f, ("l", ["page"])) -- Request guild info for given page
