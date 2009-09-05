@@ -114,9 +114,8 @@ wait s l c = do (s', a) <- accept s
                                              , sLog = l })
 
                 -- Log the connection
-                -- TEMPORARILY DISABLED: Seems to cause a segfault when trying to show the SockAddr.
-                -- me <- getSocketName s
-                -- logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me) ++ " established.")
+                me <- getSocketName s
+                logMsg l Normal ("Connection from " ++ green (show a) ++ " to " ++ green (show me) ++ " established.")
 
                 -- Make the client socket read/writeable
                 h <- socketToHandle s' ReadWriteMode
@@ -128,27 +127,40 @@ wait s l c = do (s', a) <- accept s
                 wait s l c
 
 runConn :: IORef State -> Handle -> Packets -> IO ()
-runConn w h c = do packet <- hGet h 2
-                   state <- readIORef w
-                   them <- getSocketName (sClient state)
+runConn w h c = do state <- readIORef w
+                   done <- hIsEOF h
 
-                   case packet of
-                        Nothing -> do case state of
-                                           InitState _ _ -> return ()
-                                           MidState _ _ _ -> save (sAccount state)
-                                           _ -> do save (sActor state)
-                                                   save (sAccount state)
+                   if done
+                      then do them <- getSocketName (sClient state)
 
-                                      hClose h
-                                      logMsg (sLog state) Normal ("Disconnected from (TODO)")--" ++ green (show them)) (TEMPORARILY DISABLED)
-                        Just p -> do let p = fromJust packet
-                                         bs = toBS p
-                                         hexed = hex bs
+                              case state of
+                                InitState _ _ -> return ()
+                                MidState _ _ _ -> save (sAccount state)
+                                _ -> save (sActor state) >> save (sAccount state)
 
-                                     case lookup (hToInt hexed) received of
-                                          Nothing -> do logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS hexed))
-                                                        runConn w h c
-                                          Just (f, names) -> handleP state p f names
+                              hClose h
+
+                              logMsg (sLog state) Normal ("Disconnected from " ++ green (show them))
+                      else do
+
+                   first <- hGetChar h
+                   secondAvail <- hReady h
+
+                   if not secondAvail
+                      then runConn w h c
+                      else do
+
+                   second <- hGetChar h
+
+                   let packet = [first, second]
+
+                   let bs = toBS packet
+                       hexed = hex bs
+
+                   case lookup (hToInt hexed) received of
+                     Nothing -> do logMsg (sLog state) Warning ("Unknown packet " ++ red (fromBS hexed))
+                                   runConn w h c
+                     Just (f, names) -> handleP state packet f names
                 where
                     handleP s p f ns = do let bs = toBS p
                                               hexed = hex bs

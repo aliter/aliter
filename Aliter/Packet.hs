@@ -77,6 +77,7 @@ received = [
            , (0x14f, ("l", ["page"])) -- Request guild info for given page
            , (0x18a, ("xx", [])) -- Quit
            , (0x21d, ("l", ["effect"])) -- Client's /effect state
+           , (0x399, ("b", ["?"])) -- Unsure
            , (0x436, ("lll4xB", ["accountID", "characterID", "loginIDa", "gender"])) -- Request connection
            , (0x44a, ("l", ["?"])) -- Unsure
            ]
