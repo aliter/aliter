@@ -8,10 +8,10 @@ start_link(StartArgs) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, StartArgs).
 
 init([]) ->
-    {ok, {{port, _LoginPort},
-          {node, {LoginHost, LoginName}},
-          {aliter, LoginAliter},
-          _CharZones}} = application:get_env(aliter, servers),
+    {ok, {LoginConf, _Servers}} = application:get_env(aliter, servers),
+
+    {node, {LoginHost, LoginName}} = proplists:lookup(node, LoginConf),
+    {aliter, LoginAliter} = proplists:lookup(aliter, LoginConf),
 
     {ok, LoginNode} = slave:start_link(LoginHost,
                                        LoginName,
@@ -26,4 +26,3 @@ init([]) ->
             []},
            {char, {char, start, [normal, []]}, permanent, 1000, worker, []},
            {api, {api, start_link, []}, permanent, 1000, worker, []}]}}.
-           % {zone_srv, {zone_srv, start_link, []}, permanent, 1000, worker, [zone_srv]}]}}.

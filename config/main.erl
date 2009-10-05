@@ -1,9 +1,9 @@
 % Structure: {servers, {login, [{char, zone}, {char2, zone2}]}}
 {servers,
-  % Login server port
- {{port, 6900},
-  {node, {localhost, login}},
-  {aliter, "/path/to/aliter"}, % Absolute path to Aliter directory on node.
+  % Login server config
+ {[{port, 6900},
+   {node, {localhost, login}},
+   {aliter, "/path/to/aliter"}], % Absolute path to Aliter directory on node.
 
    % First char & zone server. Others go after in the list.
   [{"Aliter",
