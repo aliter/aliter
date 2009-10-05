@@ -21,8 +21,6 @@ start_link() ->
 
     log:info("Starting API.", [{port, Port}]),
 
-    protobuffs_compile:scan_file("include/api.proto"),
-
     gen_listener_tcp:start_link({local, ?MODULE}, ?MODULE, Port, []).
 
 init(Port) ->
