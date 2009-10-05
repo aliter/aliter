@@ -1,0 +1,83 @@
+message ApiRequest {
+    required string key = 1;
+    required string node = 2;
+
+    optional Account add_account = 3;
+    optional Account get_account = 4;
+    optional Account delete_account = 5;
+    optional Account update_account = 6;
+
+    optional Char add_char = 7;
+    optional Char get_char = 8;
+    optional Char delete_char = 9;
+    optional Char update_char = 10;
+}
+
+message ApiResponse {
+    required string msg = 1;
+    optional string info = 2;
+
+    repeated Account account = 3;
+    repeated Char char = 4;
+}
+
+message Account {
+    optional int64 id = 1;
+    optional string login = 2;
+    optional string password = 3;
+    optional string email = 4;
+    optional int32 gender = 5;
+    optional int64 login_count = 6;
+    optional string last_login = 7;
+    optional string last_ip = 8;
+    optional int32 gm_level = 9;
+    optional string ban_until = 10;
+}
+
+message Char {
+    optional int64 id = 1;
+    optional int32 num = 2;
+    optional string name = 3;
+    optional int32 job = 4;
+    optional int32 base_level = 5;
+    optional int64 base_exp = 6;
+    optional int32 job_level = 7;
+    optional int64 job_exp = 8;
+    optional int64 zeny = 9;
+    optional int32 str = 10;
+    optional int32 agi = 11;
+    optional int32 vit = 12;
+    optional int32 int = 13;
+    optional int32 dex = 14;
+    optional int32 luk = 15;
+    optional int32 max_hp = 16;
+    optional int32 hp = 17;
+    optional int32 max_sp = 18;
+    optional int32 sp = 19;
+    optional int32 status_points = 20;
+    optional int32 skill_points = 21;
+    optional int32 hair_style = 22;
+    optional int32 hair_colour = 23;
+    optional int32 clothes_colour = 24;
+    optional int32 view_weapon = 25;
+    optional int32 view_shield = 26;
+    optional int32 view_head_top = 27;
+    optional int32 view_head_middle = 28;
+    optional int32 view_head_bottom = 29;
+    optional string map = 30;
+    optional int32 x = 31;
+    optional int32 y = 32;
+    optional string save_map = 33;
+    optional int32 save_x = 34;
+    optional int32 save_y = 35;
+    optional bool online = 36;
+    optional int32 fame = 37;
+    optional int32 guild_position = 38;
+    optional int64 guild_taxed = 39;
+    optional int64 account_id = 40;
+    optional int64 party_id = 41;
+    optional int64 guild_id = 42;
+    optional int64 pet_id = 43;
+    optional int64 homunculus_id = 44;
+    optional int64 mercenary_id = 45;
+}
