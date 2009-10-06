@@ -72,13 +72,16 @@ message Char {
     optional int32 save_y = 35;
     optional int32 online = 36;
     optional int32 fame = 37;
-    optional int32 guild_position = 38;
-    optional int64 guild_taxed = 39;
-    optional int32 renamed = 40;
-    optional int64 account_id = 41;
-    optional int64 party_id = 42;
-    optional int64 guild_id = 43;
-    optional int64 pet_id = 44;
-    optional int64 homunculus_id = 45;
-    optional int64 mercenary_id = 46;
+    optional int32 option = 38,
+    optional int32 karma = 39,
+    optional int32 manner = 40;
+    optional int32 guild_position = 41;
+    optional int64 guild_taxed = 42;
+    optional int32 renamed = 43;
+    optional int64 account_id = 44;
+    optional int64 party_id = 45;
+    optional int64 guild_id = 46;
+    optional int64 pet_id = 47;
+    optional int64 homunculus_id = 48;
+    optional int64 mercenary_id = 49;
 }
