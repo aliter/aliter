@@ -51,7 +51,10 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
             State#state.tcp ! {16#6c, 0},
             {next_state, locked, State}
     end;
-locked(_Event, State) ->
+locked(Event, State) ->
+    log:debug("Character FSM received invalid event.",
+              [{event, Event},
+               {state, locked}]),
     {next_state, locked, State}.
 
 valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
@@ -75,10 +78,12 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
         {atomic, []} ->
             log:warning("Player selected invalid character.",
                         [{account, AccountID}]),
+            State#state.tcp ! {16#6c, 1},
             {next_state, valid, State};
         Error ->
             log:warning("Error grabbing selected character.",
                         [{result, Error}]),
+            State#state.tcp ! {16#6c, 1},
             {next_state, valid, State}
     end;
 valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
@@ -110,13 +115,46 @@ valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
         Error ->
             log:info("Character creation failed.",
                      [{account, Account},
-                      {result, Error}])
+                      {result, Error}]),
+            State#state.tcp ! {16#6e, 1}
     end,
 
     {next_state, valid, State};
-valid({delete, _CharacterID, _EMail}, State) ->
+valid({delete, CharacterID, EMail}, State = #state{account = #account{id = AccountID, email = AccountEMail}}) ->
+    case EMail of
+        AccountEMail ->
+            Delete = fun() ->
+                         [Char] = qlc:e(qlc:q([C || C <- mnesia:table(char),
+                                                    C#char.id =:= CharacterID,
+                                                    C#char.account_id =:= AccountID])),
+                         mnesia:delete(char, CharacterID),
+                         Char
+                     end,
+
+            case mnesia:transaction(Delete) of
+                {atomic, Char} ->
+                    log:info("Character deleted.",
+                             [{char, Char}]),
+                    State#state.tcp ! <<16#6f:16/little>>;
+                Error ->
+                    log:warning("Character deletion failed.",
+                                [{char_id, CharacterID},
+                                 {account_id, AccountID},
+                                 {email, EMail},
+                                 {result, Error}]),
+                    State#state.tcp ! {16#70, 1}
+            end;
+        _Invalid ->
+            log:warning("Character deletion attempted with wrong e-mail address.",
+                        [{email, EMail},
+                         {wanted, AccountEMail}]),
+            State#state.tcp ! {16#70, 0}
+    end,
     {next_state, valid, State};
-valid(_Event, State) ->
+valid(Event, State) ->
+    log:debug("Character FSM received invalid event.",
+              [{event, Event},
+               {state, valid}]),
     {next_state, valid, State}.
 
 handle_event(stop, _StateName, StateData) ->
