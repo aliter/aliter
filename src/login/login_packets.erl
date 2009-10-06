@@ -45,4 +45,4 @@ pack(Header, Data) ->
     log:error("Cannot pack unknown data.",
               [{header, Header},
                {data, Data}]),
-    false.
+    <<>>.

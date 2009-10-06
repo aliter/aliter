@@ -12,10 +12,11 @@
          terminate/3,
          code_change/4]).
 
--export([init/1, locked/2, valid/2]).
+-export([init/1, locked/2, valid/2, renaming/2]).
 
 -record(state, {tcp,
-                account}).
+                account,
+                rename}).
 
 start_link(Tcp) ->
     gen_fsm:start_link(?MODULE, Tcp, []).
@@ -162,11 +163,56 @@ valid({delete, CharacterID, EMail}, State = #state{account = #account{id = Accou
             State#state.tcp ! {16#70, 0}
     end,
     {next_state, valid, State};
+valid({check_name, AccountID, CharacterID, NewName}, State = #state{account = #account{id = AccountID}}) ->
+    Check = fun() ->
+                [] = qlc:e(qlc:q([C || C <- mnesia:table(char),
+                                       C#char.name =:= NewName])),
+                qlc:e(qlc:q([C || C <- mnesia:table(char),
+                                  C#char.id =:= CharacterID,
+                                  C#char.account_id =:= AccountID]))
+            end,
+
+    case mnesia:transaction(Check) of
+        {atomic, [Char]} ->
+            State#state.tcp ! {16#28e, 1},
+            {next_state, renaming, State#state{rename = {Char, NewName}}};
+        _Invalid ->
+            State#state.tcp ! {16#28e, 0},
+            {next_state, valid, State}
+    end;
 valid(Event, State) ->
     log:debug("Character FSM received invalid event.",
               [{event, Event},
                {state, valid}]),
     {next_state, valid, State}.
+
+renaming({rename, CharacterID},
+         State = #state{rename = {Char = #char{id = CharacterID,
+                                               renamed = 0},
+                                  NewName}}) ->
+    Write = fun() ->
+                [] = qlc:e(qlc:q([C || C <- mnesia:table(char),
+                                       C#char.name =:= NewName])),
+                mnesia:write(Char#char{name = NewName, renamed = 1})
+            end,
+
+    case mnesia:transaction(Write) of
+        {atomic, ok} ->
+            State#state.tcp ! {16#290, 0};
+        _Error ->
+            State#state.tcp ! {16#290, 3}
+    end,
+
+    {next_state, valid, State#state{rename = undefined}};
+renaming({rename, _CharacterID},
+         State = #state{rename = {#char{renamed = 1}, _NewName}}) ->
+    State#state.tcp ! {16#290, 1},
+    {next_state, valid, State};
+renaming(Event, State) ->
+    log:debug("Character FSM received invalid event.",
+              [{event, Event},
+               {state, renaming}]),
+    {next_state, renaming, State}.
 
 handle_event(stop, _StateName, StateData) ->
     log:info("Character FSM stopping."),

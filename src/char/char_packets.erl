@@ -42,7 +42,9 @@ unpack(<<16#28d:16/little,
          AccountID:32/little,
          CharacterID:32/little,
          NewName:24/little-binary-unit:8>>) ->
-    {rename, AccountID, CharacterID, string:strip(binary_to_list(NewName), both, 0)};
+    {check_name, AccountID, CharacterID, string:strip(binary_to_list(NewName), both, 0)};
+unpack(<<16#28f:16/little, CharacterID:32/little>>) ->
+    {rename, CharacterID};
 unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     false.
@@ -69,11 +71,16 @@ pack(16#71, {#char{id = ID, map = Map}, {ZA, ZB, ZC, ZD}, ZonePort}) ->
        ID:32/little>>,
      list_to_binary(string:left(Map ++ ".gat", 16, 0)),
      <<ZA, ZB, ZC, ZD, ZonePort:16/little>>];
+pack(16#28e, Taken) ->
+    <<16#28e:16/little,
+      Taken:16/little>>;
+pack(16#290, Result) ->
+    <<16#290:16/little, Result:16/little>>;
 pack(Header, Data) ->
     log:error("Cannot pack unknown data.",
                [{header, Header},
                 {data, Data}]),
-    false.
+    <<>>.
 
 
 character(C) ->
