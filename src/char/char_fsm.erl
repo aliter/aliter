@@ -78,7 +78,8 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
             {next_state, valid, State};
         Error ->
             log:warning("Error grabbing selected character.",
-                        [{result, Error}])
+                        [{result, Error}]),
+            {next_state, valid, State}
     end;
 valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
       State = #state{account = Account}) ->
