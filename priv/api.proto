@@ -70,14 +70,15 @@ message Char {
     optional string save_map = 33;
     optional int32 save_x = 34;
     optional int32 save_y = 35;
-    optional bool online = 36;
+    optional int32 online = 36;
     optional int32 fame = 37;
     optional int32 guild_position = 38;
     optional int64 guild_taxed = 39;
-    optional int64 account_id = 40;
-    optional int64 party_id = 41;
-    optional int64 guild_id = 42;
-    optional int64 pet_id = 43;
-    optional int64 homunculus_id = 44;
-    optional int64 mercenary_id = 45;
+    optional int32 renamed = 40;
+    optional int64 account_id = 41;
+    optional int64 party_id = 42;
+    optional int64 guild_id = 43;
+    optional int64 pet_id = 44;
+    optional int64 homunculus_id = 45;
+    optional int64 mercenary_id = 46;
 }

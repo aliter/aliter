@@ -107,4 +107,4 @@ character(C) ->
        (C#char.dex):8,
        (C#char.luk):8,
        (C#char.num):16/little,
-       0:16/little>>]. % TODO (Renamed)
+       (C#char.renamed):16/little>>]. % TODO (Renamed)
