@@ -30,14 +30,19 @@ unpack(<<16#67:16/little,
          Num:8,
          HairColor:16/little,
          HairStyle:16/little>>) ->
-    {create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColor, HairStyle};
+    {create, string:strip(binary_to_list(Name), both, 0), Str, Agi, Vit, Int, Dex, Luk, Num, HairColor, HairStyle};
 unpack(<<16#68:16/little,
          CharacterID:32/little,
          EMail:40/little-binary-unit:8>>) ->
-    {delete, CharacterID, EMail};
+    {delete, CharacterID, string:strip(binary_to_list(EMail), both, 0)};
 unpack(<<16#187:16/little,
          AccountID:32/little>>) ->
     {keepalive, AccountID};
+unpack(<<16#28d:16/little,
+         AccountID:32/little,
+         CharacterID:32/little,
+         NewName:24/little-binary-unit:8>>) ->
+    {rename, AccountID, CharacterID, string:strip(binary_to_list(NewName), both, 0)};
 unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     false.
@@ -107,4 +112,4 @@ character(C) ->
        (C#char.dex):8,
        (C#char.luk):8,
        (C#char.num):16/little,
-       (C#char.renamed):16/little>>]. % TODO (Renamed)
+       (C#char.renamed):16/little>>].
