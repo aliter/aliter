@@ -3,8 +3,8 @@
 -export([load/1]).
 
 load(main) ->
-    % {ok, Cwd} = file:get_cwd(),
-    % load(main, Cwd ++ "/config/"),
+    {ok, Cwd} = file:get_cwd(),
+    load(main, Cwd ++ "/config/"),
     load(main, misc:home()).
 load(main, Path) ->
     {ok, Main} = file:consult(Path ++ "main.erl"),

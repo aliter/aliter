@@ -60,12 +60,59 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
                                     X#char.num =:= Num,
                                     X#char.account_id =:= AccountID]))
               end,
-    {atomic, [_C]} = mnesia:transaction(GetChar),
+
+    case mnesia:transaction(GetChar) of
+        {atomic, [C]} ->
+            {ok, ZoneConf} = application:get_env(char, zone_conf),
+
+            State#state.tcp ! {16#71,
+                               C#char.id,
+                               (C#char.map) ++ ".gat",
+                               proplists:get_value(host, ZoneConf),
+                               proplists:get_value(port, ZoneConf)},
+
+            {stop, normal, State};
+        {atomic, []} ->
+            log:warning("Player selected invalid character.",
+                        [{account, AccountID}]),
+            {next_state, valid, State};
+        Error ->
+            log:warning("Error grabbing selected character.",
+                        [{result, Error}])
+    end;
+valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
+      State = #state{account = Account}) ->
+    Create = fun() ->
+                 Char = #char{id = mnesia:dirty_update_counter(ids, char, 0),
+                              num = Num,
+                              name = Name,
+                              zeny = 500, % TODO: Config flag
+                              str = Str,
+                              agi = Agi,
+                              vit = Vit,
+                              int = Int,
+                              dex = Dex,
+                              luk = Luk,
+                              hair_colour = HairColour,
+                              hair_style = HairStyle},
+                 mnesia:dirty_update_counter(ids, char, 1),
+                 mnesia:write(Char),
+                 Char
+             end,
+
+    case mnesia:transaction(Create) of
+        {atomic, Char} ->
+            log:info("Created character.",
+                     [{account, Account},
+                      {char, Char}]),
+            State#state.tcp ! {16#6d, Char};
+        Error ->
+            log:info("Character creation failed.",
+                     [{account, Account},
+                      {result, Error}])
+    end,
 
     {next_state, valid, State};
-% valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColor, HairStyle},
-      % State) ->
-    % {next_state, valid, State};
 valid({delete, _CharacterID, _EMail}, State) ->
     {next_state, valid, State};
 valid(_Event, State) ->
