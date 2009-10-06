@@ -138,7 +138,7 @@ valid({delete, CharacterID, EMail}, State = #state{account = #account{id = Accou
                          [Char] = qlc:e(qlc:q([C || C <- mnesia:table(char),
                                                     C#char.id =:= CharacterID,
                                                     C#char.account_id =:= AccountID])),
-                         mnesia:delete(char, CharacterID),
+                         mnesia:delete_object(Char),
                          Char
                      end,
 
@@ -153,7 +153,7 @@ valid({delete, CharacterID, EMail}, State = #state{account = #account{id = Accou
                                  {account_id, AccountID},
                                  {email, EMail},
                                  {result, Error}]),
-                    State#state.tcp ! {16#70, 1}
+                    State#state.tcp ! {16#70, 0}
             end;
         _Invalid ->
             log:warning("Character deletion attempted with wrong e-mail address.",
