@@ -89,34 +89,45 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
 valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
       State = #state{account = Account}) ->
     Create = fun() ->
-                 Char = #char{id = mnesia:dirty_update_counter(ids, char, 0),
-                              num = Num,
-                              name = Name,
-                              zeny = 500, % TODO: Config flag
-                              str = Str,
-                              agi = Agi,
-                              vit = Vit,
-                              int = Int,
-                              dex = Dex,
-                              luk = Luk,
-                              hair_colour = HairColour,
-                              hair_style = HairStyle},
-                 mnesia:dirty_update_counter(ids, char, 1),
-                 mnesia:write(Char),
-                 Char
+                  case qlc:e(qlc:q([C || C <- mnesia:table(char),
+                                         C#char.name =:= Name])) of
+                      [] ->
+                          Char = #char{id = mnesia:dirty_update_counter(ids, char, 0),
+                                       num = Num,
+                                       name = Name,
+                                       zeny = 500, % TODO: Config flag
+                                       str = Str,
+                                       agi = Agi,
+                                       vit = Vit,
+                                       int = Int,
+                                       dex = Dex,
+                                       luk = Luk,
+                                       hair_colour = HairColour,
+                                       hair_style = HairStyle,
+                                       account_id = Account#account.id},
+                          mnesia:dirty_update_counter(ids, char, 1),
+                          mnesia:write(Char),
+                          Char;
+                      _Exists ->
+                          exists
+                  end
              end,
 
     case mnesia:transaction(Create) of
-        {atomic, Char} ->
+        {atomic, Char} when is_record(Char, char)->
             log:info("Created character.",
                      [{account, Account},
                       {char, Char}]),
             State#state.tcp ! {16#6d, Char};
+        {atomic, exists} ->
+            log:info("Character creation denied (name already in use).",
+                     [{account, Account}]),
+            State#state.tcp ! {16#6e, 0};
         Error ->
             log:info("Character creation failed.",
                      [{account, Account},
                       {result, Error}]),
-            State#state.tcp ! {16#6e, 1}
+            State#state.tcp ! {16#6e, 16#FF}
     end,
 
     {next_state, valid, State};
