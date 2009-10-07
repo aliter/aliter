@@ -1,34 +1,28 @@
 -module(char).
--behaviour(application).
 
 -include("include/records.hrl").
 
--export([start/2,
+-export([start/0,
          init/1,
          install/0,
          uninstall/0,
-         shutdown/0,
-         stop/1]).
+         stop/0]).
 
-start(_Type, _Args) ->
+start() ->
     char_config:load(main),
 
     Supervisor = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
 
     {ok, Servers} = application:get_env(?MODULE, servers),
-    lists:foreach(fun
-                      ({Name, Char, Zone}) ->
-                          {node, {CharHost, CharName}} = proplists:lookup(node, Char),
-                          {aliter, CharAliter} = proplists:lookup(aliter, Char),
+    lists:foreach(fun({_Name, Conf, _ZoneConf}) ->
+                      {node, {Host, Name}} = proplists:lookup(node, Conf),
+                      {aliter, Aliter} = proplists:lookup(aliter, Conf),
 
-                          {ok, CharNode} = slave:start_link(CharHost,
-                                                            CharName,
-                                                            "-pa " ++ CharAliter ++ "/ebin"),
+                      Args = "-pa " ++ Aliter ++ "/ebin",
+                      {ok, Node} = slave:start_link(Host, Name, Args),
 
-                          supervisor:start_child(?MODULE, [CharNode,
-                                                           char_srv,
-                                                           start_link,
-                                                           [Name, Char, Zone]])
+                      supervisor:start_child(?MODULE,
+                                             [Node, char_srv, start_link, []])
                   end,
                   Servers),
 
@@ -69,9 +63,6 @@ uninstall() ->
 
     mnesia:delete_schema([node()]).
 
-shutdown() ->
+stop() ->
     log:info("Stopping char server."),
-    application:stop(char).
-
-stop(_State) ->
     ok.

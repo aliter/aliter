@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/1]).
+-export([start_link/0]).
 
 -export([init/1,
          handle_call/3,
@@ -12,7 +12,11 @@
          terminate/2,
          code_change/3]).
 
-start_link(Port) ->
+start_link() ->
+    login_config:load(main),
+
+    {ok, Port} = application:get_env(login, port),
+
     log:info("Starting login server.", [{port, Port}]),
 
     application:set_env(mnesia, dir, misc:home() ++ "database/login"),
@@ -27,7 +31,8 @@ init(Port) ->
     {ok, {Port, login_fsm, login_packets}, []}.
 
 handle_call({verify_session, AccountID, LoginIDa, LoginIDb}, _From, Sessions) ->
-    log:debug("Verifying session.", [{account, AccountID}, {ids, {LoginIDa, LoginIDb}}, {session, Sessions}]),
+    log:debug("Verifying session.",
+              [{account, AccountID}, {ids, {LoginIDa, LoginIDb}}, {session, Sessions}]),
 
     case proplists:lookup(AccountID, Sessions) of
         {AccountID, Account, FSM, LoginIDa, LoginIDb} ->
@@ -42,7 +47,8 @@ handle_call(Request, _From, Sessions) ->
     {reply, {illegal_request, Request}, Sessions}.
 
 handle_cast({#apirequest{add_account = A}, From}, Sessions) when A =/= undefined ->
-    log:debug("Login server got API request", [{request, log:yellow(add_account)}, {account, A}]),
+    log:debug("Login server got API request",
+              [{request, log:yellow(add_account)}, {account, A}]),
 
     Create = fun() ->
                  Account = A#account{id = mnesia:dirty_update_counter(ids, account, 0)},
@@ -61,7 +67,8 @@ handle_cast({#apirequest{add_account = A}, From}, Sessions) when A =/= undefined
 
     {noreply, Sessions};
 handle_cast({#apirequest{get_account = A}, From}, Sessions) when A =/= undefined ->
-    log:debug("Login server got API request", [{request, log:yellow(get_account)}, {account, A}]),
+    log:debug("Login server got API request",
+              [{request, log:yellow(get_account)}, {account, A}]),
 
     Get = fun() -> mnesia:match_object(api:dc(A)) end,
     case mnesia:transaction(Get) of
@@ -75,7 +82,8 @@ handle_cast({#apirequest{get_account = A}, From}, Sessions) when A =/= undefined
 
     {noreply, Sessions};
 handle_cast({#apirequest{delete_account = A}, From}, Sessions) when A =/= undefined ->
-    log:debug("Login server got API request", [{request, log:yellow(delete_account)}, {account, A}]),
+    log:debug("Login server got API request",
+              [{request, log:yellow(delete_account)}, {account, A}]),
 
     Delete = fun() ->
                  Accounts = mnesia:match_object(api:dc(A)),
@@ -94,7 +102,8 @@ handle_cast({#apirequest{delete_account = A}, From}, Sessions) when A =/= undefi
 
     {noreply, Sessions};
 handle_cast({#apirequest{update_account = A}, From}, Sessions) when A =/= undefined ->
-    log:debug("Login server got API request", [{request, log:yellow(update_account)}, {account, A}]),
+    log:debug("Login server got API request",
+              [{request, log:yellow(update_account)}, {account, A}]),
 
     Update = fun() -> mnesia:write(A) end,
     case mnesia:transaction(Update) of

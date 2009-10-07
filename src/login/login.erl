@@ -1,20 +1,20 @@
 -module(login).
--behaviour(application).
 
 -include("include/records.hrl").
 
--export([start/2,
+-export([start/0,
          install/0,
          uninstall/0,
-         shutdown/0,
-         stop/1]).
+         stop/0]).
 
-start(_Type, _Args) ->
+start() ->
     login_config:load(main),
 
-    {ok, Port} = application:get_env(?MODULE, port),
+    {ok, {Host, Name}} = application:get_env(?MODULE, host),
+    {ok, Aliter} = application:get_env(?MODULE, aliter),
+    {ok, Node} = slave:start_link(Host, Name, "-pa " ++ Aliter ++ "/ebin"),
 
-    login_srv:start_link(Port).
+    rpc:block_call(Node, login_srv, start_link, []).
 
 install() ->
     application:set_env(mnesia, dir, misc:home() ++ "database/login"),
@@ -40,9 +40,5 @@ uninstall() ->
 
     mnesia:delete_schema([node()]).
 
-shutdown() ->
-    log:info("Stopping login server."),
-    application:stop(login).
-
-stop(_State) ->
+stop() ->
     ok.

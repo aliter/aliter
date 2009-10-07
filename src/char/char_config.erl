@@ -10,20 +10,25 @@ load(main, Path) ->
     {ok, Main} = file:consult(Path ++ "main.erl"),
 
     {servers, {LoginConf, Servers}} = proplists:lookup(servers, Main),
+
+    case lists:filter(fun({_Name, Conf, _ZoneConf}) ->
+                          {node, {Host, Name}} = proplists:lookup(node, Conf),
+                          Node = list_to_atom(lists:concat([Name, '@', Host])),
+                          Node == node()
+                      end,
+                      Servers) of
+        [] ->
+            ok;
+        [{_Name, Conf, ZoneConf}] ->
+            application:set_env(char, name, proplists:get_value(name, Conf)),
+            application:set_env(char, port, proplists:get_value(port, Conf)),
+            application:set_env(char, zone_conf, ZoneConf)
+    end,
+
     {node, {LoginHost, LoginName}} = proplists:lookup(node, LoginConf),
-
-    lists:foreach(fun({_Name, CharConf, ZoneConf}) ->
-                      {node, {CharHost, CharName}} = proplists:lookup(node, CharConf),
-                      CharNode = list_to_atom(lists:concat([CharName, '@', CharHost])),
-
-                      if
-                          CharNode == node() ->
-                              application:set_env(char, zone_conf, ZoneConf);
-                          true ->
-                              ok
-                      end
-                  end,
-                  Servers),
-
-    application:set_env(char, login_node, list_to_atom(lists:concat([LoginName, '@', LoginHost]))),
+    application:set_env(char,
+                        login_node,
+                        list_to_atom(lists:concat([LoginName,
+                                                   '@',
+                                                   LoginHost]))),
     application:set_env(char, servers, Servers).

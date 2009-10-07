@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/3]).
+-export([start_link/0]).
 
 -export([init/1,
          handle_call/3,
@@ -12,14 +12,17 @@
          terminate/2,
          code_change/3]).
 
-start_link(Name, CharConf, _ZoneConf) ->
+start_link() ->
     char_config:load(main),
 
-    {port, Port} = proplists:lookup(port, CharConf),
+    {ok, Name} = application:get_env(char, name),
+    {ok, Port} = application:get_env(char, port),
 
     log:info("Starting character server.", [{name, Name}, {port, Port}]),
 
-    application:set_env(mnesia, dir, lists:concat([misc:home(), "database/char/", node()])),
+    application:set_env(mnesia,
+                        dir,
+                        lists:concat([misc:home(), "database/char/", node()])),
 
     ok = mnesia:start(),
 
@@ -38,7 +41,8 @@ handle_call(Request, _From, State) ->
     {reply, {illegal_request, Request}, State}.
 
 handle_cast({#apirequest{add_char = C}, From}, State) when C =/= undefined ->
-    log:debug("Character server got API request", [{request, log:yellow(add_char)}, {char, C}]),
+    log:debug("Character server got API request",
+              [{request, log:yellow(add_char)}, {char, C}]),
 
     Create = fun() ->
                  Char = C#char{id = mnesia:dirty_update_counter(ids, char, 0)},
@@ -57,7 +61,8 @@ handle_cast({#apirequest{add_char = C}, From}, State) when C =/= undefined ->
 
     {noreply, State};
 handle_cast({#apirequest{get_char = C}, From}, State) when C =/= undefined ->
-    log:debug("Character server got API request", [{request, log:yellow(get_char)}, {char, C}]),
+    log:debug("Character server got API request",
+              [{request, log:yellow(get_char)}, {char, C}]),
 
     Get = fun() -> mnesia:match_object(api:dc(C)) end,
     case mnesia:transaction(Get) of
@@ -71,7 +76,8 @@ handle_cast({#apirequest{get_char = C}, From}, State) when C =/= undefined ->
 
     {noreply, State};
 handle_cast({#apirequest{delete_char = C}, From}, State) when C =/= undefined ->
-    log:debug("Character server got API request", [{request, log:yellow(delete_char)}, {char, C}]),
+    log:debug("Character server got API request",
+              [{request, log:yellow(delete_char)}, {char, C}]),
 
     Get = fun() ->
               Chars = mnesia:match_object(api:dc(C)),
@@ -90,7 +96,8 @@ handle_cast({#apirequest{delete_char = C}, From}, State) when C =/= undefined ->
 
     {noreply, State};
 handle_cast({#apirequest{update_char = C}, From}, State) when C =/= undefined ->
-    log:debug("Character server got API request", [{request, log:yellow(update_char)}, {char, C}]),
+    log:debug("Character server got API request",
+              [{request, log:yellow(update_char)}, {char, C}]),
 
     Get = fun() -> mnesia:write(C) end,
     case mnesia:transaction(Get) of
