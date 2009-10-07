@@ -25,17 +25,20 @@ init(Tcp) ->
     {ok, locked, #state{tcp=Tcp}}.
 
 locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
-    {ok, LoginNode} = application:get_env(char, login_node),
+    State#state.tcp ! <<AccountID:32/little>>,
 
+    {ok, LoginNode} = application:get_env(char, login_node),
     Verify = gen_server_tcp:call({listener, LoginNode},
                                  {verify_session,
                                   AccountID,
                                   LoginIDa,
                                   LoginIDb}),
 
-    State#state.tcp ! <<AccountID:32/little>>,
+    log:info("Character connect request.",
+             [{account, AccountID},
+              {ids, {LoginIDa, LoginIDb}},
+              {verified, Verify}]),
 
-    log:info("Character connect request.", [{account, AccountID}, {ids, {LoginIDa, LoginIDb}}, {verified, Verify}]),
 
     case Verify of
         {ok, Account} ->
