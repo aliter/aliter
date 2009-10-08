@@ -16,6 +16,7 @@
 
 start_link() ->
     {ok, API} = application:get_env(aliter, api),
+
     {port, Port} = proplists:lookup(port, API),
     {key, Key} = proplists:lookup(key, API),
 

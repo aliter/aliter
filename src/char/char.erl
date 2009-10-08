@@ -64,5 +64,5 @@ uninstall() ->
     mnesia:delete_schema([node()]).
 
 stop() ->
-    log:info("Stopping char server."),
+    log:info("Stopping Char server."),
     ok.
