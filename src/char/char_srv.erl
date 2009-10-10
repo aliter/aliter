@@ -119,7 +119,7 @@ handle_info(Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
-    log:info("Character server terminating.", [{node, node()}]),
+    log:info("Character server terminating."),
     mnesia:stop(),
     ok.
 

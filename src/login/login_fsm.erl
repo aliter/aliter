@@ -31,13 +31,13 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
     log:info("Received login request.",
              [{packetver, PacketVer},
               {login, Login},
-              {password, misc:md5_hash(Password)},
+              {password, erlang:md5(Password)},
               {region, Region}]),
 
     F = fun() ->
            qlc:e(qlc:q([X || X <- mnesia:table(account),
                              X#account.login =:= Login,
-                             X#account.password =:= misc:md5_hash(Password)]))
+                             X#account.password =:= erlang:md5(Password)]))
         end,
 
     {atomic, Verify} = mnesia:transaction(F),

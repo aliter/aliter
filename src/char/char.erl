@@ -14,6 +14,7 @@ start() ->
     Supervisor = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
 
     {ok, Servers} = application:get_env(?MODULE, servers),
+
     lists:foreach(fun({_Name, Conf, _ZoneConf}) ->
                       {node, {Host, Name}} = proplists:lookup(node, Conf),
                       {aliter, Aliter} = proplists:lookup(aliter, Conf),

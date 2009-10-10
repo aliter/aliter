@@ -13,7 +13,7 @@ load(main, Path) ->
 
     case lists:filter(fun({_Name, Conf, _ZoneConf}) ->
                           {node, {Host, Name}} = proplists:lookup(node, Conf),
-                          Node = list_to_atom(lists:concat([Name, $@, Host])),
+                          Node = list_to_atom(lists:concat([Name, "@", Host])),
                           Node == node()
                       end,
                       Servers) of
@@ -28,7 +28,7 @@ load(main, Path) ->
             application:set_env(char,
                                 zone_node,
                                 list_to_atom(lists:concat([ZoneName,
-                                                           $@,
+                                                           "@",
                                                            ZoneHost])))
     end,
 
@@ -36,6 +36,6 @@ load(main, Path) ->
     application:set_env(char,
                         login_node,
                         list_to_atom(lists:concat([LoginName,
-                                                   $@,
+                                                   "@",
                                                    LoginHost]))),
     application:set_env(char, servers, Servers).
