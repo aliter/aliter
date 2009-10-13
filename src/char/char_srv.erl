@@ -22,7 +22,7 @@ start_link() ->
 
     application:set_env(mnesia,
                         dir,
-                        lists:concat([misc:home(), "database/char/", node()])),
+                        lists:concat([aliter:home(), "database/char/", node()])),
 
     ok = mnesia:start(),
 

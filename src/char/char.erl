@@ -41,7 +41,7 @@ init([]) ->
 install() ->
     application:set_env(mnesia,
                         dir,
-                        misc:home() ++ "database/char/" ++ atom_to_list(node())),
+                        aliter:home() ++ "database/char/" ++ atom_to_list(node())),
 
     ok = mnesia:create_schema([node()]),
 
@@ -60,7 +60,7 @@ install() ->
     mnesia:stop().
 
 uninstall() ->
-    application:set_env(mnesia, dir, misc:home() ++ "database/char/" ++ atom_to_list(node())),
+    application:set_env(mnesia, dir, aliter:home() ++ "database/char/" ++ atom_to_list(node())),
 
     mnesia:delete_schema([node()]).
 

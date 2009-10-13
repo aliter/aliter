@@ -1,0 +1,4 @@
+[submodule "protobuffs"]
+    path = lib/protobuffs
+    url = git://github.com/ngerakines/erlang_protobuffs
+

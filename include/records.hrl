@@ -3,6 +3,13 @@
         {key,
          id}).
 
+-record(map,
+        {name,
+         width,
+         height,
+         cells}).
+
+
 %%% Login tables
 -record(account,
         {id,

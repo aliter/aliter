@@ -19,7 +19,7 @@ start_link() ->
 
     log:info("Starting login server.", [{port, Port}]),
 
-    application:set_env(mnesia, dir, misc:home() ++ "database/login"),
+    application:set_env(mnesia, dir, aliter:home() ++ "database/login"),
 
     ok = mnesia:start(),
 

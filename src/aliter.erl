@@ -10,6 +10,8 @@
          uninstall/0,
          reinstall/0]).
 
+-export([home/0]).
+
 start(_Type, StartArgs) ->
     aliter_config:load(main),
 
@@ -93,4 +95,8 @@ uninstall() ->
 reinstall() ->
     uninstall(),
     install().
+
+home() ->
+    {ok, [[Home]]} = init:get_argument(home),
+    Home ++ "/.aliter/".
 

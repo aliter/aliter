@@ -3,5 +3,8 @@ all: compile
 compile:
 	erl -pa ebin -make
 
-start: compile
+install: compile
+	erl -noshell -pa ebin -sname aliter -eval "aliter:install()."
+
+start:
 	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."

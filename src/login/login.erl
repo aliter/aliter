@@ -17,7 +17,7 @@ start() ->
     rpc:block_call(Node, login_srv, start_link, []).
 
 install() ->
-    application:set_env(mnesia, dir, misc:home() ++ "database/login"),
+    application:set_env(mnesia, dir, aliter:home() ++ "database/login"),
 
     ok = mnesia:create_schema([node()]),
 
@@ -36,7 +36,7 @@ install() ->
     mnesia:stop().
 
 uninstall() ->
-    application:set_env(mnesia, dir, misc:home() ++ "database/login"),
+    application:set_env(mnesia, dir, aliter:home() ++ "database/login"),
 
     mnesia:delete_schema([node()]).
 
