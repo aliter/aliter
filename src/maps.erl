@@ -28,9 +28,10 @@ read_cache(Filename) ->
 
     read_maps(Maps).
 
-flip(_Width, <<>>) ->
+flip(<<>>, _Width) ->
     <<>>;
-flip(Width, <<Cells:Width/binary, Rest/binary>>) ->
+flip(Tiles, Width) ->
+    <<Cells:Width/binary, Rest/binary>> = Tiles,
     <<(flip(Width, Rest))/binary,
       Cells/binary>>.
 

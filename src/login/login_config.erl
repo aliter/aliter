@@ -21,5 +21,3 @@ load(main, Path) ->
     application:set_env(login, aliter, proplists:get_value(aliter, LoginConf)),
     application:set_env(login, servers, Servers).
 
-setFrom(Key, Conf) ->
-    application:set_env(login, Key, proplists:get_value(Key, Conf)).
