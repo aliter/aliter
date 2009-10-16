@@ -12,7 +12,7 @@
 {aliter, "/path/to/aliter"}.
 
 % Node of the master zone server associated with this char server
-{zone, name@host}
+{zone, name@host}.
 
 % Is the server undergoing maintenance?
 {maintenance, 0}.
