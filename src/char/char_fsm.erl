@@ -27,7 +27,7 @@ init(Tcp) ->
 locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
     State#state.tcp ! <<AccountID:32/little>>,
 
-    {ok, LoginNode} = application:get_env(char, login_node),
+    {node, LoginNode} = config:get_env(char, login.node),
     Verify = gen_server_tcp:call({listener, LoginNode},
                                  {verify_session,
                                   AccountID,
@@ -38,7 +38,6 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
              [{account, AccountID},
               {ids, {LoginIDa, LoginIDb}},
               {verified, Verify}]),
-
 
     case Verify of
         {ok, Account} ->
@@ -70,13 +69,11 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
 
     case mnesia:transaction(GetChar) of
         {atomic, [C]} ->
-            {ok, ZoneConf} = application:get_env(char, zone_conf),
-
             State#state.tcp ! {16#71,
                                C#char.id,
                                (C#char.map) ++ ".gat",
-                               proplists:get_value(host, ZoneConf),
-                               proplists:get_value(port, ZoneConf)},
+                               config:get_env(char, zone.server.host),
+                               config:get_env(char, zone.server.port)},
 
             {stop, normal, State};
         {atomic, []} ->

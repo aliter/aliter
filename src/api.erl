@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/0,
+-export([start_link/1,
          init/1,
          handle_accept/2,
          handle_call/3,
@@ -14,11 +14,11 @@
 
 -export([dc/1]).
 
-start_link() ->
-    {ok, API} = application:get_env(aliter, api),
+start_link(Conf) ->
+    config:set_env(api, Conf),
 
-    {port, Port} = proplists:lookup(port, API),
-    {key, Key} = proplists:lookup(key, API),
+    {port, Port} = config:get_env(api, port),
+    {key, Key} = config:get_env(api, key),
 
     log:info("Starting API.", [{port, Port}]),
 
@@ -41,7 +41,7 @@ loop(Socket, Key) ->
                     log:warning("API got request with invalid key.", [{request, R}])
             end,
 
-            ?MODULE:loop(Socket, Key);
+            loop(Socket, Key);
 
         {tcp_closed, Socket} ->
             log:info("Client disconnected from API.");
@@ -49,7 +49,7 @@ loop(Socket, Key) ->
         Packet when is_binary(Packet) ->
             log:debug("Sending API response.", [{response, api_pb:decode_apiresponse(Packet)}]),
             gen_tcp:send(Socket, Packet),
-            ?MODULE:loop(Socket, Key)
+            loop(Socket, Key)
     end.
 
 handle_accept(Socket, Key) ->

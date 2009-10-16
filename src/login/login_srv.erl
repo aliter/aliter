@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/0]).
+-export([start_link/1]).
 
 -export([init/1,
          handle_call/3,
@@ -12,14 +12,14 @@
          terminate/2,
          code_change/3]).
 
-start_link() ->
-    login_config:load(main),
+start_link(Conf) ->
+    config:set_env(login, Conf),
 
-    {ok, Port} = application:get_env(login, port),
+    {port, Port} = config:get_env(login, server.port),
 
     log:info("Starting login server.", [{port, Port}]),
 
-    application:set_env(mnesia, dir, aliter:home() ++ "database/login"),
+    application:set_env(mnesia, dir, config:db()),
 
     ok = mnesia:start(),
 

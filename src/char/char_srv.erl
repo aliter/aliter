@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/0]).
+-export([start_link/1]).
 
 -export([init/1,
          handle_call/3,
@@ -12,17 +12,15 @@
          terminate/2,
          code_change/3]).
 
-start_link() ->
-    char_config:load(main),
+start_link(Conf) ->
+    config:set_env(char, Conf),
 
-    {ok, Name} = application:get_env(char, name),
-    {ok, Port} = application:get_env(char, port),
+    {name, Name} = config:get_env(char, server.name),
+    {port, Port} = config:get_env(char, server.port),
 
     log:info("Starting character server.", [{name, Name}, {port, Port}]),
 
-    application:set_env(mnesia,
-                        dir,
-                        lists:concat([aliter:home(), "database/char/", node()])),
+    application:set_env(mnesia, dir, config:db()),
 
     ok = mnesia:start(),
 

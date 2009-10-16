@@ -24,7 +24,7 @@ message ApiResponse {
 message Account {
     optional int64 id = 1;
     optional string login = 2;
-    optional string password = 3;
+    optional bytes password = 3;
     optional string email = 4;
     optional int32 gender = 5;
     optional int64 login_count = 6;

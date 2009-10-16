@@ -2,30 +2,26 @@
 
 -include("include/records.hrl").
 
--export([start/0,
+-export([start_link/1,
          init/1,
          install/0,
          uninstall/0,
          stop/0]).
 
-start() ->
-    char_config:load(main),
-
+start_link(Config) ->
     Supervisor = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
 
-    {ok, Servers} = application:get_env(?MODULE, servers),
-
-    lists:foreach(fun({_Name, Conf, _ZoneConf}) ->
-                      {node, {Host, Name}} = proplists:lookup(node, Conf),
-                      {aliter, Aliter} = proplists:lookup(aliter, Conf),
+    lists:foreach(fun({Node, Conf}) ->
+                      {host, {Host, Name}} = config:find(server.host, Conf),
+                      {aliter, Aliter} = config:find(server.aliter, Conf),
 
                       Args = "-pa " ++ Aliter ++ "/ebin",
                       {ok, Node} = slave:start_link(Host, Name, Args),
 
                       supervisor:start_child(?MODULE,
-                                             [Node, char_srv, start_link, []])
+                                             [Node, char_srv, start_link, [Conf]])
                   end,
-                  Servers),
+                  Config),
 
     Supervisor.
 
@@ -39,9 +35,7 @@ init([]) ->
             []}]}}.
 
 install() ->
-    application:set_env(mnesia,
-                        dir,
-                        aliter:home() ++ "database/char/" ++ atom_to_list(node())),
+    application:set_env(mnesia, dir, config:db()),
 
     ok = mnesia:create_schema([node()]),
 
@@ -60,7 +54,7 @@ install() ->
     mnesia:stop().
 
 uninstall() ->
-    application:set_env(mnesia, dir, aliter:home() ++ "database/char/" ++ atom_to_list(node())),
+    application:set_env(mnesia, dir, config:db()),
 
     mnesia:delete_schema([node()]).
 

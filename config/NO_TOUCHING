@@ -1,4 +1,4 @@
 These files are default Aliter configurations.
 
 For setting up your own configuration, you may copy this structure to
-~/.aliter.
+~/.aliter/config.

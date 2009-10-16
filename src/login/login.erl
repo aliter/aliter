@@ -2,22 +2,20 @@
 
 -include("include/records.hrl").
 
--export([start/0,
+-export([start_link/1,
          install/0,
          uninstall/0,
          stop/0]).
 
-start() ->
-    login_config:load(main),
+start_link(Conf) ->
+    {host, {Host, Name}} = config:find(server.host, Conf),
+    {aliter, Aliter} = config:find(server.aliter, Conf),
 
-    {ok, {Host, Name}} = application:get_env(?MODULE, host),
-    {ok, Aliter} = application:get_env(?MODULE, aliter),
     {ok, Node} = slave:start_link(Host, Name, "-pa " ++ Aliter ++ "/ebin"),
-
-    rpc:block_call(Node, login_srv, start_link, []).
+    rpc:block_call(Node, login_srv, start_link, [Conf]).
 
 install() ->
-    application:set_env(mnesia, dir, aliter:home() ++ "database/login"),
+    application:set_env(mnesia, dir, config:db()),
 
     ok = mnesia:create_schema([node()]),
 
@@ -36,7 +34,7 @@ install() ->
     mnesia:stop().
 
 uninstall() ->
-    application:set_env(mnesia, dir, aliter:home() ++ "database/login"),
+    application:set_env(mnesia, dir, config:db()),
 
     mnesia:delete_schema([node()]).
 

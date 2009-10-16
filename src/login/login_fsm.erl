@@ -57,17 +57,17 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
                                                            LoginIDa,
                                                            LoginIDb}}),
 
-            {ok, ServerConf} = application:get_env(login, servers),
-            Servers = lists:map(fun({Name, Char, _Zone}) ->
+            {chars, CharServers} = config:get_env(login, chars),
+            Servers = lists:map(fun({_Node, Conf}) ->
+                                    {name, Name} = config:find(server.name, Conf),
+                                    {ip, IP} = config:find(server.ip, Conf),
+                                    {port, Port} = config:find(server.port, Conf),
+                                    {maintenance, Maintenance} = config:find(server.maintenance, Conf),
+                                    {new, New} = config:find(server.new, Conf),
 
-                                    {host, Host} = proplists:lookup(host, Char),
-                                    {port, Port} = proplists:lookup(port, Char),
-                                    {maintenance, Maintenance} = proplists:lookup(maintenance, Char),
-                                    {new, New} = proplists:lookup(new, Char),
-
-                                    {Host, Port, Name, 0, Maintenance, New}
+                                    {IP, Port, Name, 0, Maintenance, New}
                                 end,
-                                ServerConf),
+                                CharServers),
 
             State#state.tcp ! {16#69, {LoginIDa,
                                        LoginIDb,
