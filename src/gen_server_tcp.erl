@@ -98,6 +98,10 @@ loop(Socket, FSM, PacketHandler) ->
             log:info("Client disconnected."),
             gen_fsm:send_event(FSM, stop);
 
+        {packet_handler, Mod} ->
+            log:debug("Changing packet handler.", [{mod, Mod}]),
+            ?MODULE:loop(Socket, FSM, Mod);
+
         {Header, Data} ->
             log:debug("Sending data.", [{data, Data}]),
 

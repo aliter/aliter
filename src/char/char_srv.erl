@@ -32,8 +32,23 @@ start_link(Conf) ->
                               []).
 
 init(Port) ->
-    {ok, {Port, char_fsm, char_packets}, []}.
+    {ok, {Port, char_fsm, char_packets:new(24)}, []}.
 
+handle_call({verify_session, AccountID, CharacterID, SessionIDa}, _From, Sessions) ->
+    log:debug("Verifying session.",
+              [{account, AccountID},
+               {character, CharacterID},
+               {id, SessionIDa},
+               {session, Sessions}]),
+
+    case proplists:lookup(AccountID, Sessions) of
+        {AccountID, CharacterID, Account, Character, FSM, SessionIDa, _SessionIDb, PacketVer} ->
+            FSM ! keepalive,
+            {reply, {ok, Account, Character, PacketVer}, Sessions};
+        _ -> {reply, invalid, Sessions}
+    end;
+handle_call({get_session, AccountID}, _From, Sessions) ->
+    {reply, proplists:lookup(AccountID, Sessions), Sessions};
 handle_call(Request, _From, State) ->
     log:debug("Character server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
@@ -108,6 +123,12 @@ handle_cast({#apirequest{update_char = C}, From}, State) when C =/= undefined ->
     end,
 
     {noreply, State};
+handle_cast({add_session, Session}, Sessions) ->
+    log:debug("Character server adding session.", [{session, Session}]),
+    {noreply, [Session | Sessions]};
+handle_cast({remove_session, AccountID}, Sessions) ->
+    log:debug("Character server removing session.", [{account, AccountID}]),
+    {noreply, lists:keydelete(AccountID, 1, Sessions)};
 handle_cast(Cast, State) ->
     log:debug("Character server got cast.", [{cast, Cast}]),
     {noreply, State}.

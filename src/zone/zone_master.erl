@@ -12,6 +12,9 @@
          terminate/2,
          code_change/3]).
 
+-export([tick/0]).
+
+
 start_link(Conf) ->
     config:set_env(zone, Conf),
 
@@ -21,6 +24,8 @@ start_link(Conf) ->
 
 init({server, Conf}) ->
     supervisor:start_link({local, zone_master_sup}, ?MODULE, supervisor),
+
+    application:set_env(zone, tick, 0),
 
     application:set_env(mnesia, dir, config:db()),
 
@@ -94,3 +99,8 @@ who_serves(Map, [{_Id, Server, _Type, _Modules} | Servers]) ->
         no ->
             who_serves(Map, Servers)
     end.
+
+tick() ->
+    {ok, Tick} = application:get_env(zone, tick),
+    application:set_env(zone, tick, Tick + 1),
+    Tick.

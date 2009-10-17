@@ -51,13 +51,13 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
             {LoginIDa, LoginIDb} = {random:uniform(16#FFFFFFFF),
                                     random:uniform(16#FFFFFFFF)},
 
-            {port, LoginPort} = config:get_env(login, server.port),
             gen_server_tcp:cast(server,
                                 {add_session, {A#account.id,
                                                A,
                                                self(),
                                                LoginIDa,
-                                               LoginIDb}}),
+                                               LoginIDb,
+                                               PacketVer}}),
 
             {chars, CharServers} = config:get_env(login, chars),
             Servers = lists:map(fun({_Node, Conf}) ->

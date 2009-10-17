@@ -23,7 +23,7 @@ start_link(Port, Maps) ->
     gen_server_tcp:start_link(?MODULE, {Port, Maps}, []).
 
 init({Port, Maps}) ->
-    {ok, {Port, zone_fsm, zone_packets}, #state{port = Port, maps = Maps}}.
+    {ok, {Port, zone_fsm, zone_packets:new(24)}, #state{port = Port, maps = Maps}}.
 
 handle_call({provides, Map}, _From, State = #state{port = Port, maps = Maps}) ->
     case lists:dropwhile(fun(M) -> M#map.name /= Map end, Maps) of

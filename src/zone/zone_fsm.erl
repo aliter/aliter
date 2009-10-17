@@ -24,6 +24,26 @@ start_link(Tcp) ->
 init(Tcp) ->
     {ok, locked, #state{tcp=Tcp}}.
 
+locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
+    {char, CharNode} = config:get_env(zone, server.char),
+    Session = gen_server_tcp:call({server, CharNode},
+                                  {verify_session, AccountID, CharacterID, SessionIDa}),
+
+    case Session of
+        {ok, A, C, PacketVer} ->
+            State#state.tcp ! {packet_handler, zone_packets:new(PacketVer)},
+
+            State#state.tcp ! {16#283, SessionIDa},
+            State#state.tcp ! {16#73, {zone_master:tick(), {53, 111, 0}}},
+            State#state.tcp ! {16#8e, "Welcome to Aliter!"},
+
+            {next_state, valid, State#state{account = A, character = C}};
+        invalid ->
+            log:warning("Invalid zone login attempt caught.",
+                        [{account_id, AccountID},
+                         {character_id, CharacterID}]),
+            {next_state, locked, State}
+    end;
 locked(Event, State) ->
     log:debug("Zone FSM received invalid event.",
               [{event, Event},

@@ -40,13 +40,16 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
               {verified, Verify}]),
 
     case Verify of
-        {ok, Account} ->
+        {ok, Account, PacketVer} ->
             GetChars = fun() ->
                            qlc:e(qlc:q([X || X <- mnesia:table(char),
                                              X#char.account_id =:= AccountID]))
                        end,
             {atomic, Chars} = mnesia:transaction(GetChars),
 
+            log:debug("Packet version received.", [{ver, PacketVer}]),
+
+            State#state.tcp ! {packet_handler, char_packets:new(PacketVer)},
             State#state.tcp ! {16#6b, Chars},
 
             {next_state, valid, State#state{account = Account}};
@@ -69,11 +72,28 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
 
     case mnesia:transaction(GetChar) of
         {atomic, [C]} ->
+            log:debug("Player selected character.", [{account, AccountID}, {character, C#char.id}]),
+
             {ip, ZoneIP} = config:get_env(char, zone.server.ip),
             {zone, ZoneNode} = config:get_env(char, server.zone),
 
             {port, ZonePort} = gen_server:call({zone_master, ZoneNode},
-                                           {who_serves, C#char.map}),
+                                               {who_serves, C#char.map}),
+
+            {node, LoginNode} = config:get_env(char, login.node),
+            {AccountID, Account, _FSM, SessionIDa, SessionIDb, PacketVer} =
+                gen_server_tcp:call({server, LoginNode},
+                                    {get_session, AccountID}),
+
+            gen_server_tcp:cast(server,
+                                {add_session, {AccountID,
+                                               C#char.id,
+                                               Account,
+                                               C,
+                                               self(),
+                                               SessionIDa,
+                                               SessionIDb,
+                                               PacketVer}}),
 
             State#state.tcp ! {16#71,
                                {C,
@@ -237,8 +257,27 @@ handle_info(Info, StateName, StateData) ->
     log:debug("Character FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.
 
+terminate(_Reason, _StateName, #state{account = #account{id = AccountID}}) ->
+    log:info("Character FSM waiting for message to keep sessions alive."),
+
+    receive
+        keepalive ->
+            log:debug("Received keepalive; terminating.", [{account, AccountID}]),
+            ok
+    after
+        300000 ->
+            log:debug("No keepalive; removing session.",
+                      [{account, AccountID}]),
+            gen_server_tcp:cast(server, {remove_session, AccountID}),
+
+            {node, LoginNode} = config:get_env(char, login.node),
+            gen_server_tcp:cast({server, LoginNode},
+                                {remove_session, AccountID}),
+
+            ok
+    end;
 terminate(_Reason, _StateName, _StateData) ->
-    log:info("Character FSM terminating."),
+    log:debug("Character FSM terminating."),
     ok.
 
 code_change(_OldVsn, StateName, StateData, _Extra) ->
