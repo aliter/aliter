@@ -4,10 +4,10 @@
 
 % Login request
 unpack(<<16#64:16/little,
-        PacketVer:8/little-unit:4,
+        PacketVer:32/little,
         Login:24/little-binary-unit:8,
         Password:24/little-binary-unit:8,
-        Region:8/little>>) ->
+        Region:8>>) ->
     {login,
      PacketVer,
      string:strip(erlang:binary_to_list(Login), right, 0),

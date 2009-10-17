@@ -85,7 +85,6 @@ reply(Client, Reply) ->
     gen_server:reply(Client, Reply).
 
 loop(Socket, FSM, PacketHandler) ->
-    ok = inet:setopts(Socket, [{active, once}]),
     receive
         {tcp, Socket, Packet} ->
             log:debug("Received packet.", [{packet, Packet}]),
@@ -98,9 +97,18 @@ loop(Socket, FSM, PacketHandler) ->
             log:info("Client disconnected."),
             gen_fsm:send_event(FSM, stop);
 
-        {packet_handler, Mod} ->
-            log:debug("Changing packet handler.", [{mod, Mod}]),
-            ?MODULE:loop(Socket, FSM, Mod);
+        {parse, PacketHandler} ->
+            log:debug("Changing to parse mode with packet handler.",
+                      [{handler, PacketHandler}]),
+
+            Loop = self(),
+            Parser = spawn(fun() ->
+                               parse_loop(Socket, PacketHandler, Loop)
+                           end),
+
+            gen_tcp:controlling_process(Socket, Parser),
+
+            ?MODULE:loop(Socket, FSM, PacketHandler);
 
         {Header, Data} ->
             log:debug("Sending data.", [{data, Data}]),
@@ -115,6 +123,40 @@ loop(Socket, FSM, PacketHandler) ->
             ?MODULE:loop(Socket, FSM, PacketHandler)
     end.
 
+parse_loop(Socket, PacketHandler, Loop) ->
+    case gen_tcp:recv(Socket, 1) of
+        {ok, <<H1>>} ->
+            case gen_tcp:recv(Socket, 1, 0) of
+                {ok, <<H2>>} ->
+                    <<Header:16/little>> = <<H1, H2>>,
+
+                    case PacketHandler:packet_size(Header) of
+                        undefined ->
+                            log:debug("Received unknown packet.", [{header, Header}]),
+                            parse_loop(Socket, PacketHandler, Loop);
+                        0 -> % Variable-length packet
+                            {ok, <<Length:16/little>>} = gen_tcp:recv(Socket, 2),
+                            {ok, Rest} = gen_tcp:recv(Socket, Length - 4),
+                            Loop ! {tcp, Socket, <<Header:16/little, Length:16/little, Rest/binary>>},
+                            parse_loop(Socket, PacketHandler, Loop);
+                        2 ->
+                            Loop ! {tcp, Socket, <<Header:16/little>>},
+                            parse_loop(Socket, PacketHandler, Loop);
+                        Size ->
+                            {ok, Rest} = gen_tcp:recv(Socket, Size - 2),
+                            Loop ! {tcp, Socket, <<Header:16/little, Rest/binary>>},
+                            parse_loop(Socket, PacketHandler, Loop)
+                    end;
+                {error, timeout} ->
+                    log:debug("Ignoring rest."),
+                    parse_loop(Socket, PacketHandler, Loop);
+                {error, closed} ->
+                    Loop ! {tcp_closed, Socket}
+            end;
+        {error, closed} ->
+            Loop ! {tcp_closed, Socket}
+    end.
+
 % gen_listener_tcp callbacks
 
 handle_accept(Sock, #server_state{port = Port, packet_handler = PacketHandler} = St) ->
@@ -124,7 +166,11 @@ handle_accept(Sock, #server_state{port = Port, packet_handler = PacketHandler} =
                     {ok, FSM} = supervisor:start_child(client_sup(Port), [self()]),
                     loop(Sock, FSM, PacketHandler)
                 end),
+
     gen_tcp:controlling_process(Sock, Pid),
+
+    ok = inet:setopts(Sock, [{active, once}]),
+
     {noreply, St}.
 
 

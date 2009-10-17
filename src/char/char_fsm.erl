@@ -49,7 +49,7 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
 
             log:debug("Packet version received.", [{ver, PacketVer}]),
 
-            State#state.tcp ! {packet_handler, char_packets:new(PacketVer)},
+            State#state.tcp ! {parse, char_packets:new(PacketVer)},
             State#state.tcp ! {16#6b, Chars},
 
             {next_state, valid, State#state{account = Account}};

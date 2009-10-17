@@ -31,7 +31,7 @@ locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
 
     case Session of
         {ok, A, C, PacketVer} ->
-            State#state.tcp ! {packet_handler, zone_packets:new(PacketVer)},
+            State#state.tcp ! {parse, zone_packets:new(PacketVer)},
 
             State#state.tcp ! {16#283, SessionIDa},
             State#state.tcp ! {16#73, {zone_master:tick(), {53, 111, 0}}},
