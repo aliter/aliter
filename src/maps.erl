@@ -32,7 +32,7 @@ flip(<<>>, _Width) ->
     <<>>;
 flip(Tiles, Width) ->
     <<Cells:Width/binary, Rest/binary>> = Tiles,
-    <<(flip(Width, Rest))/binary,
+    <<(flip(Rest, Width))/binary,
       Cells/binary>>.
 
 at(M, {X, Y}) ->

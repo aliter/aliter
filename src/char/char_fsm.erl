@@ -28,7 +28,7 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
     State#state.tcp ! <<AccountID:32/little>>,
 
     {node, LoginNode} = config:get_env(char, login.node),
-    Verify = gen_server_tcp:call({listener, LoginNode},
+    Verify = gen_server_tcp:call({server, LoginNode},
                                  {verify_session,
                                   AccountID,
                                   LoginIDa,
@@ -69,11 +69,16 @@ valid({choose, Num}, State = #state{account = #account{id = AccountID}}) ->
 
     case mnesia:transaction(GetChar) of
         {atomic, [C]} ->
+            {ip, ZoneIP} = config:get_env(char, zone.server.ip),
+            {zone, ZoneNode} = config:get_env(char, server.zone),
+
+            {port, ZonePort} = gen_server:call({zone_master, ZoneNode},
+                                           {who_serves, C#char.map}),
+
             State#state.tcp ! {16#71,
-                               C#char.id,
-                               (C#char.map) ++ ".gat",
-                               config:get_env(char, zone.server.host),
-                               config:get_env(char, zone.server.port)},
+                               {C,
+                                ZoneIP,
+                                ZonePort}},
 
             {stop, normal, State};
         {atomic, []} ->
@@ -225,6 +230,9 @@ handle_sync_event(_Event, _From, StateName, StateData) ->
     log:debug("Character FSM got sync event."),
     {next_state, StateName, StateData}.
 
+handle_info({'EXIT', _From, Reason}, _StateName, StateData) ->
+    log:debug("Character FSM got EXIT signal.", [{reason, Reason}]),
+    {stop, normal, StateData};
 handle_info(Info, StateName, StateData) ->
     log:debug("Character FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.

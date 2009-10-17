@@ -51,11 +51,13 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
             {LoginIDa, LoginIDb} = {random:uniform(16#FFFFFFFF),
                                     random:uniform(16#FFFFFFFF)},
 
-            gen_listener_tcp:cast(listener, {add_session, {A#account.id,
-                                                           A,
-                                                           self(),
-                                                           LoginIDa,
-                                                           LoginIDb}}),
+            {port, LoginPort} = config:get_env(login, server.port),
+            gen_server_tcp:cast(server,
+                                {add_session, {A#account.id,
+                                               A,
+                                               self(),
+                                               LoginIDa,
+                                               LoginIDb}}),
 
             {chars, CharServers} = config:get_env(login, chars),
             Servers = lists:map(fun({_Node, Conf}) ->
@@ -93,7 +95,10 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
             {next_state, locked, State}
     end.
 
-valid(_Event, State) ->
+valid(Event, State) ->
+    log:debug("Login FSM received invalid event.",
+              [{state, valid},
+               {event, Event}]),
     {stop, normal, State}.
 
 handle_event(stop, _StateName, StateData) ->
@@ -107,6 +112,9 @@ handle_sync_event(_Event, _From, StateName, StateData) ->
     log:debug("Login FSM got sync event."),
     {next_state, StateName, StateData}.
 
+handle_info({'EXIT', _From, Reason}, _StateName, StateData) ->
+    log:debug("Login FSM got EXIT signal.", [{reason, Reason}]),
+    {stop, normal, StateData};
 handle_info(Info, StateName, StateData) ->
     log:debug("Login FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.
@@ -121,7 +129,7 @@ terminate(_Reason, _StateName, #state{account = #account{id = AccountID}}) ->
     after
         300000 -> % Wait 5 minutes to see if they chose a char server
             log:debug("No keepalive; removing session.", [{account, AccountID}]),
-            gen_server_tcp:cast(login_srv, {remove_session, AccountID}),
+            gen_server_tcp:cast(server, {remove_session, AccountID}),
             ok
     end;
 terminate(_Reason, _StateName, _StateData) ->

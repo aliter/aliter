@@ -27,6 +27,9 @@
          terminate/2,
          code_change/3]).
 
+-export([listener/1,
+         client_sup/1]).
+
 -record(server_state,
         {port,
          module,
@@ -110,11 +113,11 @@ loop(Socket, FSM, PacketHandler) ->
 
 % gen_listener_tcp callbacks
 
-handle_accept(Sock, #server_state{packet_handler = PacketHandler} = St) ->
+handle_accept(Sock, #server_state{port = Port, packet_handler = PacketHandler} = St) ->
     log:info("Client connected.", [{client, element(2, inet:peername(Sock))}]),
 
     Pid = spawn(fun() ->
-                    {ok, FSM} = supervisor:start_child(client_sup, [self()]),
+                    {ok, FSM} = supervisor:start_child(client_sup(Port), [self()]),
                     loop(Sock, FSM, PacketHandler)
                 end),
     gen_tcp:controlling_process(Sock, Pid),
@@ -147,12 +150,12 @@ init([{'__gen_server_tcp_mod', Module} | InitArgs]) ->
         Other ->
             {stop, Other}
     end;
-init({all, #server_state{fsm = FSM} = St}) ->
+init({all, #server_state{port = Port, fsm = FSM} = St}) ->
     {ok, {{one_for_one, 100000, 60},
           [{listener,
             {gen_listener_tcp,
              start_link,
-             [{local, listener},
+             [{local, listener(Port)},
               ?MODULE,
               {listener, St},
               []]},
@@ -163,7 +166,7 @@ init({all, #server_state{fsm = FSM} = St}) ->
            {client_sup,
             {supervisor,
              start_link,
-             [{local, client_sup},
+             [{local, client_sup(Port)},
               ?MODULE,
               {clients, FSM}]},
             permanent,
@@ -226,10 +229,21 @@ handle_info(Info, #server_state{module = Module, module_state = ModState}=St) ->
             {stop, Reason, St#server_state{module_state = NewModState}}
     end.
 
-terminate(Reason, #server_state{module = Module, module_state = ModState}) ->
-    log:debug("Generic TCP server terminating.", [{module, Module}, {reason, Reason}]),
+terminate(Reason, #server_state{port = Port, module = Module, module_state = ModState}) ->
+    log:debug("Generic TCP server terminating.",
+              [{module, Module},
+               {port, Port},
+               {reason, Reason}]),
     Module:terminate(Reason, ModState).
 
 code_change(OldVsn, #server_state{module = Module, module_state = ModState}=St, Extra) ->
     {ok, NewModState} = Module:code_change(OldVsn, ModState, Extra),
     {ok, St#server_state{module_state = NewModState}}.
+
+
+% Helpers
+listener(Port) ->
+    list_to_atom(lists:concat(["listener_", Port])).
+
+client_sup(Port) ->
+    list_to_atom(lists:concat(["client_sup_", Port])).

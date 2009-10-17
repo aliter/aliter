@@ -12,12 +12,7 @@
 
 
 start(_Type, StartArgs) ->
-    case aliter_sup:start_link(StartArgs) of
-        {ok, Pid} ->
-            {ok, Pid};
-        Error ->
-            Error
-    end.
+    aliter_sup:start_link(StartArgs).
 
 shutdown() ->
     application:stop(aliter).

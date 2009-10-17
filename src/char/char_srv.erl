@@ -112,6 +112,9 @@ handle_cast(Cast, State) ->
     log:debug("Character server got cast.", [{cast, Cast}]),
     {noreply, State}.
 
+handle_info({'EXIT', _From, Reason}, State) ->
+    log:debug("Character server got EXIT signal.", [{reason, Reason}]),
+    {stop, normal, State};
 handle_info(Info, State) ->
     log:debug("Character server got info.", [{info, Info}]),
     {noreply, State}.

@@ -6,7 +6,7 @@
 
 % Public IP/port configuration
 {ip, {127,0,0,1}}.
-{port, 6121}.
+{port, 5121}.
 
 % Path to Aliter on this server's host
 {aliter, "/path/to/aliter"}.
