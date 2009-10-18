@@ -12,19 +12,17 @@
          terminate/3,
          code_change/4]).
 
--export([init/1, locked/2, valid/2]).
+-export([init/1,
+         locked/2,
+         valid/2,
+         valid/3]).
 
--record(state,
-        {tcp,
-         account,
-         login_a,
-         login_b}).
 
 start_link(Tcp) ->
     gen_fsm:start_link(?MODULE, Tcp, []).
 
 init(Tcp) ->
-    {ok, locked, #state{tcp = Tcp}}.
+    {ok, locked, #login_state{tcp = Tcp}}.
 
 
 locked({login, PacketVer, Login, Password, Region}, State) ->
@@ -53,11 +51,9 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
 
             gen_server_tcp:cast(server,
                                 {add_session, {A#account.id,
-                                               A,
                                                self(),
                                                LoginIDa,
-                                               LoginIDb,
-                                               PacketVer}}),
+                                               LoginIDb}}),
 
             {chars, CharServers} = config:get_env(login, chars),
             Servers = lists:map(fun({_Node, Conf}) ->
@@ -71,14 +67,15 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
                                 end,
                                 CharServers),
 
-            State#state.tcp ! {16#69, {LoginIDa,
+            State#login_state.tcp ! {16#69, {LoginIDa,
                                        LoginIDb,
                                        A#account.id,
                                        Servers}},
 
-            {next_state, valid, State#state{account = A,
-                                            login_a = LoginIDa,
-                                            login_b = LoginIDb}};
+            {next_state, valid, State#login_state{account = A,
+                                                  id_a = LoginIDa,
+                                                  id_b = LoginIDb,
+                                                  packet_ver = PacketVer}};
         [] ->
             L = fun() ->
                     qlc:e(qlc:q([X || X <- mnesia:table(account),
@@ -88,22 +85,29 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
             {atomic, ValidName} = mnesia:transaction(L),
 
             case ValidName of
-                [_A] -> State#state.tcp ! {16#6a, {1, ""}};
-                [] -> State#state.tcp ! {16#6a, {0, ""}}
+                [_A] -> State#login_state.tcp ! {16#6a, {1, ""}};
+                [] -> State#login_state.tcp ! {16#6a, {0, ""}}
             end,
 
             {next_state, locked, State}
     end.
 
+valid(stop, State) ->
+    gen_fsm:send_event_after(60 * 5 * 1000, exit),
+    {next_state, valid, State};
+valid(exit, State) ->
+    {stop, normal, State};
 valid(Event, State) ->
-    log:debug("Login FSM received invalid event.",
-              [{state, valid},
-               {event, Event}]),
-    {stop, normal, State}.
+    ?MODULE:handle_event(Event, chosen, State).
+
+valid(switch_char, _From, State) ->
+    {stop, normal, {ok, State}, State}.
 
 handle_event(stop, _StateName, StateData) ->
     log:info("Login FSM stopping."),
     {stop, normal, StateData};
+handle_event({set_server, Server}, StateName, StateData) ->
+    {next_state, StateName, StateData#login_state{server = Server}};
 handle_event(Event, StateName, StateData) ->
     log:debug("Login FSM got event.", [{even, Event}, {state, StateName}, {state_data, StateData}]),
     {next_state, StateName, StateData}.
@@ -112,26 +116,22 @@ handle_sync_event(_Event, _From, StateName, StateData) ->
     log:debug("Login FSM got sync event."),
     {next_state, StateName, StateData}.
 
-handle_info({'EXIT', _From, Reason}, _StateName, StateData) ->
+handle_info({'EXIT', _From, Reason}, StateName, StateData) ->
     log:debug("Login FSM got EXIT signal.", [{reason, Reason}]),
-    {stop, normal, StateData};
+
+    % Wait 5 minutes, then kill the FSM
+    gen_fsm:send_event_after(60 * 5 * 1000, stop),
+
+    {next_state, StateName, StateData};
 handle_info(Info, StateName, StateData) ->
     log:debug("Login FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.
 
-terminate(_Reason, _StateName, #state{account = #account{id = AccountID}}) ->
-    log:debug("Login FSM waiting for message to keep login session alive.", [{account, AccountID}]),
+terminate(_Reason, _StateName, #login_state{account = #account{id = AccountID}}) ->
+    log:debug("Login FSM terminating.",
+              [{account, AccountID}]),
 
-    receive
-        keepalive ->
-            log:debug("Received keepalive; terminating.", [{account, AccountID}]),
-            ok
-    after
-        300000 -> % Wait 5 minutes to see if they chose a char server
-            log:debug("No keepalive; removing session.", [{account, AccountID}]),
-            gen_server_tcp:cast(server, {remove_session, AccountID}),
-            ok
-    end;
+    gen_server_tcp:cast(server, {remove_session, AccountID});
 terminate(_Reason, _StateName, _StateData) ->
     ok.
 

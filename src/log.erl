@@ -65,7 +65,7 @@ warning(Msg, Args) ->
 error(Msg) ->
     info(Msg, []).
 error(Msg, Args) ->
-    log(cyan("ERROR"), Msg, Args).
+    log(red("ERROR"), Msg, Args).
 
 colour(Num, String) ->
     lists:concat(["\e[3", Num, "m", String, "\e[39m"]).

@@ -42,10 +42,10 @@ handle_call({verify_session, AccountID, CharacterID, SessionIDa}, _From, Session
                {session, Sessions}]),
 
     case proplists:lookup(AccountID, Sessions) of
-        {AccountID, CharacterID, Account, Character, FSM, SessionIDa, _SessionIDb, PacketVer} ->
-            FSM ! keepalive,
-            {reply, {ok, Account, Character, PacketVer}, Sessions};
-        _ -> {reply, invalid, Sessions}
+        {AccountID, FSM, SessionIDa, _SessionIDb} ->
+            {reply, {ok, FSM}, Sessions};
+        _ ->
+            {reply, invalid, Sessions}
     end;
 handle_call({get_session, AccountID}, _From, Sessions) ->
     {reply, proplists:lookup(AccountID, Sessions), Sessions};

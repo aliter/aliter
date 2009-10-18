@@ -12,7 +12,8 @@
          terminate/2,
          code_change/3]).
 
--export([tick/0]).
+-export([tick/0,
+         server_for/1]).
 
 
 start_link(Conf) ->
@@ -66,6 +67,11 @@ handle_call({who_serves, Map}, _From, State) ->
               [{map, Map}]),
 
     {reply, who_serves(Map, supervisor:which_children(zone_master_sup)), State};
+handle_call({get_player, ActorID}, _From, State) ->
+    log:debug("Zone master server got get_player call.",
+              [{actor, ActorID}]),
+
+    {reply, get_player(ActorID, supervisor:which_children(zone_master_sup)), State};
 handle_call(Request, _From, State) ->
     log:debug("Zone master server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
@@ -100,7 +106,20 @@ who_serves(Map, [{_Id, Server, _Type, _Modules} | Servers]) ->
             who_serves(Map, Servers)
     end.
 
+get_player(_ActorID, []) ->
+    none;
+get_player(ActorID, [{_Id, Server, _Type, _Modules} | Servers]) ->
+    case gen_server_tcp:call(Server, {get_player, ActorID}) of
+        {ok, FSM} ->
+            {ok, FSM};
+        none ->
+            get_player(ActorID, Servers)
+    end.
+
 tick() ->
     {ok, Tick} = application:get_env(zone, tick),
     application:set_env(zone, tick, Tick + 1),
     Tick.
+
+server_for(Port) ->
+    list_to_atom(lists:concat(["zone_server_", Port])).

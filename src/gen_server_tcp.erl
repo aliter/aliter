@@ -162,8 +162,11 @@ parse_loop(Socket, PacketHandler, Loop) ->
 handle_accept(Sock, #server_state{port = Port, packet_handler = PacketHandler} = St) ->
     log:info("Client connected.", [{client, element(2, inet:peername(Sock))}]),
 
+    Server = self(),
+
     Pid = spawn(fun() ->
                     {ok, FSM} = supervisor:start_child(client_sup(Port), [self()]),
+                    gen_fsm:send_all_state_event(FSM, {set_server, Server}),
                     loop(Sock, FSM, PacketHandler)
                 end),
 

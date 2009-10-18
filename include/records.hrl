@@ -7,7 +7,36 @@
         {name,
          width,
          height,
-         cells}).
+         cells,
+         players = [],
+         npcs = []}).
+
+-record(login_state,
+        {server,
+         tcp,
+         account,
+         id_a,
+         id_b,
+         packet_ver}).
+
+-record(char_state,
+        {server,
+         tcp,
+         char,
+         account,
+         id_a,
+         id_b,
+         packet_ver,
+         rename}).
+
+-record(zone_state,
+        {server,
+         tcp,
+         char,
+         account,
+         id_a,
+         id_b,
+         packet_ver}).
 
 
 %%% Login tables
