@@ -41,6 +41,12 @@ handle_call({provides, Map}, _From, State = #state{port = Port, maps = Maps}) ->
         [] -> {reply, no, State};
         _Yes -> {reply, {yes, Port}, State}
     end;
+handle_call({add_player, Map, Player}, _From, State) ->
+    {Map, MapServer} = proplists:lookup(Map, State#state.maps),
+
+    gen_server:cast(MapServer, {add_player, Player}),
+
+    {reply, {ok, MapServer}, State};
 handle_call({get_player, ActorID}, _From, State = #state{maps = Maps}) ->
     log:debug("Zone server got get_player call.",
               [{actor, ActorID}]),
@@ -49,20 +55,6 @@ handle_call(Request, _From, State) ->
     log:debug("Zone server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
 
-handle_cast({add_player, Map, Player}, State) ->
-    Maps = lists:map(fun
-                         ({Name, MapServer}) when Name == Map ->
-                             log:info("Adding player to map.",
-                                      [{map, Map},
-                                       {player, Player}]),
-
-                             gen_server:cast(MapServer, {add_player, Player});
-                         (M) ->
-                             M
-                     end,
-                     State#state.maps),
-
-    {noreply, State#state{maps = Maps}};
 handle_cast(Cast, State) ->
     log:debug("Zone server got cast.", [{cast, Cast}]),
     {noreply, State}.
@@ -85,7 +77,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 get_player(_ActorID, []) ->
     none;
-get_player(ActorID, [{Name, MapServer} | Maps]) ->
+get_player(ActorID, [{_Name, MapServer} | Maps]) ->
     case gen_server:call(MapServer, {get_player, ActorID}) of
         {ActorID, FSM} ->
             {ok, FSM};

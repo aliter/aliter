@@ -71,10 +71,10 @@ message Char {
     optional int32 save_x = 34;
     optional int32 save_y = 35;
     optional int32 online = 36;
-    optional int32 fame = 37;
-    optional int32 option = 38,
-    optional int32 karma = 39,
-    optional int32 manner = 40;
+    optional int32 effects = 37;
+    optional int32 karma = 38;
+    optional int32 manner = 39;
+    optional int32 fame = 40;
     optional int32 guild_position = 41;
     optional int64 guild_taxed = 42;
     optional int32 renamed = 43;

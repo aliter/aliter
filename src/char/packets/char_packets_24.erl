@@ -90,9 +90,9 @@ character(C) ->
        (C#char.zeny):32/little,
        (C#char.job_exp):32/little,
        (C#char.job_level):32/little,
-       0:32/little, % ?
-       0:32/little, % ?
-       (C#char.option):32/little,
+       0:32/little, % TODO: ?
+       0:32/little, % TODO: ?
+       (C#char.effects):32/little,
        (C#char.karma):32/little,
        (C#char.manner):32/little,
        (C#char.status_points):16/little,

@@ -79,14 +79,16 @@ pack(16#87, {ActorID, {{FromX, FromY}, {ToX, ToY}}, Tick}) ->
       (encode_move(FromX, FromY, ToX, ToY)):6/little-binary-unit:8,
       Tick:32/little>>;
 pack(16#8d, {ActorID, Message}) ->
-    <<16#8d:16/little,
-      (length(Message) + 8):16/little,
-      ActorID:32/little,
-      Message/little-binary-unit:8>>;
+    [<<16#8d:16/little,
+       (length(Message) + 9):16/little,
+       ActorID:32/little>>,
+     list_to_binary(Message),
+     <<0>>];
 pack(16#8e, Message) ->
     [<<16#8e:16/little,
-       (length(Message) + 4):16/little>>,
-     list_to_binary(Message)];
+       (length(Message) + 5):16/little>>,
+     list_to_binary(Message),
+     <<0>>];
 pack(16#95, {ActorID, Name}) ->
     [<<16#95:16/little,
        ActorID:32/little>>,
@@ -95,6 +97,15 @@ pack(16#c0, {ActorID, EmoticonID}) ->
     <<16#c0:16/little,
       ActorID:32/little,
       EmoticonID:8>>;
+pack(16#14c, Relationships) ->
+    [<<16#14c:16/little,
+       (32 * length(Relationships) + 4):16/little>>,
+     lists:map(fun(R) ->
+                   [<<(R#guild_relationship.type):32/little,
+                      (R#guild_relationship.b_id):32/little>>,
+                    list_to_binary(string:left("Guild name here!", 24, 0))] % TODO: Guild name
+               end,
+               Relationships)];
 pack(16#18b, QuitResponse) ->
     <<16#18b:16/little,
       QuitResponse:8>>;
@@ -104,6 +115,22 @@ pack(16#195, {Name, Party, Guild, Position}) ->
      list_to_binary(string:left(Party, 24, 0)),
      list_to_binary(string:left(Guild, 24, 0)),
      list_to_binary(string:left(Position, 24, 0))];
+pack(16#1b6, Guild) ->
+    [<<16#1b6:16/little,
+       (Guild#guild.id):32/little,
+       (Guild#guild.level):32/little,
+       0:32/little, % TODO: Online count
+       (16 * Guild#guild.level):32/little, % TODO: Verify this
+       9001:32/little, % TODO: Average level
+       (Guild#guild.exp):32/little,
+       (Guild#guild.next_exp):32/little,
+       0:32/little, % TODO: Tax points
+       0:32/little, % TODO: Tendency Left/Right
+       0:32/little, % TODO: Tendency Down/Up
+       0:32/little>>, % TODO: Emblem ID
+     list_to_binary(string:left(Guild#guild.name, 24, 0)),
+     list_to_binary(string:left("Master goes here!", 24, 0)), % TODO: Master name
+     list_to_binary(string:left("Everywhere, bitches.", 20, 0))]; % TODO: Territory
 pack(16#283, LoginIDa) ->
     <<16#283:16/little,
       LoginIDa:32/little>>;

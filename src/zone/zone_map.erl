@@ -38,10 +38,60 @@ handle_call(Request, _From, State) ->
     {reply, {illegal_request, Request}, State}.
 
 handle_cast({add_player, Player}, State = #map_state{players = Players}) ->
-    log:warning("Zone map server adding player.",
-                [{player, Player}]),
+    log:debug("Zone map server adding player.",
+              [{player, Player}]),
 
     {noreply, State#map_state{players = [Player | Players]}};
+handle_cast({send_to_players, Packet, Data}, State) ->
+    lists:foreach(fun({_ID, FSM}) ->
+                      gen_fsm:send_all_state_event(FSM,
+                                                   {send_packet,
+                                                    Packet,
+                                                    Data})
+                  end,
+                  State#map_state.players),
+
+    {noreply, State};
+handle_cast({send_to_other_players, Self, Packet, Data}, State) ->
+    lists:foreach(fun({_ID, FSM}) ->
+                      gen_fsm:send_all_state_event(FSM,
+                                                   {send_packet_if,
+                                                    fun(#zone_state{char = C}) ->
+                                                        (C#char.id /= Self)
+                                                    end,
+                                                    Packet,
+                                                    Data})
+                  end,
+                  State#map_state.players),
+
+    {noreply, State};
+handle_cast({send_to_players_in_sight, {X, Y}, Packet, Data}, State) ->
+    lists:foreach(fun({_ID, FSM}) ->
+                      gen_fsm:send_all_state_event(FSM,
+                                                   {send_packet_if,
+                                                    fun(#zone_state{char = C}) ->
+                                                        in_range(C, {X, Y})
+                                                    end,
+                                                    Packet,
+                                                    Data})
+                  end,
+                  State#map_state.players),
+
+    {noreply, State};
+handle_cast({send_to_other_players_in_sight, {X, Y}, Self, Packet, Data}, State) ->
+    lists:foreach(fun({_ID, FSM}) ->
+                      gen_fsm:send_all_state_event(FSM,
+                                                   {send_packet_if,
+                                                    fun(#zone_state{char = C}) ->
+                                                        (C#char.id /= Self) and
+                                                        in_range(C, {X, Y})
+                                                    end,
+                                                    Packet,
+                                                    Data})
+                  end,
+                  State#map_state.players),
+
+    {noreply, State};
 handle_cast(Cast, State) ->
     log:debug("Zone map server got cast.", [{cast, Cast}]),
     {noreply, State}.
@@ -59,3 +109,10 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+
+in_range(C, {X, Y}) ->
+    (((C#char.x - X) < 17) and
+     ((C#char.x - X) > -17) and
+     ((C#char.y - Y) < 17) and
+     ((C#char.y - Y) > -17)).
