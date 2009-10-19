@@ -59,7 +59,7 @@ pack(16#6c, Reason) ->
     <<16#6c:16/little,
       Reason:16/little>>;
 pack(16#6d, Character) ->
-    [<<16#6d>>,
+    [<<16#6d:16/little>>,
      character(Character)];
 pack(16#6e, Reason) ->
     <<16#6e:16/little,
@@ -100,7 +100,7 @@ character(C) ->
        (C#char.max_hp):32/little,
        (C#char.sp):16/little,
        (C#char.max_sp):16/little,
-       140:16/little, % TODO (Walk speed)
+       300:16/little, % TODO (Walk speed)
        (C#char.job):16/little,
        (C#char.hair_style):16/little,
        (C#char.view_weapon):16/little,

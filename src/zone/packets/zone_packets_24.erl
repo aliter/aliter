@@ -68,16 +68,15 @@ pack(16#73, {Tick, {X, Y, D}}) ->
       0>>;
 pack(16#7f, Tick) ->
     <<16#7f:16/little, Tick:32/little>>;
-pack(16#86, {ActorID, {{FromX, FromY}, {ToX, ToY}}, Tick}) ->
+pack(16#86, {ActorID, {FromX, FromY}, {ToX, ToY}, Tick}) ->
     <<16#86:16/little,
       ActorID:32/little,
       (encode_move(FromX, FromY, ToX, ToY)):6/little-binary-unit:8,
       Tick:32/little>>;
-pack(16#87, {ActorID, {{FromX, FromY}, {ToX, ToY}}, Tick}) ->
+pack(16#87, {{FromX, FromY}, {ToX, ToY}, Tick}) ->
     <<16#87:16/little,
-      ActorID:32/little,
-      (encode_move(FromX, FromY, ToX, ToY)):6/little-binary-unit:8,
-      Tick:32/little>>;
+      Tick:32/little,
+      (encode_move(FromX, FromY, ToX, ToY)):6/little-binary-unit:8>>;
 pack(16#8d, {ActorID, Message}) ->
     [<<16#8d:16/little,
        (length(Message) + 9):16/little,
@@ -109,8 +108,9 @@ pack(16#14c, Relationships) ->
 pack(16#18b, QuitResponse) ->
     <<16#18b:16/little,
       QuitResponse:8>>;
-pack(16#195, {Name, Party, Guild, Position}) ->
-    [<<16#195:16/little>>,
+pack(16#195, {AccountID, Name, Party, Guild, Position}) ->
+    [<<16#195:16/little,
+       AccountID:32/little>>,
      list_to_binary(string:left(Name, 24, 0)),
      list_to_binary(string:left(Party, 24, 0)),
      list_to_binary(string:left(Guild, 24, 0)),
@@ -131,6 +131,87 @@ pack(16#1b6, Guild) ->
      list_to_binary(string:left(Guild#guild.name, 24, 0)),
      list_to_binary(string:left("Master goes here!", 24, 0)), % TODO: Master name
      list_to_binary(string:left("Everywhere, bitches.", 20, 0))]; % TODO: Territory
+pack(16#1d7, Character) ->
+    <<16#1d7:16/little,
+      (Character#char.account_id):32/little,
+      2:8, % TODO: ?
+      (Character#char.view_weapon):16/little,
+      (Character#char.view_shield):16/little>>;
+pack(16#22b, {A, C}) ->
+    Gender = if
+                 A#account.gender == 0 ->
+                     1;
+                 true ->
+                     0
+             end,
+
+    <<16#22b:16/little,
+      (A#account.id):32/little,
+      300:16/little, % TODO: Walk speed
+      0:16/little, % TODO: Effect 1
+      0:16/little, % TODO: Effect 2
+      0:16/little, % TODO: Effect 3
+      0:16, % Nothing
+      (C#char.job):16/little,
+      (C#char.hair_style):16/little,
+      (C#char.view_weapon):16/little,
+      (C#char.view_shield):16/little,
+      (C#char.view_head_bottom):16/little,
+      (C#char.view_head_top):16/little,
+      (C#char.view_head_middle):16/little,
+      (C#char.hair_colour):16/little,
+      (C#char.clothes_colour):16/little,
+      0:16/little, % TODO: Head direction (test this)
+      (C#char.guild_id):32/little,
+      (C#char.guild_id):16/little, % Guild emblem ID
+      (C#char.manner):16/little, % Manners
+      0:16/little, % Effect
+      0:16, % Nothing,
+      (C#char.karma):8, % Karma
+      Gender:8, % Gender
+      (encode_position(C#char.x, C#char.y, 0)):3/binary-unit:8,
+      5:8,
+      5:8,
+      (C#char.base_level):16/little>>;
+pack(16#22c, {A, C, Tick}) ->
+    Gender = if
+                 A#account.gender == 0 ->
+                     1;
+                 true ->
+                     0
+             end,
+
+    <<16#22c:16/little,
+      0:8, % Nothing
+      (A#account.id):32/little,
+      300:16/little, % TODO: Walk speed
+      0:16/little, % TODO: Effect 1
+      0:16/little, % TODO: Effect 2
+      0:16/little, % TODO: Effect 3
+      0:16, % Nothing
+      (C#char.job):16/little,
+      (C#char.hair_style):16/little,
+      (C#char.view_weapon):16/little,
+      (C#char.view_shield):16/little,
+      (C#char.view_head_bottom):16/little,
+      Tick:32/little,
+      (C#char.view_head_top):16/little,
+      (C#char.view_head_middle):16/little,
+      (C#char.hair_colour):16/little,
+      (C#char.clothes_colour):16/little,
+      0:16/little, % TODO: Head direction (test this)
+      (C#char.guild_id):32/little,
+      (C#char.guild_id):16/little, % Guild emblem ID
+      (C#char.manner):16/little, % Manners
+      0:16/little, % Effect
+      0:16, % Nothing,
+      (C#char.karma):8, % Karma
+      Gender:8, % Gender
+      (encode_position(C#char.x, C#char.y, 0)):3/binary-unit:8,
+      5:8,
+      5:8,
+      0:8/unit:3, % Nothing
+      (C#char.base_level):16/little>>;
 pack(16#283, LoginIDa) ->
     <<16#283:16/little,
       LoginIDa:32/little>>;
@@ -141,20 +222,20 @@ pack(Header, Data) ->
     <<>>.
 
 decode_position(<<XNum, YNum, DNum>>) ->
-    X = (XNum bsl 2) bor ((YNum band 16#C0) bsr 6),
-    Y = ((YNum band 16#3F) bsl 4) bor ((DNum band 16#F0) bsr 4),
+    X = (XNum bsl 2) bor ((YNum band 16#c0) bsr 6),
+    Y = ((YNum band 16#3F) bsl 4) bor ((DNum band 16#f0) bsr 4),
     D = DNum band 16#0F,
     {X, Y, D}.
 
 encode_position(X, Y, D) ->
-    A = (X bsr 2) band 16#FF,
-    B = ((X bsl 6) bor ((Y bsr 4) band 16#3f)) band 16#FF,
-    C = ((Y bsl 4) bor (D band 16#0f)) band 16#FF,
+    A = (X bsr 2) band 16#ff,
+    B = ((X bsl 6) bor ((Y bsr 4) band 16#3f)) band 16#ff,
+    C = ((Y bsl 4) bor (D band 16#0f)) band 16#ff,
     <<A, B, C>>.
 
 encode_move(X, Y, ToX, ToY) ->
-    A = (X bsr 2) band 16#FF,
-    B = ((X bsl 6) bor ((X bsr 4) band 16#3f)) band 16#ff,
+    A = (X bsr 2) band 16#ff,
+    B = ((X bsl 6) bor ((Y bsr 4) band 16#3f)) band 16#ff,
     C = ((Y bsl 4) bor ((ToX bsr 6) band 16#0f)) band 16#ff,
     D = ((ToX bsl 2) bor ((ToY bsr 8) band 16#03)) band 16#ff,
     E = ToY band 16#ff,

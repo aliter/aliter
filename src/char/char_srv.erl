@@ -129,6 +129,13 @@ handle_cast({add_session, Session}, Sessions) ->
 handle_cast({remove_session, AccountID}, Sessions) ->
     log:debug("Character server removing session.", [{account, AccountID}]),
     {noreply, lists:keydelete(AccountID, 1, Sessions)};
+handle_cast({save_char, C}, Sessions) ->
+    log:debug("Saving character.",
+              [{character, C}]),
+
+    {atomic, ok} = mnesia:transaction(fun() -> mnesia:write(C) end),
+
+    {noreply, Sessions};
 handle_cast(Cast, State) ->
     log:debug("Character server got cast.", [{cast, Cast}]),
     {noreply, State}.

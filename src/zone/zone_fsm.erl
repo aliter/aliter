@@ -68,8 +68,8 @@ valid({request_name, ActorID}, State = #zone_state{account = #account{id = Accou
                ActorID == AccountID ->
                    CharacterName;
                true ->
-                   {ok, FSM} = gen_server:call(State#zone_state.map_server,
-                                               {get_player, ActorID}),
+                   {ActorID, FSM} = gen_server:call(State#zone_state.map_server,
+                                                    {get_player, ActorID}),
 
                    {ok, Z} = gen_fsm:sync_send_all_state_event(FSM, get_state),
                    (Z#zone_state.char)#char.name
@@ -78,7 +78,31 @@ valid({request_name, ActorID}, State = #zone_state{account = #account{id = Accou
     State#zone_state.tcp ! {16#95, {ActorID, Name}},
 
     {next_state, valid, State};
-valid(map_loaded, State) ->
+valid(map_loaded, State = #zone_state{map_server = MapServer,
+                                      account = A,
+                                      char = C}) ->
+    gen_server:cast(MapServer,
+                    {send_to_other_players,
+                     C#char.id,
+                     16#1d7,
+                     C}),
+
+    gen_server:cast(MapServer,
+                    {send_to_players_in_sight,
+                     {C#char.x, C#char.y},
+                     16#195,
+                     {A#account.id, C#char.name, "Party Name", "Guild Name", "Tester"}}), % TODO
+
+    gen_server:cast(MapServer,
+                    {send_to_other_players,
+                     C#char.id,
+                     16#22b,
+                     {A, C}}),
+
+    gen_server:cast(MapServer,
+                    {show_actors,
+                     self()}),
+
     {next_state, valid, State};
 valid(request_guild_status,
       State = #zone_state{char = #char{id = CharacterID,
@@ -135,6 +159,25 @@ valid({request_guild_info, 1},
 valid({request_guild_info, 2}, State) ->
     log:debug("Requested third page of guild info."),
     {next_state, valid, State};
+valid({walk, {ToX, ToY, ToD}}, State = #zone_state{tcp = TCP,
+                                             map_server = MapServer,
+                                             account = #account{id = AccountID},
+                                             char = #char{id = CharacterID,
+                                                          x = X,
+                                                          y = Y}}) ->
+    log:debug("Received walk request.",
+              [{coords, {ToX, ToY, ToD}}]),
+
+    gen_server:cast(MapServer,
+                    {send_to_other_players_in_sight,
+                     {X, Y},
+                     CharacterID,
+                     16#86,
+                     {AccountID, {X, Y}, {ToX, ToY}, zone_master:tick()}}),
+
+    TCP ! {16#87, {{X, Y}, {ToX, ToY}, zone_master:tick()}},
+
+    {next_state, valid, State#zone_state{char = (State#zone_state.char)#char{x = ToX, y = ToY}}};
 valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
 
@@ -143,12 +186,15 @@ handle_event({speak, Message},
              StateData = #zone_state{tcp = TCP,
                                      map_server = MapServer,
                                      account = #account{id = AccountID},
-                                     char = #char{x = X, y = Y}}) ->
+                                     char = #char{id = CharacterID,
+                                                  x = X,
+                                                  y = Y}}) ->
     log:debug("Speaking.", [{message, Message}]),
 
     gen_server:cast(MapServer,
                     {send_to_other_players_in_sight,
                      {X, Y},
+                     CharacterID,
                      16#8d,
                      {AccountID, Message}}),
 
@@ -176,6 +222,24 @@ handle_event({send_packet_if, Pred, Packet, Data}, StateName, StateData) ->
     end,
 
     {next_state, StateName, StateData};
+handle_event({show_to, FSM}, StateName, StateData = #zone_state{account = A,
+                                                                char = C}) ->
+    gen_fsm:send_all_state_event(FSM,
+                                 {send_packet,
+                                  16#1d7,
+                                  C}),
+
+    gen_fsm:send_all_state_event(FSM,
+                                 {send_packet,
+                                  16#195,
+                                  {A#account.id, C#char.name, "Other Party Name", "Other Guild Name", "Other Tester"}}), % TODO
+
+    gen_fsm:send_all_state_event(FSM,
+                                 {send_packet,
+                                  16#22c,
+                                  {A, C, zone_master:tick()}}),
+
+    {next_state, StateName, StateData};
 handle_event(Event, StateName, StateData) ->
     log:debug("Zone FSM received event.", [{event, Event}, {state, StateName}]),
     {next_state, StateName, StateData}.
@@ -194,9 +258,15 @@ handle_info(Info, StateName, StateData) ->
     log:debug("Zone FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.
 
-terminate(_Reason, _StateName, #zone_state{account = #account{id = AccountID}}) ->
+terminate(_Reason, _StateName, #zone_state{account = #account{id = AccountID},
+                                           char = Character}) ->
     log:info("Zone FSM terminating.",
             [{account, AccountID}]),
+
+    {char, CharNode} = config:get_env(zone, server.char),
+
+    gen_server_tcp:cast({server, CharNode},
+                        {save_char, Character}),
 
     gen_server_tcp:cast(server, {remove_session, AccountID});
 terminate(_Reason, _StateName, _StateData) ->

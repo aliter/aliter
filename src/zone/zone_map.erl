@@ -92,6 +92,20 @@ handle_cast({send_to_other_players_in_sight, {X, Y}, Self, Packet, Data}, State)
                   State#map_state.players),
 
     {noreply, State};
+handle_cast({show_actors, Self}, State) ->
+    lists:foreach(fun({_ID, FSM}) ->
+                      if
+                          FSM == Self ->
+                              log:error("Skipping self.");
+                          true ->
+                              gen_fsm:send_all_state_event(FSM,
+                                                           {show_to,
+                                                            Self})
+                      end
+                  end,
+                  State#map_state.players),
+
+    {noreply, State};
 handle_cast(Cast, State) ->
     log:debug("Zone map server got cast.", [{cast, Cast}]),
     {noreply, State}.

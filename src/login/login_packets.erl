@@ -8,8 +8,15 @@ unpack(<<16#64:16/little,
         Login:24/little-binary-unit:8,
         Password:24/little-binary-unit:8,
         Region:8>>) ->
+    Version = case PacketVer of
+                  20090901 ->
+                      24;
+                  _ ->
+                      PacketVer
+              end,
+
     {login,
-     PacketVer,
+     Version,
      string:strip(erlang:binary_to_list(Login), right, 0),
      string:strip(erlang:binary_to_list(Password), right, 0),
      Region};
