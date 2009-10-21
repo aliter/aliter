@@ -8,3 +8,4 @@ mod_for(Version) ->
 
 packet_size(Header) ->
     (mod_for(PacketVer)):packet_size(Header).
+

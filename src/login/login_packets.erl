@@ -17,8 +17,8 @@ unpack(<<16#64:16/little,
 
     {login,
      Version,
-     string:strip(erlang:binary_to_list(Login), right, 0),
-     string:strip(erlang:binary_to_list(Password), right, 0),
+     binary_to_string(Login),
+     binary_to_string(Password),
      Region};
 
 unpack(Unknown) ->
@@ -33,12 +33,12 @@ pack(16#69 = Header, {LoginIDa, LoginIDb, AccountID, Servers}) ->
        AccountID:32/little,
        LoginIDb:32/little,
        0:32>>,
-     erlang:list_to_binary(lists:duplicate(24, 0)),
+     string_to_binary("", 24),
      <<0:16,
        1:8>>] ++
     lists:map(fun({{IA, IB, IC, ID}, Port, Name, 0, Maintenance, New}) ->
                   [<<IA, IB, IC, ID, Port:16/little>>,
-                   erlang:list_to_binary(string:left(Name, 20, 0)),
+                   string_to_binary(Name, 20),
                    <<0:16, Maintenance:16, New:16>>]
               end, Servers);
 
@@ -46,10 +46,21 @@ pack(16#69 = Header, {LoginIDa, LoginIDb, AccountID, Servers}) ->
 pack(16#6a = Header, {Type, S}) ->
     [<<Header:16/little,
        Type:8>>,
-      (erlang:list_to_binary(string:left(S, 20, 0)))];
+      string_to_binary(S, 20)];
 
 pack(Header, Data) ->
     log:error("Cannot pack unknown data.",
               [{header, Header},
                {data, Data}]),
     <<>>.
+
+
+% Util functions
+binary_to_string(Binary) ->
+    lists:takewhile(fun(C) ->
+                        C /= 0
+                    end,
+                    binary_to_list(Binary)).
+
+string_to_binary(String, Num) ->
+    list_to_binary(string:left(String, Num, 0)).

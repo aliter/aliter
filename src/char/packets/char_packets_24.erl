@@ -4,6 +4,8 @@
 
 -export([unpack/1, pack/2]).
 
+-define(WALKSPEED, 150).
+
 
 unpack(<<16#65:16/little,
          AccountID:32/little,
@@ -100,7 +102,7 @@ character(C) ->
        (C#char.max_hp):32/little,
        (C#char.sp):16/little,
        (C#char.max_sp):16/little,
-       300:16/little, % TODO (Walk speed)
+       ?WALKSPEED:16/little, % TODO (Walk speed)
        (C#char.job):16/little,
        (C#char.hair_style):16/little,
        (C#char.view_weapon):16/little,

@@ -92,9 +92,9 @@ valid({choose, Num}, State = #char_state{account = #account{id = AccountID}}) ->
                                                {who_serves, C#char.map}),
 
             State#char_state.tcp ! {16#71,
-                               {C,
-                                ZoneIP,
-                                ZonePort}},
+                                    {C,
+                                     ZoneIP,
+                                     ZonePort}},
 
             {next_state, chosen, State#char_state{char = C}};
         {atomic, []} ->

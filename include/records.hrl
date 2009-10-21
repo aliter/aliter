@@ -31,13 +31,24 @@
 
 -record(zone_state,
         {server,
+         map,
          map_server,
+         states = [],
          tcp,
          char,
          account,
          id_a,
          id_b,
-         packet_ver}).
+         packet_ver,
+         walk_timer,
+         walk_prev,
+         walk_path}).
+
+-record(map_state,
+        {map,
+         players = [],
+         npcs = [],
+         mobs = []}).
 
 
 %%% Login tables

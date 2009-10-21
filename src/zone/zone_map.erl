@@ -12,12 +12,6 @@
          terminate/2,
          code_change/3]).
 
--record(map_state,
-        {map,
-         players = [],
-         npcs = [],
-         mobs = []}).
-
 
 start_link(Map) ->
     log:debug("Zone map server starting.",
@@ -42,6 +36,11 @@ handle_cast({add_player, Player}, State = #map_state{players = Players}) ->
               [{player, Player}]),
 
     {noreply, State#map_state{players = [Player | Players]}};
+handle_cast({remove_player, AccountID}, State = #map_state{players = Players}) ->
+    log:debug("Zone server removing player.",
+              [{account, AccountID}]),
+
+    {noreply, State#map_state{players = lists:keydelete(AccountID, 1, Players)}};
 handle_cast({send_to_players, Packet, Data}, State) ->
     lists:foreach(fun({_ID, FSM}) ->
                       gen_fsm:send_all_state_event(FSM,
@@ -92,16 +91,15 @@ handle_cast({send_to_other_players_in_sight, {X, Y}, Self, Packet, Data}, State)
                   State#map_state.players),
 
     {noreply, State};
-handle_cast({show_actors, Self}, State) ->
-    lists:foreach(fun({_ID, FSM}) ->
-                      if
-                          FSM == Self ->
-                              log:error("Skipping self.");
-                          true ->
-                              gen_fsm:send_all_state_event(FSM,
-                                                           {show_to,
-                                                            Self})
-                      end
+handle_cast({show_actors, {SelfID, SelfFSM}}, State) ->
+    lists:foreach(fun
+                      ({ID, _FSM}) when ID == SelfID ->
+                          log:error("Skipping self.");
+                      ({_ID, FSM}) ->
+                          log:error("Sending show_to."),
+                          gen_fsm:send_all_state_event(FSM,
+                                                       {show_to,
+                                                        SelfFSM})
                   end,
                   State#map_state.players),
 

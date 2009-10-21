@@ -4,6 +4,9 @@
 
 -export([unpack/1, pack/2]).
 
+-define(WALKSPEED, 150).
+
+
 unpack(<<16#7d:16/little>>) ->
     map_loaded;
 unpack(<<16#85:16/little,
@@ -68,6 +71,10 @@ pack(16#73, {Tick, {X, Y, D}}) ->
       0>>;
 pack(16#7f, Tick) ->
     <<16#7f:16/little, Tick:32/little>>;
+pack(16#80, {ActorID, Type}) ->
+    <<16#80:16/little,
+      ActorID:32/little,
+      Type:8>>;
 pack(16#86, {ActorID, {FromX, FromY}, {ToX, ToY}, Tick}) ->
     <<16#86:16/little,
       ActorID:32/little,
@@ -107,7 +114,7 @@ pack(16#14c, Relationships) ->
                Relationships)];
 pack(16#18b, QuitResponse) ->
     <<16#18b:16/little,
-      QuitResponse:8>>;
+      QuitResponse:16/little>>;
 pack(16#195, {AccountID, Name, Party, Guild, Position}) ->
     [<<16#195:16/little,
        AccountID:32/little>>,
@@ -147,7 +154,7 @@ pack(16#22b, {A, C}) ->
 
     <<16#22b:16/little,
       (A#account.id):32/little,
-      300:16/little, % TODO: Walk speed
+      ?WALKSPEED:16/little, % TODO: Walk speed
       0:16/little, % TODO: Effect 1
       0:16/little, % TODO: Effect 2
       0:16/little, % TODO: Effect 3
@@ -184,7 +191,7 @@ pack(16#22c, {A, C, Tick}) ->
     <<16#22c:16/little,
       0:8, % Nothing
       (A#account.id):32/little,
-      300:16/little, % TODO: Walk speed
+      ?WALKSPEED:16/little, % TODO: Walk speed
       0:16/little, % TODO: Effect 1
       0:16/little, % TODO: Effect 2
       0:16/little, % TODO: Effect 3

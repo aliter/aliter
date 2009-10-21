@@ -12,7 +12,12 @@
          terminate/3,
          code_change/4]).
 
--export([init/1, locked/2, valid/2]).
+-export([init/1,
+         locked/2,
+         valid/2,
+         walking/2]).
+
+-define(WALKSPEED, 123).
 
 
 start_link(Tcp) ->
@@ -33,10 +38,10 @@ locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
             log:debug("Switched to Zone server.",
                       [{char_state, C}]),
 
-            {ok, MapServer} = gen_server_tcp:call(State#zone_state.server,
-                                                  {add_player,
-                                                   (C#char_state.char)#char.map,
-                                                   {(C#char_state.account)#account.id, self()}}),
+            {ok, Map, MapServer} = gen_server_tcp:call(State#zone_state.server,
+                                                       {add_player,
+                                                        (C#char_state.char)#char.map,
+                                                        {(C#char_state.account)#account.id, self()}}),
 
             State#zone_state.tcp ! {parse, zone_packets:new(C#char_state.packet_ver)},
 
@@ -45,7 +50,8 @@ locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
                                             {(C#char_state.char)#char.x,
                                              (C#char_state.char)#char.y, 0}}},
 
-            {next_state, valid, State#zone_state{map_server = MapServer,
+            {next_state, valid, State#zone_state{map = Map,
+                                                 map_server = MapServer,
                                                  account = C#char_state.account,
                                                  char = C#char_state.char,
                                                  id_a = C#char_state.id_a,
@@ -60,6 +66,13 @@ locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
 locked(Event, State) ->
     ?MODULE:handle_event(Event, locked, State).
 
+valid(quit, State = #zone_state{account = #account{id = AccountID}}) ->
+    log:info("Player quitting.",
+             [{account, AccountID}]),
+
+    State#zone_state.tcp ! {16#18b, 0},
+
+    {next_state, valid, State};
 valid({request_name, ActorID}, State = #zone_state{account = #account{id = AccountID},
                                                    char = #char{name = CharacterName}}) ->
     log:debug("Sending actor name.", [{actor, ActorID}]),
@@ -101,7 +114,7 @@ valid(map_loaded, State = #zone_state{map_server = MapServer,
 
     gen_server:cast(MapServer,
                     {show_actors,
-                     self()}),
+                     {A#account.id, self()}}),
 
     {next_state, valid, State};
 valid(request_guild_status,
@@ -159,14 +172,31 @@ valid({request_guild_info, 1},
 valid({request_guild_info, 2}, State) ->
     log:debug("Requested third page of guild info."),
     {next_state, valid, State};
-valid({walk, {ToX, ToY, ToD}}, State = #zone_state{tcp = TCP,
-                                             map_server = MapServer,
-                                             account = #account{id = AccountID},
-                                             char = #char{id = CharacterID,
-                                                          x = X,
-                                                          y = Y}}) ->
+valid({walk, {ToX, ToY, ToD}},
+      State = #zone_state{map = Map,
+                          char = #char{x = X, y = Y}}) ->
     log:debug("Received walk request.",
               [{coords, {ToX, ToY, ToD}}]),
+
+    FSM = self(),
+    spawn(fun() -> pathfind(FSM, Map, {X, Y}, {ToX, ToY}) end),
+
+    {next_state, valid, State};
+valid({walk_path, [], To}, State) ->
+    {next_state, valid, State};
+valid({walk_path, [{SX, SY, SDir} | Path], {ToX, ToY}, Elapsed},
+      State = #zone_state{tcp = TCP,
+                          map = Map,
+                          map_server = MapServer,
+                          account = #account{id = AccountID},
+                          char = C = #char{id = CharacterID,
+                                           x = X,
+                                           y = Y}}) ->
+    log:error("Path found.",
+              [{path, [{SX, SY, SDir} | Path]},
+               {elapsed, Elapsed}]),
+
+    {ok, Timer} = walk_interval(SDir),
 
     gen_server:cast(MapServer,
                     {send_to_other_players_in_sight,
@@ -177,9 +207,59 @@ valid({walk, {ToX, ToY, ToD}}, State = #zone_state{tcp = TCP,
 
     TCP ! {16#87, {{X, Y}, {ToX, ToY}, zone_master:tick()}},
 
-    {next_state, valid, State#zone_state{char = (State#zone_state.char)#char{x = ToX, y = ToY}}};
+    {next_state, walking, State#zone_state{char = C#char{x = SX, y = SY},
+                                           walk_timer = Timer,
+                                           walk_prev = {now(), SDir},
+                                           walk_path = Path}};
 valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
+
+walking({walk, {ToX, ToY, ToD}},
+        State = #zone_state{tcp = TCP,
+                            map = Map,
+                            map_server = MapServer,
+                            account = #account{id = AccountID},
+                            char = C = #char{id = CharacterID,
+                                             x = X,
+                                             y = Y},
+                            walk_timer = OldTimer}) ->
+    timer:cancel(OldTimer),
+
+    log:error("Walk request while walking.",
+              [{coords, {ToX, ToY, ToD}},
+               {current_position, {X, Y}}]),
+
+    valid({walk, {ToX, ToY, ToD}}, State);
+walking(step, State = #zone_state{char = C,
+                                  walk_timer = Timer,
+                                  walk_prev = {Time, PDir},
+                                  walk_path = Path}) ->
+    case Path of
+        [] ->
+            timer:cancel(Timer),
+            log:error("Done walking."),
+            {next_state, valid, State#zone_state{walk_timer = undefined,
+                                                 walk_path = undefined}};
+        [{CX, CY, CDir} | Rest] ->
+            if
+                CDir == PDir ->
+                    NewTimer = Timer;
+                true ->
+                    timer:cancel(Timer),
+
+                    {ok, NewTimer} = walk_interval(CDir)
+            end,
+
+            log:warning("Stepping.", [{direction, CDir},
+                                      {elapsed, trunc(timer:now_diff(now(), Time) / 1000)}]),
+
+            {next_state, walking, State#zone_state{char = C#char{x = CX, y = CY},
+                                                   walk_timer = NewTimer,
+                                                   walk_prev = {Time, CDir},
+                                                   walk_path = Rest}}
+    end;
+walking(Event, State) ->
+    ?MODULE:handle_event(Event, walking, State).
 
 handle_event({speak, Message},
              StateName,
@@ -189,16 +269,29 @@ handle_event({speak, Message},
                                      char = #char{id = CharacterID,
                                                   x = X,
                                                   y = Y}}) ->
-    log:debug("Speaking.", [{message, Message}]),
+    [Name | Rest] = re:split(Message, " : ", [{return, list}]),
+    Said = lists:concat(Rest),
 
-    gen_server:cast(MapServer,
-                    {send_to_other_players_in_sight,
-                     {X, Y},
-                     CharacterID,
-                     16#8d,
-                     {AccountID, Message}}),
+    log:debug("Speaking.",
+              [{message, Message},
+               {name, Name},
+               {rest, Rest},
+               {first, hd(Said)}]),
 
-    TCP ! {16#8e, Message},
+    if
+        hd(Said) == 92 -> % GM command
+            [Command | Args] = zone_commands:parse(tl(Said)),
+            zone_commands:execute(Command, Args, StateData);
+        true ->
+            gen_server:cast(MapServer,
+                            {send_to_other_players_in_sight,
+                             {X, Y},
+                             CharacterID,
+                             16#8d,
+                             {AccountID, Message}}),
+
+            TCP ! {16#8e, Message}
+    end,
 
     {next_state, StateName, StateData};
 handle_event(stop, _StateName, StateData) ->
@@ -258,20 +351,46 @@ handle_info(Info, StateName, StateData) ->
     log:debug("Zone FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.
 
-terminate(_Reason, _StateName, #zone_state{account = #account{id = AccountID},
+terminate(_Reason, _StateName, #zone_state{map_server = MapServer,
+                                           account = #account{id = AccountID},
                                            char = Character}) ->
     log:info("Zone FSM terminating.",
             [{account, AccountID}]),
+
+    gen_server:cast(MapServer,
+                    {send_to_other_players,
+                     Character#char.id,
+                     16#80,
+                     {AccountID, 3}}),
 
     {char, CharNode} = config:get_env(zone, server.char),
 
     gen_server_tcp:cast({server, CharNode},
                         {save_char, Character}),
 
-    gen_server_tcp:cast(server, {remove_session, AccountID});
+    gen_server_tcp:cast(MapServer, {remove_player, AccountID});
 terminate(_Reason, _StateName, _StateData) ->
     log:debug("Zone FSM terminating."),
     ok.
 
 code_change(_OldVsn, StateName, StateData, _Extra) ->
     {ok, StateName, StateData}.
+
+
+% Helper walking function
+walk_interval(diagonal) ->
+    log:debug("Walking diagonally."),
+    timer:apply_interval(trunc(?WALKSPEED * 1.4),
+                         gen_fsm,
+                         send_event,
+                         [self(), step]);
+walk_interval(straight) ->
+    log:debug("Walking straight."),
+    timer:apply_interval(?WALKSPEED,
+                         gen_fsm,
+                         send_event,
+                         [self(), step]).
+
+pathfind(FSM, Map, From, To) ->
+    {Time, Path} = timer:tc(maps, pathfind, [Map, From, To]),
+    gen_fsm:send_event(FSM, {walk_path, Path, To, Time}).

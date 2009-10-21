@@ -22,7 +22,7 @@ start_link(Port, Maps) ->
 
     MapServers = lists:map(fun(M) ->
                                {ok, MapServer} = zone_map:start_link(M),
-                               {M#map.name, MapServer}
+                               {M#map.name, M, MapServer}
                            end, Maps),
 
     gen_server_tcp:start_link({local, zone_master:server_for(Port)},
@@ -34,19 +34,17 @@ start_link(Port, Maps) ->
 init(State) ->
     {ok, {State#state.port, zone_fsm, zone_packets:new(24)}, State}.
 
-handle_call({provides, Map}, _From, State = #state{port = Port, maps = Maps}) ->
-    case lists:dropwhile(fun({Name, _Server}) ->
-                             Name /= Map
-                         end, Maps) of
-        [] -> {reply, no, State};
-        _Yes -> {reply, {yes, Port}, State}
+handle_call({provides, MapName}, _From, State = #state{port = Port, maps = Maps}) ->
+    case proplists:lookup(MapName, Maps) of
+        none -> {reply, no, State};
+        {MapName, _Map, _Server} -> {reply, {yes, Port}, State}
     end;
-handle_call({add_player, Map, Player}, _From, State) ->
-    {Map, MapServer} = proplists:lookup(Map, State#state.maps),
+handle_call({add_player, MapName, Player}, _From, State) ->
+    {MapName, Map, MapServer} = proplists:lookup(MapName, State#state.maps),
 
     gen_server:cast(MapServer, {add_player, Player}),
 
-    {reply, {ok, MapServer}, State};
+    {reply, {ok, Map, MapServer}, State};
 handle_call({get_player, ActorID}, _From, State = #state{maps = Maps}) ->
     log:debug("Zone server got get_player call.",
               [{actor, ActorID}]),
@@ -77,7 +75,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 get_player(_ActorID, []) ->
     none;
-get_player(ActorID, [{_Name, MapServer} | Maps]) ->
+get_player(ActorID, [{_Name, _Map, MapServer} | Maps]) ->
     case gen_server:call(MapServer, {get_player, ActorID}) of
         {ActorID, FSM} ->
             {ok, FSM};
