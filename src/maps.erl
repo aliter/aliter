@@ -5,10 +5,7 @@
 -export([read_cache/1,
          at/2,
          pretty/1,
-         pretty/2,
-         pathfind/3,
-         simple_pathfind/3,
-         complex_pathfind/3]).
+         pretty/2]).
 
 
 read_maps(Cache) ->
