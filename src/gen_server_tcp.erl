@@ -111,7 +111,9 @@ loop(Socket, FSM, PacketHandler) ->
             ?MODULE:loop(Socket, FSM, PacketHandler);
 
         {Header, Data} ->
-            log:debug("Sending data.", [{data, Data}]),
+            log:debug("Sending data.",
+                      [{data, Data},
+                       {packet, PacketHandler:pack(Header, Data)}]),
 
             gen_tcp:send(Socket, PacketHandler:pack(Header, Data)),
             ?MODULE:loop(Socket, FSM, PacketHandler);

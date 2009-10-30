@@ -1,0 +1,71 @@
+;; NPC header
+
+(defmacro name ()
+  `(++ '"[" (colour '"FF0000" (npc-name)) '"]"))
+
+(defmacro name-in (hex)
+  `(++ '"[" (colour ,hex (npc-name)) '"]"))
+
+(defun red (str)
+  (++ '"^FF0000" str '"^000000"))
+
+(defun green (str)
+  (++ '"^00FF00" str '"^000000"))
+
+(defun blue (str)
+  (++ '"^0000FF" str '"^000000"))
+
+(defun colour (hex str)
+  (++ '"^" hex str '"^000000"))
+
+(defmacro close ()
+  `(begin
+     (: log debug '"Sending close button.")
+     (: zone_npc close player npc)
+     (receive
+      ('close
+       (: log debug '"Player clicked close.")
+       (: erlang exit 'normal)))))
+
+(defmacro next ()
+  `(begin
+     (: log debug '"Sending next button.")
+     (: zone_npc next player npc)
+     (receive
+      ('continue
+       (: log debug '"Player clicked next.")))))
+
+(defmacro eval-all
+  (() ())
+  ((o . os)
+   `(++ (list ,o) (eval-all ,@os))))
+
+(defmacro menu
+  (os
+   `(let ((options (eval-all ,@os)))
+      (: log debug '"Sending menu." `(#(menu ',options)))
+      (: zone_npc menu player npc (: lists map (lambda (a) (: lists nth 1 a)) options))
+      (receive
+        (index
+         (: log debug '"Player selected menu item." `(#(index ,index)))
+         (: lists nth 2 (: lists nth index options)))))))
+
+(defmacro menu-do
+  (options
+   `(funcall (menu ,@options))))
+
+(defmacro say
+  (() ())
+  ((m . ms)
+   `(let ((msg (case (: erlang hd ,m)
+                  (n (when (is_number n)) ; String
+                     ,m)
+                  (c (when (is_atom c)) ; Function call
+                     (eval ,m))
+                  (l (when (is_list l)) ; Sublist for a broken up line
+                     (: lists concat (: lists map (fun eval 1) ,m))))))
+      (begin
+        (: log error '"Saying message." `(#(msg ,msg) #(original ,,m) #(head ,(: erlang hd ,m))))
+        (: zone_npc say player npc msg)
+        (say ,@ms)))))
+

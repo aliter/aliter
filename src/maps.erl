@@ -4,24 +4,30 @@
 
 -export([read_cache/1,
          at/2,
+         pretty/1,
          pretty/2,
          pathfind/3,
          simple_pathfind/3,
          complex_pathfind/3]).
 
 
-read_maps(<<>>) ->
+read_maps(Cache) ->
+    read_maps(Cache, 0).
+
+read_maps(<<>>, _N) ->
     [];
 read_maps(<<Name:12/binary-unit:8,
             Width:16/little,
             Height:16/little,
             Length:32/little,
             Cells:Length/binary,
-            Rest/binary>>) ->
-    [#map{name = string:strip(binary_to_list(Name), right, 0),
+            Rest/binary>>,
+          N) ->
+    [#map{id = N,
+          name = string:strip(binary_to_list(Name), right, 0),
           width = Width,
           height = Height,
-          cells = zlib:uncompress(Cells)} | read_maps(Rest)].
+          cells = zlib:uncompress(Cells)} | read_maps(Rest, N + 1)].
 
 read_cache(Filename) ->
     {ok, Cache} = file:read_file(Filename),
@@ -51,7 +57,7 @@ at(M, {X, Y}) ->
     end.
 
 pretty(Map) ->
-    pretty(flip(Map#map.cells, Map#map.width)).
+    pretty(flip(Map#map.cells, Map#map.width), Map#map.width).
 
 pretty(<<>>, _Width) ->
     ok;
@@ -68,57 +74,3 @@ pretty(Cells, Width) ->
     end.
 
 
-pathfind(Map, {X, Y}, {ToX, ToY}) ->
-    Simple = simple_pathfind(Map, {X, Y}, {ToX, ToY}),
-    Final = lists:last([{X, Y, straight} | Simple]),
-
-    case Final of
-        {ToX, ToY, _Dir} ->
-            Simple;
-        Stuck ->
-            log:error("Final not final.", [{final, Final}, {wanted, {ToX, ToY, straight}}]),
-            [] % Simple ++ complex_pathfind(Map, Stuck, {ToX, ToY})
-    end.
-
-simple_pathfind(_Map, {X, Y}, {ToX, ToY}) when X == ToX, Y == ToY ->
-    [];
-simple_pathfind(Map, {X, Y}, {ToX, ToY}) ->
-    {NewX, NewY} = {X + sign(ToX, X), Y + sign(ToY, Y)},
-    New = {NewX,
-           NewY,
-           if
-               NewX /= X, NewY /= Y ->
-                   diagonal;
-               true ->
-                   straight
-           end},
-
-    case at(Map, {NewX, NewY}) of
-        {ok, 0} ->
-            log:warning("Tile OK.",
-                        [{coord, New}]),
-
-            [New | simple_pathfind(Map, {NewX, NewY}, {ToX, ToY})];
-        {ok, Tile} ->
-            log:error("Cannot walk on tile; stopping.",
-                      [{coord, New},
-                       {tile, Tile}]),
-
-            [];
-        {error, unbounded} ->
-            log:error("Requested tile out of bounds.",
-                      [{requested, New}]),
-
-            []
-    end.
-
-complex_pathfind(Map, {X, Y}, {ToX, ToY}) ->
-    [].
-
-
-sign(A, B) when A == B ->
-    0;
-sign(A, B) when A > B ->
-    1;
-sign(A, B) ->
-    -1.

@@ -4,12 +4,20 @@
          id}).
 
 -record(map,
-        {name,
+        {id,
+         name,
          width,
          height,
-         cells,
-         players = [],
-         npcs = []}).
+         cells}).
+
+-record(npc,
+        {id,
+         name,
+         sprite,
+         map,
+         coordinates,
+         direction,
+         main}).
 
 -record(login_state,
         {server,
@@ -42,7 +50,8 @@
          packet_ver,
          walk_timer,
          walk_prev,
-         walk_path}).
+         walk_path,
+         npc}).
 
 -record(map_state,
         {map,

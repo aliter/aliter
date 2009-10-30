@@ -17,14 +17,17 @@
          valid/2,
          walking/2]).
 
--define(WALKSPEED, 123).
+-export([show_actors/1,
+         say/2]).
+
+-define(WALKSPEED, 150).
 
 
-start_link(Tcp) ->
-    gen_fsm:start_link(?MODULE, Tcp, []).
+start_link(TCP) ->
+    gen_fsm:start_link(?MODULE, TCP, []).
 
-init(Tcp) ->
-    {ok, locked, #zone_state{tcp=Tcp}}.
+init(TCP) ->
+    {ok, locked, #zone_state{tcp = TCP}}.
 
 locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
     {char, CharNode} = config:get_env(zone, server.char),
@@ -45,7 +48,7 @@ locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
 
             State#zone_state.tcp ! {parse, zone_packets:new(C#char_state.packet_ver)},
 
-            State#zone_state.tcp ! {16#283, SessionIDa},
+            State#zone_state.tcp ! {16#283, AccountID},
             State#zone_state.tcp ! {16#73, {zone_master:tick(),
                                             {(C#char_state.char)#char.x,
                                              (C#char_state.char)#char.y, 0}}},
@@ -81,57 +84,76 @@ valid({request_name, ActorID}, State = #zone_state{account = #account{id = Accou
                ActorID == AccountID ->
                    CharacterName;
                true ->
-                   {ActorID, FSM} = gen_server:call(State#zone_state.map_server,
-                                                    {get_player, ActorID}),
-
-                   {ok, Z} = gen_fsm:sync_send_all_state_event(FSM, get_state),
-                   (Z#zone_state.char)#char.name
+                   case gen_server:call(State#zone_state.map_server,
+                                        {get_actor, ActorID}) of
+                       {player, FSM} ->
+                           {ok, Z} = gen_fsm:sync_send_all_state_event(FSM, get_state),
+                           (Z#zone_state.char)#char.name;
+                       {npc, NPC} ->
+                           NPC#npc.name;
+                       none ->
+                           "Unknown"
+                   end
            end,
 
     State#zone_state.tcp ! {16#95, {ActorID, Name}},
 
     {next_state, valid, State};
-valid(map_loaded, State = #zone_state{map_server = MapServer,
-                                      account = A,
-                                      char = C}) ->
-    gen_server:cast(MapServer,
-                    {send_to_other_players,
-                     C#char.id,
-                     16#1d7,
-                     C}),
+valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
+    log:warning("Activating NPC.",
+                [{id, ActorID}]),
 
-    gen_server:cast(MapServer,
-                    {send_to_players_in_sight,
-                     {C#char.x, C#char.y},
-                     16#195,
-                     {A#account.id, C#char.name, "Party Name", "Guild Name", "Tester"}}), % TODO
+    case gen_server:call(MapServer, {get_actor, ActorID}) of
+        {npc, NPC} ->
+            log:warning("NPC found.",
+                        [{id, ActorID}]),
 
-    gen_server:cast(MapServer,
-                    {send_to_other_players,
-                     C#char.id,
-                     16#22b,
-                     {A, C}}),
+            Mod = (NPC#npc.main):new(self(), NPC),
+            log:debug("NPC initialized.",
+                      [{result, Mod}]),
 
-    gen_server:cast(MapServer,
-                    {show_actors,
-                     {A#account.id, self()}}),
+            Pid = spawn(fun() -> Mod:main() end),
 
+            {next_state, valid, State#zone_state{npc = {Pid, NPC}}};
+        _Invalid ->
+            log:error("NPC NOT found.",
+                        [{id, ActorID}]),
+
+            {next_state, valid, State}
+    end;
+valid({npc_menu_select, ActorID, Selection}, State = #zone_state{npc = {Pid, NPC}}) ->
+    Pid ! Selection,
+    {next_state, valid, State};
+valid({npc_next, ActorID}, State = #zone_state{npc = {Pid, NPC}}) ->
+    Pid ! continue,
+    {next_state, valid, State};
+valid({npc_close, ActorID}, State = #zone_state{npc = {Pid, NPC}}) ->
+    Pid ! close,
+    {next_state, valid, State};
+valid(map_loaded, State) ->
     {next_state, valid, State};
 valid(request_guild_status,
       State = #zone_state{char = #char{id = CharacterID,
-                                       guild_id = GuildID}}) when GuildID /= 0 ->
+                                       guild_id = GuildID}}) ->
+    show_actors(State),
+
+    init_player(State),
+
     log:debug("Requested guild status."),
 
-    GetGuild = fun() ->
-                   mnesia:read(guild, GuildID)
-               end,
-    case mnesia:transaction(GetGuild) of
-        {atomic, [#guild{master_id = CharacterID}]} ->
-            State#zone_state.tcp ! {16#4e, master};
-        {atomic, [_G]} ->
-            State#zone_state.tcp ! {16#4e, member};
-        _Error ->
-            ok
+    if
+        GuildID /= 0 ->
+            GetGuild = fun() ->
+                               mnesia:read(guild, GuildID)
+                       end,
+            case mnesia:transaction(GetGuild) of
+                {atomic, [#guild{master_id = CharacterID}]} ->
+                    State#zone_state.tcp ! {16#14e, master};
+                _Error ->
+                    State#zone_state.tcp ! {16#14e, member}
+            end;
+        true ->
+            State#zone_state.tcp ! {16#14e, none}
     end,
 
     {next_state, valid, State};
@@ -173,18 +195,6 @@ valid({request_guild_info, 2}, State) ->
     log:debug("Requested third page of guild info."),
     {next_state, valid, State};
 valid({walk, {ToX, ToY, ToD}},
-      State = #zone_state{map = Map,
-                          char = #char{x = X, y = Y}}) ->
-    log:debug("Received walk request.",
-              [{coords, {ToX, ToY, ToD}}]),
-
-    FSM = self(),
-    spawn(fun() -> pathfind(FSM, Map, {X, Y}, {ToX, ToY}) end),
-
-    {next_state, valid, State};
-valid({walk_path, [], To}, State) ->
-    {next_state, valid, State};
-valid({walk_path, [{SX, SY, SDir} | Path], {ToX, ToY}, Elapsed},
       State = #zone_state{tcp = TCP,
                           map = Map,
                           map_server = MapServer,
@@ -192,25 +202,51 @@ valid({walk_path, [{SX, SY, SDir} | Path], {ToX, ToY}, Elapsed},
                           char = C = #char{id = CharacterID,
                                            x = X,
                                            y = Y}}) ->
+
+    log:debug("Received walk request.",
+              [{coords, {ToX, ToY, ToD}}]),
+
+    {Time, PathFound} = timer:tc(c_interface, pathfind, [Map, {X, Y}, {ToX, ToY}]),
+
     log:error("Path found.",
-              [{path, [{SX, SY, SDir} | Path]},
-               {elapsed, Elapsed}]),
+              [{map_size, {bit_size(Map#map.cells), byte_size(Map#map.cells)}},
+               {path, PathFound},
+               {elapsed, Time}]),
 
-    {ok, Timer} = walk_interval(SDir),
+    case PathFound of
+        {ok, [{SX, SY, SDir} | Path]} ->
+            {ok, Timer} = walk_interval(SDir),
+            {FX, FY, FDir} = lists:last(element(2, PathFound)),
 
+            gen_server:cast(MapServer,
+                            {send_to_other_players_in_sight,
+                             {X, Y},
+                             CharacterID,
+                             16#86,
+                             {AccountID, {X, Y}, {FX, FY}, zone_master:tick()}}),
+
+            TCP ! {16#87, {{X, Y}, {FX, FY}, zone_master:tick()}},
+
+            {next_state, walking, State#zone_state{char = C#char{x = SX, y = SY},
+                                                   walk_timer = Timer,
+                                                   walk_prev = {now(), SDir},
+                                                   walk_path = Path}};
+        _Error ->
+            {next_state, valid, State}
+    end;
+valid({change_direction, Head, Body},
+      State = #zone_state{map_server = MapServer,
+                          account = #account{id = AccountID},
+                          char = #char{id = CharacterID,
+                                       x = X,
+                                       y = Y}}) ->
     gen_server:cast(MapServer,
                     {send_to_other_players_in_sight,
                      {X, Y},
                      CharacterID,
-                     16#86,
-                     {AccountID, {X, Y}, {ToX, ToY}, zone_master:tick()}}),
-
-    TCP ! {16#87, {{X, Y}, {ToX, ToY}, zone_master:tick()}},
-
-    {next_state, walking, State#zone_state{char = C#char{x = SX, y = SY},
-                                           walk_timer = Timer,
-                                           walk_prev = {now(), SDir},
-                                           walk_path = Path}};
+                     16#9c,
+                     {AccountID, Head, Body}}),
+    {next_state, valid, State};
 valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
 
@@ -251,7 +287,8 @@ walking(step, State = #zone_state{char = C,
             end,
 
             log:warning("Stepping.", [{direction, CDir},
-                                      {elapsed, trunc(timer:now_diff(now(), Time) / 1000)}]),
+                                      {elapsed, trunc(timer:now_diff(now(), Time) / 1000)},
+                                      {current_pos, {CX, CY}}]),
 
             {next_state, walking, State#zone_state{char = C#char{x = CX, y = CY},
                                                    walk_timer = NewTimer,
@@ -281,7 +318,8 @@ handle_event({speak, Message},
     if
         hd(Said) == 92 -> % GM command
             [Command | Args] = zone_commands:parse(tl(Said)),
-            zone_commands:execute(Command, Args, StateData);
+            FSM = self(),
+            spawn(fun() -> zone_commands:execute(FSM, Command, Args, StateData) end);
         true ->
             gen_server:cast(MapServer,
                             {send_to_other_players_in_sight,
@@ -292,6 +330,15 @@ handle_event({speak, Message},
 
             TCP ! {16#8e, Message}
     end,
+
+    {next_state, StateName, StateData};
+handle_event({broadcast, Message}, StateName, StateData) ->
+    gen_server:cast(zone_master,
+                    {send_to_all,
+                     {send_to_all,
+                      {send_to_players,
+                       16#9a,
+                       Message}}}),
 
     {next_state, StateName, StateData};
 handle_event(stop, _StateName, StateData) ->
@@ -333,6 +380,11 @@ handle_event({show_to, FSM}, StateName, StateData = #zone_state{account = A,
                                   {A, C, zone_master:tick()}}),
 
     {next_state, StateName, StateData};
+handle_event({get_state, From}, StateName, StateData) ->
+    From ! {ok, StateData},
+    {next_state, StateName, StateData};
+handle_event({update_state, Fun}, StateName, StateData) ->
+    {next_state, StateName, Fun(StateData)};
 handle_event(Event, StateName, StateData) ->
     log:debug("Zone FSM received event.", [{event, Event}, {state, StateName}]),
     {next_state, StateName, StateData}.
@@ -378,19 +430,108 @@ code_change(_OldVsn, StateName, StateData, _Extra) ->
 
 
 % Helper walking function
-walk_interval(diagonal) ->
+walk_interval(N) when N band 1 == 1 ->
     log:debug("Walking diagonally."),
     timer:apply_interval(trunc(?WALKSPEED * 1.4),
                          gen_fsm,
                          send_event,
                          [self(), step]);
-walk_interval(straight) ->
+walk_interval(_) ->
     log:debug("Walking straight."),
     timer:apply_interval(?WALKSPEED,
                          gen_fsm,
                          send_event,
                          [self(), step]).
 
-pathfind(FSM, Map, From, To) ->
-    {Time, Path} = timer:tc(maps, pathfind, [Map, From, To]),
-    gen_fsm:send_event(FSM, {walk_path, Path, To, Time}).
+
+show_actors(#zone_state{map_server = MapServer,
+                        char = C,
+                        account = A}) ->
+    gen_server:cast(MapServer,
+                    {send_to_other_players,
+                     C#char.id,
+                     16#1d7,
+                     C}),
+
+    gen_server:cast(MapServer,
+                    {send_to_players_in_sight,
+                     {C#char.x, C#char.y},
+                     16#195,
+                     {A#account.id, C#char.name, "Party Name", "Guild Name", "Tester"}}), % TODO
+
+    gen_server:cast(MapServer,
+                    {send_to_other_players,
+                     C#char.id,
+                     16#22b,
+                     {A, C}}),
+
+    gen_server:cast(MapServer,
+                    {show_actors,
+                     {A#account.id, self()}}).
+
+say(Message, State) ->
+    State#zone_state.tcp ! {16#8e, Message}.
+
+init_player(#zone_state{tcp = TCP, char = C}) ->
+    TCP ! {16#b0, {24, 500}},
+    TCP ! {16#b0, {25, 21500}},
+
+    TCP ! {16#141, {13, C#char.str, 1}},
+    TCP ! {16#141, {14, C#char.agi, 2}},
+    TCP ! {16#141, {15, C#char.vit, 3}},
+    TCP ! {16#141, {16, C#char.int, 4}},
+    TCP ! {16#141, {17, C#char.dex, 5}},
+    TCP ! {16#141, {18, C#char.luk, 6}},
+
+    TCP ! {16#b0, {49, 6}},
+    TCP ! {16#b0, {50, 6}},
+    TCP ! {16#b0, {53, 488}},
+    TCP ! {16#b0, {41, 7}},
+    TCP ! {16#b0, {46, 5}},
+    TCP ! {16#b0, {51, 1}},
+    TCP ! {16#b0, {52, 2}},
+    TCP ! {16#b0, {43, 6}},
+    TCP ! {16#b0, {44, 5}},
+    TCP ! {16#b0, {48, 5}},
+
+    TCP ! {16#13a, 1},
+
+    TCP ! {16#b0, {6, 42}},
+    TCP ! {16#b0, {8, 11}},
+    TCP ! {16#b0, {5, 42}},
+    TCP ! {16#b0, {7, 11}},
+
+    TCP ! {16#17f, "You have 0 new emails (0 unread)"},
+
+    TCP ! {16#1d7, C},
+
+    TCP ! {16#2d0, []},
+
+    TCP ! {16#b0, {24, 500}},
+    TCP ! {16#b0, {25, 21500}},
+
+    TCP ! {16#10f, [{1, 0, 0, 0, 0, "NV_BASIC", 1}]},
+
+    TCP ! {16#2b9, []},
+
+    TCP ! {16#b1, {22, 9}},
+    TCP ! {16#b1, {23, 10}},
+    TCP ! {16#b0, {12, 0}},
+
+    TCP ! {16#bd, C},
+
+    TCP ! {16#141, {13, C#char.str, 1}},
+    TCP ! {16#141, {14, C#char.agi, 0}},
+    TCP ! {16#141, {15, C#char.vit, 0}},
+    TCP ! {16#141, {16, C#char.int, 0}},
+    TCP ! {16#141, {17, C#char.dex, 0}},
+    TCP ! {16#141, {18, C#char.luk, 0}},
+
+    TCP ! {16#13a, 1},
+
+    TCP ! {16#b0, {53, 488}},
+
+    TCP ! {16#2c9, 0},
+    TCP ! {16#2da, 0},
+
+    TCP ! {16#7f, zone_master:tick()}.

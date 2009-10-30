@@ -88,8 +88,9 @@ valid({choose, Num}, State = #char_state{account = #account{id = AccountID}}) ->
             {ip, ZoneIP} = config:get_env(char, zone.server.ip),
             {zone, ZoneNode} = config:get_env(char, server.zone),
 
-            {port, ZonePort} = gen_server:call({zone_master, ZoneNode},
-                                               {who_serves, C#char.map}),
+            {zone, ZonePort, _ZoneServer}
+                = gen_server:call({zone_master, ZoneNode},
+                                  {who_serves, C#char.map}),
 
             State#char_state.tcp ! {16#71,
                                     {C,
@@ -205,6 +206,7 @@ valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
 
 chosen(stop, State) ->
+    log:debug("Character FSM waiting 5 minutes to exit."),
     gen_fsm:send_event_after(60 * 5 * 1000, exit),
     {next_state, chosen, State};
 chosen(exit, State) ->

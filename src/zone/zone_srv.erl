@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/2]).
+-export([start_link/3]).
 
 -export([init/1,
          handle_call/3,
@@ -17,11 +17,15 @@
          maps}).
 
 
-start_link(Port, Maps) ->
+start_link(Port, Maps, NPCs) ->
     log:info("Starting zone server.", [{port, Port}]),
 
     MapServers = lists:map(fun(M) ->
-                               {ok, MapServer} = zone_map:start_link(M),
+                               MapNPCs = lists:filter(fun(N) ->
+                                                          N#npc.map == M#map.name
+                                                      end, NPCs),
+
+                               {ok, MapServer} = zone_map:start_link(M, MapNPCs),
                                {M#map.name, M, MapServer}
                            end, Maps),
 
@@ -45,14 +49,24 @@ handle_call({add_player, MapName, Player}, _From, State) ->
     gen_server:cast(MapServer, {add_player, Player}),
 
     {reply, {ok, Map, MapServer}, State};
-handle_call({get_player, ActorID}, _From, State = #state{maps = Maps}) ->
-    log:debug("Zone server got get_player call.",
+handle_call({get_actor, ActorID}, _From, State = #state{maps = Maps}) ->
+    log:debug("Zone server got get_actor call.",
               [{actor, ActorID}]),
-    {reply, get_player(ActorID, Maps), State};
+    {reply, get_actor(ActorID, Maps), State};
+handle_call({get_player_by, Pred}, _From, State = #state{maps = Maps}) ->
+    log:debug("Zone server got get_player_by call."),
+    {reply, get_player_by(Pred, Maps), State};
 handle_call(Request, _From, State) ->
     log:debug("Zone server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
 
+handle_cast({send_to_all, Msg}, State) ->
+    lists:foreach(fun({_Name, _Map, MapServer}) ->
+                      gen_server:cast(MapServer,
+                                      Msg)
+                  end,
+                  State#state.maps),
+    {noreply, State};
 handle_cast(Cast, State) ->
     log:debug("Zone server got cast.", [{cast, Cast}]),
     {noreply, State}.
@@ -73,12 +87,26 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 
-get_player(_ActorID, []) ->
+get_actor(_ActorID, []) ->
     none;
-get_player(ActorID, [{_Name, _Map, MapServer} | Maps]) ->
-    case gen_server:call(MapServer, {get_player, ActorID}) of
-        {ActorID, FSM} ->
-            {ok, FSM};
+get_actor(ActorID, [{_Name, _Map, MapServer} | Maps]) ->
+    case gen_server:call(MapServer, {get_actor, ActorID}) of
         none ->
-            get_player(ActorID, Maps)
+            get_actor(ActorID, Maps);
+        Found ->
+            {ok, Found}
+    end.
+
+get_player_by(_Pred, []) ->
+    none;
+get_player_by(Pred, [{_Name, _Map, MapServer} | Maps]) ->
+    log:debug("Looking for player from zone_srv.",
+              [{server, MapServer},
+               {pred, Pred}]),
+
+    case gen_server:call(MapServer, {get_player_by, Pred}) of
+        {ok, State} ->
+            {ok, State};
+        none ->
+            get_player_by(Pred, Maps)
     end.

@@ -19,6 +19,8 @@
 start_link(Conf) ->
     config:set_env(zone, Conf),
 
+    application:set_env(zone, started, now()),
+
     log:debug("Starting master zone server."),
 
     gen_server:start_link({local, ?MODULE}, ?MODULE, {server, Conf}, []).
@@ -34,19 +36,27 @@ init({server, Conf}) ->
 
     ok = mnesia:wait_for_tables([item, monster, guild, ids], 2000),
 
+    c_interface:start(),
+
+    AllNPCs = zone_npc:load_all(),
+
     AllMaps = maps:read_cache("priv/maps"),
 
-    log:debug("Map caches read."),
     {zones, Zones} = config:find(server.zones, Conf),
     lists:foreach(fun({Port, ZoneMaps}) ->
                       log:debug("Starting slave.", [{port, Port}, {maps, ZoneMaps}]),
+
+                      NPCs = lists:filter(fun(N) ->
+                                              lists:member(N#npc.map, ZoneMaps)
+                                          end,
+                                          AllNPCs),
 
                       Maps = lists:filter(fun(M) ->
                                               lists:member(M#map.name, ZoneMaps)
                                           end,
                                           AllMaps),
 
-                      supervisor:start_child(zone_master_sup, [Port, Maps])
+                      supervisor:start_child(zone_master_sup, [Port, Maps, NPCs])
                   end,
                   Zones),
 
@@ -71,11 +81,27 @@ handle_call({get_player, ActorID}, _From, State) ->
     log:debug("Zone master server got get_player call.",
               [{actor, ActorID}]),
 
-    {reply, get_player(ActorID, supervisor:which_children(zone_master_sup)), State};
+    {reply,
+     get_player(ActorID,
+                supervisor:which_children(zone_master_sup)),
+     State};
+handle_call({get_player_by, Pred}, _From, State) ->
+    log:debug("Zone master got get_player_by call."),
+    {reply,
+     get_player_by(Pred,
+                   supervisor:which_children(zone_master_sup)),
+     State};
 handle_call(Request, _From, State) ->
     log:debug("Zone master server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
 
+handle_cast({send_to_all, Msg}, State) ->
+    lists:foreach(fun({_ID, Server, _Type, _Modules}) ->
+                      gen_server_tcp:cast(Server,
+                                          Msg)
+                  end,
+                  supervisor:which_children(zone_master_sup)),
+    {noreply, State};
 handle_cast(Cast, State) ->
     log:debug("Zone master server got cast.", [{cast, Cast}]),
     {noreply, State}.
@@ -101,7 +127,7 @@ who_serves(_Map, []) ->
 who_serves(Map, [{_Id, Server, _Type, _Modules} | Servers]) ->
     case gen_server_tcp:call(Server, {provides, Map}) of
         {yes, Port} ->
-            {port, Port};
+            {zone, Port, Server};
         no ->
             who_serves(Map, Servers)
     end.
@@ -116,10 +142,23 @@ get_player(ActorID, [{_Id, Server, _Type, _Modules} | Servers]) ->
             get_player(ActorID, Servers)
     end.
 
+get_player_by(_Pred, []) ->
+    none;
+get_player_by(Pred, [{_Id, Server, _Type, _Modules} | Servers]) ->
+    log:debug("Looking for player from zone_master.",
+              [{server, Server},
+               {pred, Pred}]),
+
+    case gen_server_tcp:call(Server, {get_player_by, Pred}) of
+        {ok, State} ->
+            {ok, State};
+        none ->
+            get_player_by(Pred, Servers)
+    end.
+
 tick() ->
-    {ok, Tick} = application:get_env(zone, tick),
-    application:set_env(zone, tick, Tick + 1),
-    Tick.
+    {ok, Started} = application:get_env(zone, started),
+    round(timer:now_diff(now(), Started) / 1000).
 
 server_for(Port) ->
     list_to_atom(lists:concat(["zone_server_", Port])).
