@@ -33,12 +33,17 @@ load_script([Script | Scripts], N) ->
                                []
                        end,
 
-            Attrs = lists:map(fun([K, V]) -> [define, [list_to_atom(lists:concat(["npc-", K]))], [quote, V]] end, Attributes),
+            Attrs = [[define, ['npc-id'], N] |
+                     lists:map(fun([K, V]) ->
+                                   [define,
+                                    [list_to_atom(lists:concat(["npc-", K]))],
+                                    [quote, V]]
+                               end, Attributes)],
 
             Body = lists:filter(fun(Sexp) -> lists:nth(1, Sexp) /= include end, Rest),
 
             Code = [[defmodule,
-                     [Name, player, npc],
+                     [Name, player],
                      [export, [main, 0]]] |
                      [([progn,
                         ['include-file', "lib/npc.lfh"]] ++ Includes ++ Attrs) |
@@ -92,24 +97,24 @@ say(FSM, NPC, Message) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
                                   16#b4,
-                                  {NPC#npc.id,
+                                  {NPC,
                                    Message}}).
 
 menu(FSM, NPC, Choices) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
                                   16#b7,
-                                  {NPC#npc.id,
+                                  {NPC,
                                    Choices}}).
 
 next(FSM, NPC) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
                                   16#b5,
-                                  NPC#npc.id}).
+                                  NPC}).
 
 close(FSM, NPC) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
                                   16#b6,
-                                  NPC#npc.id}).
+                                  NPC}).

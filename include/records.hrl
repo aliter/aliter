@@ -51,6 +51,7 @@
          walk_timer,
          walk_prev,
          walk_path,
+         walk_changed,
          npc}).
 
 -record(map_state,

@@ -21,7 +21,7 @@
 (defmacro close ()
   `(begin
      (: log debug '"Sending close button.")
-     (: zone_npc close player npc)
+     (: zone_npc close player (npc-id))
      (receive
       ('close
        (: log debug '"Player clicked close.")
@@ -30,7 +30,7 @@
 (defmacro next ()
   `(begin
      (: log debug '"Sending next button.")
-     (: zone_npc next player npc)
+     (: zone_npc next player (npc-id))
      (receive
       ('continue
        (: log debug '"Player clicked next.")))))
@@ -44,7 +44,7 @@
   (os
    `(let ((options (eval-all ,@os)))
       (: log debug '"Sending menu." `(#(menu ',options)))
-      (: zone_npc menu player npc (: lists map (lambda (a) (: lists nth 1 a)) options))
+      (: zone_npc menu player (npc-id) (: lists map (lambda (a) (: lists nth 1 a)) options))
       (receive
         (index
          (: log debug '"Player selected menu item." `(#(index ,index)))
@@ -66,6 +66,6 @@
                      (: lists concat (: lists map (fun eval 1) ,m))))))
       (begin
         (: log error '"Saying message." `(#(msg ,msg) #(original ,,m) #(head ,(: erlang hd ,m))))
-        (: zone_npc say player npc msg)
+        (: zone_npc say player (npc-id) msg)
         (say ,@ms)))))
 

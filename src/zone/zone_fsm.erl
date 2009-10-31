@@ -29,7 +29,7 @@ start_link(TCP) ->
 init(TCP) ->
     {ok, locked, #zone_state{tcp = TCP}}.
 
-locked({connect, AccountID, CharacterID, SessionIDa, Gender}, State) ->
+locked({connect, AccountID, CharacterID, SessionIDa, _Gender}, State) ->
     {char, CharNode} = config:get_env(zone, server.char),
     Session = gen_server_tcp:call({server, CharNode},
                                   {verify_session, AccountID, CharacterID, SessionIDa}),
@@ -108,7 +108,7 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
             log:warning("NPC found.",
                         [{id, ActorID}]),
 
-            Mod = (NPC#npc.main):new(self(), NPC),
+            Mod = (NPC#npc.main):new(self()),
             log:debug("NPC initialized.",
                       [{result, Mod}]),
 
@@ -121,13 +121,14 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
 
             {next_state, valid, State}
     end;
-valid({npc_menu_select, ActorID, Selection}, State = #zone_state{npc = {Pid, NPC}}) ->
+valid({npc_menu_select, _ActorID, Selection},
+      State = #zone_state{npc = {Pid, _NPC}}) ->
     Pid ! Selection,
     {next_state, valid, State};
-valid({npc_next, ActorID}, State = #zone_state{npc = {Pid, NPC}}) ->
+valid({npc_next, _ActorID}, State = #zone_state{npc = {Pid, _NPC}}) ->
     Pid ! continue,
     {next_state, valid, State};
-valid({npc_close, ActorID}, State = #zone_state{npc = {Pid, NPC}}) ->
+valid({npc_close, _ActorID}, State = #zone_state{npc = {Pid, _NPC}}) ->
     Pid ! close,
     {next_state, valid, State};
 valid(map_loaded, State) ->
@@ -216,7 +217,7 @@ valid({walk, {ToX, ToY, ToD}},
     case PathFound of
         {ok, [{SX, SY, SDir} | Path]} ->
             {ok, Timer} = walk_interval(SDir),
-            {FX, FY, FDir} = lists:last(element(2, PathFound)),
+            {FX, FY, _FDir} = lists:last(element(2, PathFound)),
 
             gen_server:cast(MapServer,
                             {send_to_other_players_in_sight,
@@ -251,31 +252,42 @@ valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
 
 walking({walk, {ToX, ToY, ToD}},
-        State = #zone_state{tcp = TCP,
-                            map = Map,
-                            map_server = MapServer,
-                            account = #account{id = AccountID},
-                            char = C = #char{id = CharacterID,
-                                             x = X,
-                                             y = Y},
-                            walk_timer = OldTimer}) ->
-    timer:cancel(OldTimer),
-
+        State = #zone_state{map = Map,
+                            char = #char{x = X,
+                                         y = Y}}) ->
     log:error("Walk request while walking.",
               [{coords, {ToX, ToY, ToD}},
                {current_position, {X, Y}}]),
 
-    valid({walk, {ToX, ToY, ToD}}, State);
+    {Time, PathFound} = timer:tc(c_interface, pathfind, [Map, {X, Y}, {ToX, ToY}]),
+
+    log:error("Path found.",
+              [{map_size, {bit_size(Map#map.cells), byte_size(Map#map.cells)}},
+               {path, PathFound},
+               {elapsed, Time}]),
+
+    case PathFound of
+        {ok, Path} ->
+            {next_state, walking, State#zone_state{walk_path = Path,
+                                                   walk_changed = {X, Y}}};
+        _Error ->
+            {next_state, valid, State}
+    end;
 walking(step, State = #zone_state{char = C,
+                                  account = A,
+                                  tcp = TCP,
+                                  map_server = MapServer,
                                   walk_timer = Timer,
                                   walk_prev = {Time, PDir},
-                                  walk_path = Path}) ->
+                                  walk_path = Path,
+                                  walk_changed = Changed}) ->
     case Path of
         [] ->
             timer:cancel(Timer),
             log:error("Done walking."),
             {next_state, valid, State#zone_state{walk_timer = undefined,
-                                                 walk_path = undefined}};
+                                                 walk_path = undefined,
+                                                 walk_changed = false}};
         [{CX, CY, CDir} | Rest] ->
             if
                 CDir == PDir ->
@@ -286,6 +298,21 @@ walking(step, State = #zone_state{char = C,
                     {ok, NewTimer} = walk_interval(CDir)
             end,
 
+            case Changed of
+                {X, Y} ->
+                    {FX, FY, _FDir} = lists:last(Rest),
+
+                    gen_server:cast(MapServer,
+                                    {send_to_other_players_in_sight,
+                                     {X, Y},
+                                     C#char.id,
+                                     16#86,
+                                     {A#account.id, {X, Y}, {FX, FY}, zone_master:tick()}}),
+
+                    TCP ! {16#87, {{X, Y}, {FX, FY}, zone_master:tick()}};
+                _ -> ok
+            end,
+
             log:warning("Stepping.", [{direction, CDir},
                                       {elapsed, trunc(timer:now_diff(now(), Time) / 1000)},
                                       {current_pos, {CX, CY}}]),
@@ -293,7 +320,8 @@ walking(step, State = #zone_state{char = C,
             {next_state, walking, State#zone_state{char = C#char{x = CX, y = CY},
                                                    walk_timer = NewTimer,
                                                    walk_prev = {Time, CDir},
-                                                   walk_path = Rest}}
+                                                   walk_path = Rest,
+                                                   walk_changed = false}}
     end;
 walking(Event, State) ->
     ?MODULE:handle_event(Event, walking, State).
@@ -430,15 +458,17 @@ code_change(_OldVsn, StateName, StateData, _Extra) ->
 
 
 % Helper walking function
-walk_interval(N) when N band 1 == 1 ->
-    log:debug("Walking diagonally."),
-    timer:apply_interval(trunc(?WALKSPEED * 1.4),
-                         gen_fsm,
-                         send_event,
-                         [self(), step]);
-walk_interval(_) ->
-    log:debug("Walking straight."),
-    timer:apply_interval(?WALKSPEED,
+walk_interval(N) ->
+    Interval = case N band 1 of
+                   1 ->
+                       log:debug("Walking diagonally."),
+                       trunc(?WALKSPEED * 1.4);
+                   0 ->
+                       log:debug("Walking straight."),
+                       ?WALKSPEED
+               end,
+
+    timer:apply_interval(Interval,
                          gen_fsm,
                          send_event,
                          [self(), step]).
