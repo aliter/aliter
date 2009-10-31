@@ -14,9 +14,6 @@
 
 
 start_link(Map, NPCs) ->
-    log:debug("Zone map server starting.",
-              [{map, Map#map.name}]),
-
     gen_server:start_link({local, list_to_atom("zone_map_" ++ Map#map.name)},
                           ?MODULE,
                           #map_state{map = Map,

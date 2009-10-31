@@ -38,7 +38,7 @@
 (defmacro eval-all
   (() ())
   ((o . os)
-   `(++ (list ,o) (eval-all ,@os))))
+   `(cons ,o (eval-all ,@os))))
 
 (defmacro menu
   (os

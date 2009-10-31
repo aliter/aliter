@@ -300,7 +300,7 @@ pack(16#1b6, Guild) ->
 pack(16#1d7, Character) ->
     <<16#1d7:16/little,
       (Character#char.account_id):32/little,
-      2:8, % TODO: ?
+      2:8, % Type
       (Character#char.view_weapon):16/little,
       (Character#char.view_shield):16/little>>;
 pack(16#22b, {A, C}) ->

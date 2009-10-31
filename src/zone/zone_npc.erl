@@ -49,9 +49,6 @@ load_script([Script | Scripts], N) ->
                         ['include-file', "lib/npc.lfh"]] ++ Includes ++ Attrs) |
                       Body]],
 
-            log:debug("Final source.",
-                      [{final, Code}]),
-
             case lfe_comp:forms(Script ++ ".lfe", Code, [return, {outdir, "ebin"}]) of
                 {ok, Name, Warnings} ->
                     lists:map(fun({File, W}) ->
