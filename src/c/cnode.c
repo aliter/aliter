@@ -1,23 +1,19 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
 #include "erl_interface.h"
-#include "ei.h"
+
+#include "extern.h"
 
 #define BUFSIZE 1000
 
 int main(int argc, char **argv) {
-    int fd;                                  /* fd to Erlang node */
+    int fd;
 
-    int loop = 1;                            /* Loop flag */
-    int got;                                 /* Result of receive */
-    unsigned char buf[BUFSIZE];              /* Buffer for incoming message */
-    ErlMessage emsg;                         /* Incoming message */
+    int got;
+    unsigned char buf[BUFSIZE];
+    ErlMessage emsg;
 
     ETERM *fromp, *tuplep, *fnp, *argp, *resp;
-    int res;
+    ETERM *res;
+    /* res = erl_mk_atom("ok"); */
 
     erl_init(NULL, 0);
 
@@ -31,7 +27,7 @@ int main(int argc, char **argv) {
         erl_err_quit("erl_connect");
     }
 
-    while (loop) {
+    while (1) {
         got = erl_receive_msg(fd, buf, BUFSIZE, &emsg);
 
         if (got == ERL_TICK)
@@ -48,15 +44,17 @@ int main(int argc, char **argv) {
             fnp = erl_element(1, tuplep);
             argp = erl_element(2, tuplep);
 
-            if (strncmp(ERL_ATOM_PTR(fnp), "pathfind", 8) == 0)
+            if (strncmp(ERL_ATOM_PTR(fnp), "pathfind", 8) == 0) {
                 res = pathfind(ERL_INT_VALUE(erl_element(1, argp)),
                                ERL_INT_VALUE(erl_element(2, argp)),
                                ERL_INT_VALUE(erl_element(3, argp)),
                                ERL_INT_VALUE(erl_element(4, argp)),
                                ERL_INT_VALUE(erl_element(5, argp)));
 
-            resp = erl_format("{data, ~w}", res);
-            erl_send(fd, fromp, resp);
+                resp = erl_format("{data, ~w}", res);
+                erl_send(fd, fromp, resp);
+                erl_free_term(resp);
+            }
 
             erl_free_term(emsg.from);
             erl_free_term(emsg.msg);
@@ -64,9 +62,10 @@ int main(int argc, char **argv) {
             erl_free_term(tuplep);
             erl_free_term(fnp);
             erl_free_term(argp);
-            erl_free_term(resp);
         }
     }
 
     debug("C node exiting.\n");
+
+    return 0;
 }

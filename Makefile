@@ -1,7 +1,7 @@
 all: compile
 
 compile:
-	gcc -o priv/extern -I/usr/lib/erlang/lib/erl_interface-3.6.1/include -L/usr/lib/erlang/lib/erl_interface-3.6.1/lib src/c/extern.c src/c/cnode.c -pthread -lerl_interface -lei -lz
+	gcc -g -O2 -Wall -o priv/extern -I/usr/lib/erlang/lib/erl_interface-3.6.1/include -L/usr/lib/erlang/lib/erl_interface-3.6.1/lib src/c/extern.c src/c/cnode.c -pthread -lerl_interface -lei -lz
 	erl -pa ebin -make
 
 install: compile

@@ -43,7 +43,7 @@ struct map_data maps[1024];
 #define calc_index(x, y) (((x) + (y) * MAX_WALKPATH) & (MAX_WALKPATH * MAX_WALKPATH - 1))
 
 
-void debug(const char* fmt, ...) {
+void debug(const char *fmt, ...) {
     va_list ap;
 
     va_start(ap, fmt);
@@ -117,7 +117,6 @@ void read_map(struct map_data *data, FILE *fp) {
 
 void read_all_maps(const char *file) {
     struct map_cache_header header;
-    struct map_cache_info info;
 
     FILE *fp;
     int i;
@@ -275,14 +274,13 @@ ETERM *pathfind(int id,
     /* debug("----------------------------\n"); */
 
     struct map_data map = maps[id];
-    struct tmp_path tp[32 * 32];
+    struct tmp_path tp[MAX_WALKPATH * MAX_WALKPATH];
 
     int heap[151];
     int rp, xs, ys;
 
     ETERM **path;
     ETERM **step;
-    ETERM *list;
 
     register int
         i = 0,
@@ -302,10 +300,10 @@ ETERM *pathfind(int id,
     /* debug("\tFirst step: %d\n", at(map, x + dx, y + dy)); */
 
     step = (ETERM **)malloc(3 * sizeof(ETERM *));
-    path = (ETERM **)malloc(32 * sizeof(ETERM *));
+    path = (ETERM **)malloc(MAX_WALKPATH * sizeof(ETERM *));
 
     for (i = 0;
-         i < 32 &&
+         i < MAX_WALKPATH &&
              (x != x1 || y != y1) &&
              at(map, x + dx, y + dy) == 0;
          i++) {
@@ -412,7 +410,7 @@ ETERM *pathfind(int id,
 
     for (len = 0, i = rp; len < 100 && i != calc_index(x0, y0); i = tp[i].before, len++);
 
-    if (len == 100 || len >= 32)
+    if (len == 100 || len >= MAX_WALKPATH)
         return finish(path, step, 0);
 
     for (i = rp, j = len - 1; j >= 0; i = tp[i].before, j--) {

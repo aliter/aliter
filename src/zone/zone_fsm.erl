@@ -132,6 +132,8 @@ valid({npc_close, _ActorID}, State = #zone_state{npc = {Pid, _NPC}}) ->
     Pid ! close,
     {next_state, valid, State};
 valid(map_loaded, State) ->
+    show_actors(State),
+
     {next_state, valid, State};
 valid(request_guild_status,
       State = #zone_state{char = #char{id = CharacterID,
@@ -300,7 +302,7 @@ walking(step, State = #zone_state{char = C,
 
             case Changed of
                 {X, Y} ->
-                    {FX, FY, _FDir} = lists:last(Rest),
+                    {FX, FY, _FDir} = lists:last(Path),
 
                     gen_server:cast(MapServer,
                                     {send_to_other_players_in_sight,
