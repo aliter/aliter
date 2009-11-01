@@ -67,10 +67,10 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
                                 end,
                                 CharServers),
 
-            State#login_state.tcp ! {16#69, {LoginIDa,
-                                       LoginIDb,
-                                       A#account.id,
-                                       Servers}},
+            State#login_state.tcp ! {accept, {LoginIDa,
+                                              LoginIDb,
+                                              A#account.id,
+                                              Servers}},
 
             {next_state, valid, State#login_state{account = A,
                                                   id_a = LoginIDa,
@@ -85,8 +85,8 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
             {atomic, ValidName} = mnesia:transaction(L),
 
             case ValidName of
-                [_A] -> State#login_state.tcp ! {16#6a, {1, ""}};
-                [] -> State#login_state.tcp ! {16#6a, {0, ""}}
+                [_A] -> State#login_state.tcp ! {refuse, {1, ""}};
+                [] -> State#login_state.tcp ! {refuse, {0, ""}}
             end,
 
             {next_state, locked, State}

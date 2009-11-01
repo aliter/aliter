@@ -21,10 +21,10 @@ execute(_FSM, "caps", Args,
                     {send_to_other_players_in_sight,
                      {X, Y},
                      CharacterID,
-                     16#8d,
+                     actor_message,
                      {AccountID, Capitalized}}),
 
-    TCP ! {16#8e, Capitalized},
+    TCP ! {message, Capitalized},
 
     {ok, State};
 execute(FSM, "load", _Args, State = #zone_state{char = C}) ->
@@ -81,10 +81,10 @@ warp_to(FSM, Map, X, Y,
                             {send_to_other_players_in_sight,
                              {C#char.x, C#char.y},
                              C#char.id,
-                             16#80,
+                             vanish,
                              {AccountID, 3}}),
 
-            TCP ! {16#92, {Map, X, Y, IP, Port}},
+            TCP ! {warp_zone, {Map, X, Y, IP, Port}},
 
             % Move to new Map server
             gen_server_tcp:cast(MapServer, {remove_player, AccountID}),

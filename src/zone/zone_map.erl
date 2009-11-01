@@ -119,7 +119,7 @@ handle_cast({show_actors, {SelfID, SelfFSM}}, State) ->
                       log:error("Showing NPC."),
                       gen_fsm:send_all_state_event(SelfFSM,
                                                    {send_packet,
-                                                    16#78,
+                                                    show_npc,
                                                     N})
                   end,
                   State#map_state.npcs),

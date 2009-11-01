@@ -25,9 +25,8 @@ unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     false.
 
-% Login accept
-pack(16#69 = Header, {LoginIDa, LoginIDb, AccountID, Servers}) ->
-    [<<Header:16/little,
+pack(accept, {LoginIDa, LoginIDb, AccountID, Servers}) ->
+    [<<16#69:16/little,
        (length(Servers) * 32 + 47):16/little,
        LoginIDa:32/little,
        AccountID:32/little,
@@ -41,11 +40,9 @@ pack(16#69 = Header, {LoginIDa, LoginIDb, AccountID, Servers}) ->
                    string_to_binary(Name, 20),
                    <<0:16, Maintenance:16, New:16>>]
               end, Servers);
-
-% Login denied
-pack(16#6a = Header, {Type, S}) ->
-    [<<Header:16/little,
-       Type:8>>,
+pack(refuse, {Reason, S}) ->
+    [<<16#6a:16/little,
+       Reason:8>>,
       string_to_binary(S, 20)];
 
 pack(Header, Data) ->

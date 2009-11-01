@@ -93,25 +93,25 @@ load_script([Script | Scripts], N) ->
 say(FSM, NPC, Message) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
-                                  16#b4,
+                                  dialog,
                                   {NPC,
                                    Message}}).
 
 menu(FSM, NPC, Choices) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
-                                  16#b7,
+                                  dialog_menu,
                                   {NPC,
                                    Choices}}).
 
 next(FSM, NPC) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
-                                  16#b5,
+                                  dialog_next,
                                   NPC}).
 
 close(FSM, NPC) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
-                                  16#b6,
+                                  dialog_close,
                                   NPC}).

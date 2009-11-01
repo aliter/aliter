@@ -80,14 +80,14 @@ unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     unknown.
 
-pack(16#73, {Tick, {X, Y, D}}) ->
+pack(accept, {Tick, {X, Y, D}}) ->
     <<16#73:16/little,
       Tick:32/little,
       (encode_position(X, Y, D)):3/binary,
       0,
       0,
       0>>;
-pack(16#78, N) ->
+pack(show_npc, N) -> % TODO: This isn't actually specific to NPCs
     {X, Y} = N#npc.coordinates,
     D = case N#npc.direction of
             north -> 0;
@@ -111,38 +111,38 @@ pack(16#78, N) ->
       0:3/unit:8, % Nothing
       1:8,
       0:8>>; % Static
-pack(16#7f, Tick) ->
+pack(tick, Tick) ->
     <<16#7f:16/little, Tick:32/little>>;
-pack(16#80, {ActorID, Type}) ->
+pack(vanish, {ActorID, Type}) ->
     <<16#80:16/little,
       ActorID:32/little,
       Type:8>>;
-pack(16#86, {ActorID, {FromX, FromY}, {ToX, ToY}, Tick}) ->
+pack(actor_move, {ActorID, {FromX, FromY}, {ToX, ToY}, Tick}) ->
     <<16#86:16/little,
       ActorID:32/little,
       (encode_move(FromX, FromY, ToX, ToY)):6/little-binary-unit:8,
       Tick:32/little>>;
-pack(16#87, {{FromX, FromY}, {ToX, ToY}, Tick}) ->
+pack(move, {{FromX, FromY}, {ToX, ToY}, Tick}) ->
     <<16#87:16/little,
       Tick:32/little,
       (encode_move(FromX, FromY, ToX, ToY)):6/little-binary-unit:8>>;
-pack(16#8d, {ActorID, Message}) ->
+pack(actor_message, {ActorID, Message}) ->
     [<<16#8d:16/little,
        (length(Message) + 9):16/little,
        ActorID:32/little>>,
      list_to_binary(Message),
      <<0>>];
-pack(16#8e, Message) ->
+pack(message, Message) ->
     [<<16#8e:16/little,
        (length(Message) + 5):16/little>>,
      list_to_binary(Message),
      <<0>>];
-pack(16#91, {Map, X, Y}) ->
+pack(warp_map, {Map, X, Y}) ->
     [<<16#91:16/little>>,
      list_to_binary(string:left(Map ++ ".gat", 16, 0)),
      <<X:16/little,
        Y:16/little>>];
-pack(16#92, {Map, X, Y, {ZA, ZB, ZC, ZD}, Port}) ->
+pack(warp_zone, {Map, X, Y, {ZA, ZB, ZC, ZD}, Port}) ->
     [<<16#91:16/little>>,
      list_to_binary(string:left(Map ++ ".gat", 16, 0)),
      <<X:16/little,
@@ -152,47 +152,47 @@ pack(16#92, {Map, X, Y, {ZA, ZB, ZC, ZD}, Port}) ->
        ZC:8,
        ZD:8,
        Port:16/little>>];
-pack(16#95, {ActorID, Name}) ->
+pack(actor_name, {ActorID, Name}) ->
     [<<16#95:16/little,
        ActorID:32/little>>,
      list_to_binary(string:left(Name, 24, 0))];
-pack(16#9a, Message) ->
+pack(broadcast, Message) ->
     [<<16#9a:16/little,
        (length(Message) + 5):16/little>>,
      list_to_binary(Message),
      <<0>>];
-pack(16#9c, {ActorID, HeadDir, BodyDir}) ->
+pack(change_direction, {ActorID, HeadDir, BodyDir}) ->
     <<16#9c:16/little,
       ActorID:32/little,
       HeadDir:16/little,
       BodyDir:8>>;
-pack(16#b0, {Type, Value}) ->
+pack(param_change, {Type, Value}) ->
     <<16#b0:16/little,
       Type:16/little,
       Value:32/little>>;
-pack(16#b1, {Type, Value}) ->
+pack(param_change_long, {Type, Value}) ->
     <<16#b1:16/little,
       Type:16/little,
       Value:32/little>>;
-pack(16#b4, {NPCID, Message}) ->
+pack(dialog, {ActorID, Message}) ->
     [<<16#b4:16/little,
        (length(Message) + 9):16/little,
-       NPCID:32/little>>,
+       ActorID:32/little>>,
      list_to_binary(Message),
      <<0>>];
-pack(16#b5, NPCID) ->
+pack(dialog_next, ActorID) ->
     <<16#b5:16/little,
-      NPCID:32/little>>;
-pack(16#b6, NPCID) ->
+      ActorID:32/little>>;
+pack(dialog_close, ActorID) ->
     <<16#b6:16/little,
-      NPCID:32/little>>;
-pack(16#b7, {NPCID, Choices}) ->
+      ActorID:32/little>>;
+pack(dialog_menu, {ActorID, Choices}) ->
     Menu = string:join(Choices, ":"),
     [<<16#b7:16/little,
        (length(Menu) + 8):16/little,
-       NPCID:32/little>>,
+       ActorID:32/little>>,
      list_to_binary(Menu)];
-pack(16#bd, C) ->
+pack(status, C) ->
     <<16#bd:16/little,
       (C#char.status_points):16/little,
       (C#char.str):8/little,
@@ -223,11 +223,11 @@ pack(16#bd, C) ->
       0:8, % Nothing
       0:8, % Nothing, v-
       0:8>>; % TODO
-pack(16#c0, {ActorID, EmoticonID}) ->
+pack(emotion, {ActorID, EmoticonID}) ->
     <<16#c0:16/little,
       ActorID:32/little,
       EmoticonID:8>>;
-pack(16#10f, Skills) ->
+pack(skill_list, Skills) ->
     [<<16#10f:16/little,
        (37 * length(Skills) + 4):16/little>>,
      lists:map(fun({ID, Type, Level, SP, Range, Name, Up}) ->
@@ -240,15 +240,15 @@ pack(16#10f, Skills) ->
                     list_to_binary(string:left(Name, 24, 0)),
                     <<Up>>]
                end, Skills)];
-pack(16#13a, Range) ->
+pack(attack_range, Range) ->
     <<16#13a:16/little,
       Range:16/little>>;
-pack(16#141, {Stat, Value, Bonus}) ->
+pack(status_change, {Stat, Value, Bonus}) ->
     <<16#141:16/little,
       Stat:32/little,
       Value:32/little,
       Bonus:32/little>>;
-pack(16#14c, Relationships) ->
+pack(guild_relationships, Relationships) ->
     [<<16#14c:16/little,
        (32 * length(Relationships) + 4):16/little>>,
      lists:map(fun(R) ->
@@ -257,7 +257,7 @@ pack(16#14c, Relationships) ->
                     list_to_binary(string:left("Guild name here!", 24, 0))] % TODO: Guild name
                end,
                Relationships)];
-pack(16#14e, State) ->
+pack(guild_status, State) ->
     case State of
         master ->
             <<16#14e:16/little,
@@ -266,22 +266,22 @@ pack(16#14e, State) ->
             <<16#14e:16/little,
               16#57:32/little>>
     end;
-pack(16#17f, Message) ->
+pack(guild_message, Message) ->
     [<<16#17f:16/little,
        (length(Message) + 5):16/little>>,
      list_to_binary(Message),
      <<5>>];
-pack(16#18b, QuitResponse) ->
+pack(quit_response, QuitResponse) ->
     <<16#18b:16/little,
       QuitResponse:16/little>>;
-pack(16#195, {AccountID, Name, Party, Guild, Position}) ->
+pack(actor_name_full, {AccountID, Name, Party, Guild, Position}) ->
     [<<16#195:16/little,
        AccountID:32/little>>,
      list_to_binary(string:left(Name, 24, 0)),
      list_to_binary(string:left(Party, 24, 0)),
      list_to_binary(string:left(Guild, 24, 0)),
      list_to_binary(string:left(Position, 24, 0))];
-pack(16#1b6, Guild) ->
+pack(guild_info, Guild) ->
     [<<16#1b6:16/little,
        (Guild#guild.id):32/little,
        (Guild#guild.level):32/little,
@@ -297,13 +297,13 @@ pack(16#1b6, Guild) ->
      list_to_binary(string:left(Guild#guild.name, 24, 0)),
      list_to_binary(string:left("Master goes here!", 24, 0)), % TODO: Master name
      list_to_binary(string:left("Everywhere, bitches.", 20, 0))]; % TODO: Territory
-pack(16#1d7, Character) ->
+pack(change_look, Character) ->
     <<16#1d7:16/little,
       (Character#char.account_id):32/little,
       2:8, % Type
       (Character#char.view_weapon):16/little,
       (Character#char.view_shield):16/little>>;
-pack(16#22b, {A, C}) ->
+pack(actor, {State, A, C}) ->
     Gender = if
                  A#account.gender == 0 ->
                      1;
@@ -311,12 +311,17 @@ pack(16#22b, {A, C}) ->
                      0
              end,
 
-    <<16#22b:16/little,
+    Header = case State of
+                 new -> 16#22b;
+                 _ -> 16#22a
+             end,
+
+    <<Header:16/little,
       (A#account.id):32/little,
       ?WALKSPEED:16/little, % TODO: Walk speed
-      0:16/little, % TODO: Effect 1
-      0:16/little, % TODO: Effect 2
-      0:16/little, % TODO: Effect 3
+      0:16/little, % TODO: Status
+      0:16/little, % TODO: Ailments
+      0:16/little, % TODO: Option
       0:16, % Nothing
       (C#char.job):16/little,
       (C#char.hair_style):16/little,
@@ -339,7 +344,7 @@ pack(16#22b, {A, C}) ->
       5:8,
       5:8,
       (C#char.base_level):16/little>>;
-pack(16#22c, {A, C, Tick}) ->
+pack(walking_actor, {A, C, Tick}) -> % TODO: Incomplete
     Gender = if
                  A#account.gender == 0 ->
                      1;
@@ -351,9 +356,9 @@ pack(16#22c, {A, C, Tick}) ->
       0:8, % Nothing
       (A#account.id):32/little,
       ?WALKSPEED:16/little, % TODO: Walk speed
-      0:16/little, % TODO: Effect 1
-      0:16/little, % TODO: Effect 2
-      0:16/little, % TODO: Effect 3
+      0:16/little, % TODO: Status
+      0:16/little, % TODO: Ailments
+      0:16/little, % TODO: Option
       0:16, % Nothing
       (C#char.job):16/little,
       (C#char.hair_style):16/little,
@@ -373,26 +378,26 @@ pack(16#22c, {A, C, Tick}) ->
       0:16, % Nothing,
       (C#char.karma):8, % Karma
       Gender:8, % Gender
-      (encode_position(C#char.x, C#char.y, 0)):3/binary-unit:8,
+      (encode_position(C#char.x, C#char.y, 0)):3/binary,
       5:8,
       5:8,
       0:8/unit:3, % Nothing
       (C#char.base_level):16/little>>;
-pack(16#283, LoginIDa) ->
+pack(account_id, AccountID) ->
     <<16#283:16/little,
-      LoginIDa:32/little>>;
-pack(16#2b9, _Hotkeys) ->
+      AccountID:32/little>>;
+pack(hotkeys, _Hotkeys) ->
     [<<16#2b9:16/little>>,
      list_to_binary(lists:duplicate(189, 0))]; % TODO
-pack(16#2c9, InvitationState) ->
+pack(party_invite_state, State) ->
     <<16#2c9:16/little,
-      InvitationState:8>>;
-pack(16#2d0, Equipment) ->
+      State:8>>;
+pack(equipment, Equipment) ->
     <<16#2d0:16/little,
       (26 * length(Equipment) + 4):16/little>>; % TODO
-pack(16#2da, ViewEquipState) ->
+pack(view_equip_state, State) ->
     <<16#2da:16/little,
-      ViewEquipState:8>>;
+      State:8>>;
 pack(Header, Data) ->
     log:error("Cannot pack unknown data.",
                [{header, Header},

@@ -52,32 +52,34 @@ unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     false.
 
-pack(16#6b, Characters) ->
+pack(characters, Characters) ->
     [<<16#6b:16/little,
        (length(Characters) * 112 + 24):16/little>>,
      list_to_binary(lists:duplicate(20, 0))] ++
     lists:map(fun(C) -> character(C) end, Characters);
-pack(16#6c, Reason) ->
+pack(refuse, Reason) ->
     <<16#6c:16/little,
       Reason:16/little>>;
-pack(16#6d, Character) ->
+pack(character_created, Character) ->
     [<<16#6d:16/little>>,
      character(Character)];
-pack(16#6e, Reason) ->
+pack(creation_failed, Reason) ->
     <<16#6e:16/little,
       Reason:16/little>>;
-pack(16#70, Reason) ->
+pack(character_deleted, ok) ->
+    <<16#6f:16/little>>;
+pack(deletion_failed, Reason) ->
     <<16#70:16/little,
       Reason:16/little>>;
-pack(16#71, {#char{id = ID, map = Map}, {ZA, ZB, ZC, ZD}, ZonePort}) ->
+pack(zone_connect, {#char{id = ID, map = Map}, {ZA, ZB, ZC, ZD}, ZonePort}) ->
     [<<16#71:16/little,
        ID:32/little>>,
      list_to_binary(string:left(Map ++ ".gat", 16, 0)),
      <<ZA, ZB, ZC, ZD, ZonePort:16/little>>];
-pack(16#28e, Taken) ->
+pack(name_check_result, Result) ->
     <<16#28e:16/little,
-      Taken:16/little>>;
-pack(16#290, Result) ->
+      Result:16/little>>;
+pack(rename_result, Result) ->
     <<16#290:16/little, Result:16/little>>;
 pack(Header, Data) ->
     log:error("Cannot pack unknown data.",

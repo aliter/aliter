@@ -48,10 +48,10 @@ locked({connect, AccountID, CharacterID, SessionIDa, _Gender}, State) ->
 
             State#zone_state.tcp ! {parse, zone_packets:new(C#char_state.packet_ver)},
 
-            State#zone_state.tcp ! {16#283, AccountID},
-            State#zone_state.tcp ! {16#73, {zone_master:tick(),
-                                            {(C#char_state.char)#char.x,
-                                             (C#char_state.char)#char.y, 0}}},
+            State#zone_state.tcp ! {account_id, AccountID},
+            State#zone_state.tcp ! {accept, {zone_master:tick(),
+                                             {(C#char_state.char)#char.x,
+                                              (C#char_state.char)#char.y, 0}}},
 
             {next_state, valid, State#zone_state{map = Map,
                                                  map_server = MapServer,
@@ -73,7 +73,7 @@ valid(quit, State = #zone_state{account = #account{id = AccountID}}) ->
     log:info("Player quitting.",
              [{account, AccountID}]),
 
-    State#zone_state.tcp ! {16#18b, 0},
+    State#zone_state.tcp ! {quit_response, 0},
 
     {next_state, valid, State};
 valid({request_name, ActorID}, State = #zone_state{account = #account{id = AccountID},
@@ -82,21 +82,31 @@ valid({request_name, ActorID}, State = #zone_state{account = #account{id = Accou
 
     Name = if
                ActorID == AccountID ->
-                   CharacterName;
+                   {actor_name_full,
+                    {ActorID,
+                     CharacterName,
+                     "Party Name",
+                     "Guild Name",
+                     "Tester"}};
                true ->
                    case gen_server:call(State#zone_state.map_server,
                                         {get_actor, ActorID}) of
                        {player, FSM} ->
                            {ok, Z} = gen_fsm:sync_send_all_state_event(FSM, get_state),
-                           (Z#zone_state.char)#char.name;
+                           {actor_name_full,
+                            {ActorID,
+                             (Z#zone_state.char)#char.name,
+                             "Other Party Name",
+                             "Other Guild Name",
+                             "Other Tester"}};
                        {npc, NPC} ->
-                           NPC#npc.name;
+                           {actor_name, {ActorID, NPC#npc.name}};
                        none ->
                            "Unknown"
                    end
            end,
 
-    State#zone_state.tcp ! {16#95, {ActorID, Name}},
+    State#zone_state.tcp ! Name,
 
     {next_state, valid, State};
 valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
@@ -151,12 +161,12 @@ valid(request_guild_status,
                        end,
             case mnesia:transaction(GetGuild) of
                 {atomic, [#guild{master_id = CharacterID}]} ->
-                    State#zone_state.tcp ! {16#14e, master};
+                    State#zone_state.tcp ! {guild_status, master};
                 _Error ->
-                    State#zone_state.tcp ! {16#14e, member}
+                    State#zone_state.tcp ! {guild_status, member}
             end;
         true ->
-            State#zone_state.tcp ! {16#14e, none}
+            State#zone_state.tcp ! {guild_status, none}
     end,
 
     {next_state, valid, State};
@@ -167,8 +177,8 @@ valid({request_guild_info, 0},
     GetGuild = fun() -> mnesia:read(guild, GuildID) end,
     case mnesia:transaction(GetGuild) of
         {atomic, [G]} ->
-            State#zone_state.tcp ! {16#1b6, G},
-            State#zone_state.tcp ! {16#14c, G#guild.relationships};
+            State#zone_state.tcp ! {guild_info, G},
+            State#zone_state.tcp ! {guild_relationships, G#guild.relationships};
         _Other ->
             ok
     end,
@@ -188,7 +198,7 @@ valid({request_guild_info, 1},
                                       end}),
     case GetMembers of
         {atomic, Members} ->
-            State#zone_state.tcp ! {16#154, Members};
+            State#zone_state.tcp ! {guild_members, Members};
         _Error ->
             ok
     end,
@@ -225,10 +235,10 @@ valid({walk, {ToX, ToY, ToD}},
                             {send_to_other_players_in_sight,
                              {X, Y},
                              CharacterID,
-                             16#86,
+                             actor_move,
                              {AccountID, {X, Y}, {FX, FY}, zone_master:tick()}}),
 
-            TCP ! {16#87, {{X, Y}, {FX, FY}, zone_master:tick()}},
+            TCP ! {move, {{X, Y}, {FX, FY}, zone_master:tick()}},
 
             {next_state, walking, State#zone_state{char = C#char{x = SX, y = SY},
                                                    walk_timer = Timer,
@@ -247,8 +257,9 @@ valid({change_direction, Head, Body},
                     {send_to_other_players_in_sight,
                      {X, Y},
                      CharacterID,
-                     16#9c,
+                     change_direction,
                      {AccountID, Head, Body}}),
+
     {next_state, valid, State};
 valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
@@ -308,10 +319,10 @@ walking(step, State = #zone_state{char = C,
                                     {send_to_other_players_in_sight,
                                      {X, Y},
                                      C#char.id,
-                                     16#86,
+                                     actor_move,
                                      {A#account.id, {X, Y}, {FX, FY}, zone_master:tick()}}),
 
-                    TCP ! {16#87, {{X, Y}, {FX, FY}, zone_master:tick()}};
+                    TCP ! {move, {{X, Y}, {FX, FY}, zone_master:tick()}};
                 _ -> ok
             end,
 
@@ -355,10 +366,10 @@ handle_event({speak, Message},
                             {send_to_other_players_in_sight,
                              {X, Y},
                              CharacterID,
-                             16#8d,
+                             actor_message,
                              {AccountID, Message}}),
 
-            TCP ! {16#8e, Message}
+            TCP ! {message, Message}
     end,
 
     {next_state, StateName, StateData};
@@ -367,7 +378,7 @@ handle_event({broadcast, Message}, StateName, StateData) ->
                     {send_to_all,
                      {send_to_all,
                       {send_to_players,
-                       16#9a,
+                       broadcast,
                        Message}}}),
 
     {next_state, StateName, StateData};
@@ -376,7 +387,7 @@ handle_event(stop, _StateName, StateData) ->
     {stop, normal, StateData};
 handle_event({tick, Tick}, StateName, StateData) when StateName /= locked ->
     log:debug("Got tick; syncing.", [{tick, Tick}]),
-    StateData#zone_state.tcp ! {16#7f, zone_master:tick()},
+    StateData#zone_state.tcp ! {tick, zone_master:tick()},
     {next_state, StateName, StateData};
 handle_event({set_server, Server}, StateName, StateData) ->
     {next_state, StateName, StateData#zone_state{server = Server}};
@@ -396,18 +407,13 @@ handle_event({show_to, FSM}, StateName, StateData = #zone_state{account = A,
                                                                 char = C}) ->
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
-                                  16#1d7,
+                                  change_look,
                                   C}),
 
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
-                                  16#195,
-                                  {A#account.id, C#char.name, "Other Party Name", "Other Guild Name", "Other Tester"}}), % TODO
-
-    gen_fsm:send_all_state_event(FSM,
-                                 {send_packet,
-                                  16#22c,
-                                  {A, C, zone_master:tick()}}),
+                                  actor,
+                                  {normal, A, C, zone_master:tick()}}),
 
     {next_state, StateName, StateData};
 handle_event({get_state, From}, StateName, StateData) ->
@@ -442,7 +448,7 @@ terminate(_Reason, _StateName, #zone_state{map_server = MapServer,
     gen_server:cast(MapServer,
                     {send_to_other_players,
                      Character#char.id,
-                     16#80,
+                     vanish,
                      {AccountID, 3}}),
 
     {char, CharNode} = config:get_env(zone, server.char),
@@ -482,88 +488,82 @@ show_actors(#zone_state{map_server = MapServer,
     gen_server:cast(MapServer,
                     {send_to_other_players,
                      C#char.id,
-                     16#1d7,
+                     change_look,
                      C}),
-
-    gen_server:cast(MapServer,
-                    {send_to_players_in_sight,
-                     {C#char.x, C#char.y},
-                     16#195,
-                     {A#account.id, C#char.name, "Party Name", "Guild Name", "Tester"}}), % TODO
 
     gen_server:cast(MapServer,
                     {send_to_other_players,
                      C#char.id,
-                     16#22b,
-                     {A, C}}),
+                     actor,
+                     {new, A, C}}),
 
     gen_server:cast(MapServer,
                     {show_actors,
                      {A#account.id, self()}}).
 
 say(Message, State) ->
-    State#zone_state.tcp ! {16#8e, Message}.
+    State#zone_state.tcp ! {message, Message}.
 
 init_player(#zone_state{tcp = TCP, char = C}) ->
-    TCP ! {16#b0, {24, 500}},
-    TCP ! {16#b0, {25, 21500}},
+    TCP ! {param_change, {24, 500}},
+    TCP ! {param_change, {25, 21500}},
 
-    TCP ! {16#141, {13, C#char.str, 1}},
-    TCP ! {16#141, {14, C#char.agi, 2}},
-    TCP ! {16#141, {15, C#char.vit, 3}},
-    TCP ! {16#141, {16, C#char.int, 4}},
-    TCP ! {16#141, {17, C#char.dex, 5}},
-    TCP ! {16#141, {18, C#char.luk, 6}},
+    TCP ! {status_change, {13, C#char.str, 1}},
+    TCP ! {status_change, {14, C#char.agi, 2}},
+    TCP ! {status_change, {15, C#char.vit, 3}},
+    TCP ! {status_change, {16, C#char.int, 4}},
+    TCP ! {status_change, {17, C#char.dex, 5}},
+    TCP ! {status_change, {18, C#char.luk, 6}},
 
-    TCP ! {16#b0, {49, 6}},
-    TCP ! {16#b0, {50, 6}},
-    TCP ! {16#b0, {53, 488}},
-    TCP ! {16#b0, {41, 7}},
-    TCP ! {16#b0, {46, 5}},
-    TCP ! {16#b0, {51, 1}},
-    TCP ! {16#b0, {52, 2}},
-    TCP ! {16#b0, {43, 6}},
-    TCP ! {16#b0, {44, 5}},
-    TCP ! {16#b0, {48, 5}},
+    TCP ! {param_change, {49, 6}},
+    TCP ! {param_change, {50, 6}},
+    TCP ! {param_change, {53, 488}},
+    TCP ! {param_change, {41, 7}},
+    TCP ! {param_change, {46, 5}},
+    TCP ! {param_change, {51, 1}},
+    TCP ! {param_change, {52, 2}},
+    TCP ! {param_change, {43, 6}},
+    TCP ! {param_change, {44, 5}},
+    TCP ! {param_change, {48, 5}},
 
-    TCP ! {16#13a, 1},
+    TCP ! {attack_range, 1},
 
-    TCP ! {16#b0, {6, 42}},
-    TCP ! {16#b0, {8, 11}},
-    TCP ! {16#b0, {5, 42}},
-    TCP ! {16#b0, {7, 11}},
+    TCP ! {param_change, {6, 42}},
+    TCP ! {param_change, {8, 11}},
+    TCP ! {param_change, {5, 42}},
+    TCP ! {param_change, {7, 11}},
 
-    TCP ! {16#17f, "You have 0 new emails (0 unread)"},
+    TCP ! {guild_message, "You have 0 new emails (0 unread)"},
 
-    TCP ! {16#1d7, C},
+    TCP ! {change_look, C},
 
-    TCP ! {16#2d0, []},
+    TCP ! {equipment, []},
 
-    TCP ! {16#b0, {24, 500}},
-    TCP ! {16#b0, {25, 21500}},
+    TCP ! {param_change, {24, 500}},
+    TCP ! {param_change, {25, 21500}},
 
-    TCP ! {16#10f, [{1, 0, 0, 0, 0, "NV_BASIC", 1}]},
+    TCP ! {skill_list, [{1, 0, 0, 0, 0, "NV_BASIC", 1}]},
 
-    TCP ! {16#2b9, []},
+    TCP ! {hotkeys, []},
 
-    TCP ! {16#b1, {22, 9}},
-    TCP ! {16#b1, {23, 10}},
-    TCP ! {16#b0, {12, 0}},
+    TCP ! {param_change_long, {22, 9}},
+    TCP ! {param_change_long, {23, 10}},
+    TCP ! {param_change, {12, 0}},
 
-    TCP ! {16#bd, C},
+    TCP ! {status, C},
 
-    TCP ! {16#141, {13, C#char.str, 1}},
-    TCP ! {16#141, {14, C#char.agi, 0}},
-    TCP ! {16#141, {15, C#char.vit, 0}},
-    TCP ! {16#141, {16, C#char.int, 0}},
-    TCP ! {16#141, {17, C#char.dex, 0}},
-    TCP ! {16#141, {18, C#char.luk, 0}},
+    TCP ! {status_change, {13, C#char.str, 1}},
+    TCP ! {status_change, {14, C#char.agi, 0}},
+    TCP ! {status_change, {15, C#char.vit, 0}},
+    TCP ! {status_change, {16, C#char.int, 0}},
+    TCP ! {status_change, {17, C#char.dex, 0}},
+    TCP ! {status_change, {18, C#char.luk, 0}},
 
-    TCP ! {16#13a, 1},
+    TCP ! {attack_range, 1},
 
-    TCP ! {16#b0, {53, 488}},
+    TCP ! {param_change, {53, 488}},
 
-    TCP ! {16#2c9, 0},
-    TCP ! {16#2da, 0},
+    TCP ! {party_invite_state, 0},
+    TCP ! {view_equip_state, 0},
 
-    TCP ! {16#7f, zone_master:tick()}.
+    TCP ! {tick, zone_master:tick()}.

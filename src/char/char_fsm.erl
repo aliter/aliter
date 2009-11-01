@@ -61,14 +61,14 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
             {atomic, Chars} = mnesia:transaction(GetChars),
 
             State#char_state.tcp ! {parse, char_packets:new(L#login_state.packet_ver)},
-            State#char_state.tcp ! {16#6b, Chars},
+            State#char_state.tcp ! {characters, Chars},
 
             {next_state, valid, State#char_state{account = L#login_state.account,
                                                  id_a = L#login_state.id_a,
                                                  id_b = L#login_state.id_b,
                                                  packet_ver = L#login_state.packet_ver}};
         invalid ->
-            State#char_state.tcp ! {16#6c, 0},
+            State#char_state.tcp ! {refuse, 0},
             {next_state, locked, State}
     end;
 locked(Event, State) ->
@@ -92,7 +92,7 @@ valid({choose, Num}, State = #char_state{account = #account{id = AccountID}}) ->
                 = gen_server:call({zone_master, ZoneNode},
                                   {who_serves, C#char.map}),
 
-            State#char_state.tcp ! {16#71,
+            State#char_state.tcp ! {zone_connect,
                                     {C,
                                      ZoneIP,
                                      ZonePort}},
@@ -101,12 +101,12 @@ valid({choose, Num}, State = #char_state{account = #account{id = AccountID}}) ->
         {atomic, []} ->
             log:warning("Player selected invalid character.",
                         [{account, AccountID}]),
-            State#char_state.tcp ! {16#6c, 1},
+            State#char_state.tcp ! {refuse, 1},
             {next_state, valid, State};
         Error ->
             log:warning("Error grabbing selected character.",
                         [{result, Error}]),
-            State#char_state.tcp ! {16#6c, 1},
+            State#char_state.tcp ! {refuse, 1},
             {next_state, valid, State}
     end;
 valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
@@ -141,16 +141,16 @@ valid({create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
             log:info("Created character.",
                      [{account, Account},
                       {char, Char}]),
-            State#char_state.tcp ! {16#6d, Char};
+            State#char_state.tcp ! {character_created, Char};
         {atomic, exists} ->
             log:info("Character creation denied (name already in use).",
                      [{account, Account}]),
-            State#char_state.tcp ! {16#6e, 0};
+            State#char_state.tcp ! {creation_failed, 0};
         Error ->
             log:info("Character creation failed.",
                      [{account, Account},
                       {result, Error}]),
-            State#char_state.tcp ! {16#6e, 16#FF}
+            State#char_state.tcp ! {creation_failed, 16#FF}
     end,
 
     {next_state, valid, State};
@@ -169,20 +169,20 @@ valid({delete, CharacterID, EMail}, State = #char_state{account = #account{id = 
                 {atomic, Char} ->
                     log:info("Character deleted.",
                              [{char, Char}]),
-                    State#char_state.tcp ! <<16#6f:16/little>>;
+                    State#char_state.tcp ! {character_deleted, ok};
                 Error ->
                     log:warning("Character deletion failed.",
                                 [{char_id, CharacterID},
                                  {account_id, AccountID},
                                  {email, EMail},
                                  {result, Error}]),
-                    State#char_state.tcp ! {16#70, 0}
+                    State#char_state.tcp ! {deletion_failed, 0}
             end;
         _Invalid ->
             log:warning("Character deletion attempted with wrong e-mail address.",
                         [{email, EMail},
                          {wanted, AccountEMail}]),
-            State#char_state.tcp ! {16#70, 0}
+            State#char_state.tcp ! {deletion_failed, 0}
     end,
     {next_state, valid, State};
 valid({check_name, AccountID, CharacterID, NewName}, State = #char_state{account = #account{id = AccountID}}) ->
@@ -196,10 +196,10 @@ valid({check_name, AccountID, CharacterID, NewName}, State = #char_state{account
 
     case mnesia:transaction(Check) of
         {atomic, [Char]} ->
-            State#char_state.tcp ! {16#28e, 1},
+            State#char_state.tcp ! {name_check_result, 1},
             {next_state, renaming, State#char_state{rename = {Char, NewName}}};
         _Invalid ->
-            State#char_state.tcp ! {16#28e, 0},
+            State#char_state.tcp ! {name_check_result, 0},
             {next_state, valid, State}
     end;
 valid(Event, State) ->
@@ -229,15 +229,15 @@ renaming({rename, CharacterID},
 
     case mnesia:transaction(Write) of
         {atomic, ok} ->
-            State#char_state.tcp ! {16#290, 0};
+            State#char_state.tcp ! {rename_result, 0};
         _Error ->
-            State#char_state.tcp ! {16#290, 3}
+            State#char_state.tcp ! {rename_result, 3}
     end,
 
     {next_state, valid, State#char_state{rename = undefined}};
 renaming({rename, _CharacterID},
          State = #char_state{rename = {#char{renamed = 1}, _NewName}}) ->
-    State#char_state.tcp ! {16#290, 1},
+    State#char_state.tcp ! {rename_result, 1},
     {next_state, valid, State};
 renaming(Event, State) ->
     log:debug("Character FSM received invalid event.",
