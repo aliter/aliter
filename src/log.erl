@@ -26,6 +26,8 @@ log(Header, Msg, Args) ->
     Info = [{node, magenta(node())} | Args],
 
     Format = lists:map(fun
+                           ({Tag, _Val, F}) ->
+                               "~s  " ++ format_of(Tag) ++ ": " ++ F ++ "~n";
                            ({Tag, Val}) ->
                                "~s  " ++ format_of(Tag) ++ ": " ++ format_of(Val) ++ "~n";
                            (Any) ->
@@ -34,6 +36,10 @@ log(Header, Msg, Args) ->
                        Info),
 
     Vals = lists:map(fun
+                         ({Tag, Val, _F}) ->
+                             [lists:duplicate(length(Header) - 10, $ ),
+                              Tag,
+                              Val];
                          ({Tag, Val}) ->
                              [lists:duplicate(length(Header) - 10, $ ),
                               Tag,
@@ -58,12 +64,12 @@ info(Msg, Args) ->
     log(green("INFO"), Msg, Args).
 
 warning(Msg) ->
-    info(Msg, []).
+    warning(Msg, []).
 warning(Msg, Args) ->
     log(yellow("WARNING"), Msg, Args).
 
 error(Msg) ->
-    info(Msg, []).
+    error(Msg, []).
 error(Msg, Args) ->
     log(red("ERROR"), Msg, Args).
 

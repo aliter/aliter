@@ -1,6 +1,6 @@
 -module(login_packets).
 
--export([unpack/1, pack/2]).
+-export([unpack/1, pack/2, packet_size/1]).
 
 % Login request
 unpack(<<16#64:16/little,
@@ -51,6 +51,9 @@ pack(Header, Data) ->
                {data, Data}]),
     <<>>.
 
+
+packet_size(Header) ->
+    packets_24:packet_size(Header).
 
 % Util functions
 binary_to_string(Binary) ->

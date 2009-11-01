@@ -91,6 +91,7 @@ loop(Socket, FSM, PacketHandler) ->
 
             Event = PacketHandler:unpack(Packet),
             gen_fsm:send_event(FSM, Event),
+
             ?MODULE:loop(Socket, FSM, PacketHandler);
 
         {tcp_closed, Socket} ->
@@ -110,12 +111,27 @@ loop(Socket, FSM, PacketHandler) ->
 
             ?MODULE:loop(Socket, FSM, PacketHandler);
 
-        {Header, Data} ->
+        {Packet, Data} ->
             log:debug("Sending data.",
                       [{data, Data},
-                       {packet, PacketHandler:pack(Header, Data)}]),
+                       {packet, iolist_to_binary(PacketHandler:pack(Packet, Data))}]),
 
-            gen_tcp:send(Socket, PacketHandler:pack(Header, Data)),
+            <<Header:16/little, _/binary>> = Packed = iolist_to_binary(PacketHandler:pack(Packet, Data)),
+            Size = PacketHandler:packet_size(Header),
+
+            if
+                Size == 0;
+                byte_size(Packed) == Size ->
+                    gen_tcp:send(Socket, Packed);
+                true ->
+                    log:error("Ignored attempt to send packet of invalid length.",
+                              [{packet, Packet},
+                               {header, Header, "~4.16.0B"},
+                               {data, Data},
+                               {wanted, Size},
+                               {got, byte_size(Packed)}])
+            end,
+
             ?MODULE:loop(Socket, FSM, PacketHandler);
 
         Packet when is_binary(Packet) ->

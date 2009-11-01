@@ -53,6 +53,8 @@ locked({connect, AccountID, CharacterID, SessionIDa, _Gender}, State) ->
                                              {(C#char_state.char)#char.x,
                                               (C#char_state.char)#char.y, 0}}},
 
+            ?MODULE:say("Welcome to Aliter.", State),
+
             {next_state, valid, State#zone_state{map = Map,
                                                  map_server = MapServer,
                                                  account = C#char_state.account,
@@ -126,7 +128,7 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
 
             {next_state, valid, State#zone_state{npc = {Pid, NPC}}};
         _Invalid ->
-            log:error("NPC NOT found.",
+            log:error("NPC not found.",
                         [{id, ActorID}]),
 
             {next_state, valid, State}
@@ -148,10 +150,6 @@ valid(map_loaded, State) ->
 valid(request_guild_status,
       State = #zone_state{char = #char{id = CharacterID,
                                        guild_id = GuildID}}) ->
-    show_actors(State),
-
-    init_player(State),
-
     log:debug("Requested guild status."),
 
     if
@@ -413,7 +411,7 @@ handle_event({show_to, FSM}, StateName, StateData = #zone_state{account = A,
     gen_fsm:send_all_state_event(FSM,
                                  {send_packet,
                                   actor,
-                                  {normal, A, C, zone_master:tick()}}),
+                                  {normal, A, C}}),
 
     {next_state, StateName, StateData};
 handle_event({get_state, From}, StateName, StateData) ->
@@ -504,66 +502,3 @@ show_actors(#zone_state{map_server = MapServer,
 say(Message, State) ->
     State#zone_state.tcp ! {message, Message}.
 
-init_player(#zone_state{tcp = TCP, char = C}) ->
-    TCP ! {param_change, {24, 500}},
-    TCP ! {param_change, {25, 21500}},
-
-    TCP ! {status_change, {13, C#char.str, 1}},
-    TCP ! {status_change, {14, C#char.agi, 2}},
-    TCP ! {status_change, {15, C#char.vit, 3}},
-    TCP ! {status_change, {16, C#char.int, 4}},
-    TCP ! {status_change, {17, C#char.dex, 5}},
-    TCP ! {status_change, {18, C#char.luk, 6}},
-
-    TCP ! {param_change, {49, 6}},
-    TCP ! {param_change, {50, 6}},
-    TCP ! {param_change, {53, 488}},
-    TCP ! {param_change, {41, 7}},
-    TCP ! {param_change, {46, 5}},
-    TCP ! {param_change, {51, 1}},
-    TCP ! {param_change, {52, 2}},
-    TCP ! {param_change, {43, 6}},
-    TCP ! {param_change, {44, 5}},
-    TCP ! {param_change, {48, 5}},
-
-    TCP ! {attack_range, 1},
-
-    TCP ! {param_change, {6, 42}},
-    TCP ! {param_change, {8, 11}},
-    TCP ! {param_change, {5, 42}},
-    TCP ! {param_change, {7, 11}},
-
-    TCP ! {guild_message, "You have 0 new emails (0 unread)"},
-
-    TCP ! {change_look, C},
-
-    TCP ! {equipment, []},
-
-    TCP ! {param_change, {24, 500}},
-    TCP ! {param_change, {25, 21500}},
-
-    TCP ! {skill_list, [{1, 0, 0, 0, 0, "NV_BASIC", 1}]},
-
-    TCP ! {hotkeys, []},
-
-    TCP ! {param_change_long, {22, 9}},
-    TCP ! {param_change_long, {23, 10}},
-    TCP ! {param_change, {12, 0}},
-
-    TCP ! {status, C},
-
-    TCP ! {status_change, {13, C#char.str, 1}},
-    TCP ! {status_change, {14, C#char.agi, 0}},
-    TCP ! {status_change, {15, C#char.vit, 0}},
-    TCP ! {status_change, {16, C#char.int, 0}},
-    TCP ! {status_change, {17, C#char.dex, 0}},
-    TCP ! {status_change, {18, C#char.luk, 0}},
-
-    TCP ! {attack_range, 1},
-
-    TCP ! {param_change, {53, 488}},
-
-    TCP ! {party_invite_state, 0},
-    TCP ! {view_equip_state, 0},
-
-    TCP ! {tick, zone_master:tick()}.

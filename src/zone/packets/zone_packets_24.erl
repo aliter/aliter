@@ -16,7 +16,7 @@ unpack(<<16#85:16/little,
          Body:8>>) ->
     {change_direction, Head, Body};
 unpack(<<16#89:16/little,
-         _:40,
+         _:5/binary,
          Tick:32/little>>) ->
     {tick, Tick};
 unpack(<<16#90:16/little,
@@ -24,7 +24,7 @@ unpack(<<16#90:16/little,
          _:8>>) ->
     {npc_activate, NPCID};
 unpack(<<16#8c:16/little,
-         _:64,
+         _:8/binary,
          ActorID:32/little>>) ->
     {request_name, ActorID};
 unpack(<<16#99:16/little,
@@ -84,9 +84,8 @@ pack(accept, {Tick, {X, Y, D}}) ->
     <<16#73:16/little,
       Tick:32/little,
       (encode_position(X, Y, D)):3/binary,
-      0,
-      0,
-      0>>;
+      5,   % Static
+      5>>; % Statuc
 pack(show_npc, N) -> % TODO: This isn't actually specific to NPCs
     {X, Y} = N#npc.coordinates,
     D = case N#npc.direction of
@@ -316,34 +315,39 @@ pack(actor, {State, A, C}) ->
                  _ -> 16#22a
              end,
 
-    <<Header:16/little,
-      (A#account.id):32/little,
-      ?WALKSPEED:16/little, % TODO: Walk speed
-      0:16/little, % TODO: Status
-      0:16/little, % TODO: Ailments
-      0:16/little, % TODO: Option
-      0:16, % Nothing
-      (C#char.job):16/little,
-      (C#char.hair_style):16/little,
-      (C#char.view_weapon):16/little,
-      (C#char.view_shield):16/little,
-      (C#char.view_head_bottom):16/little,
-      (C#char.view_head_top):16/little,
-      (C#char.view_head_middle):16/little,
-      (C#char.hair_colour):16/little,
-      (C#char.clothes_colour):16/little,
-      0:16/little, % TODO: Head direction (test this)
-      (C#char.guild_id):32/little,
-      (C#char.guild_id):16/little, % Guild emblem ID
-      (C#char.manner):16/little, % Manners
-      0:16/little, % Effect
-      0:16, % Nothing,
-      (C#char.karma):8, % Karma
-      Gender:8, % Gender
-      (encode_position(C#char.x, C#char.y, 0)):3/binary-unit:8,
-      5:8,
-      5:8,
-      (C#char.base_level):16/little>>;
+    [<<Header:16/little,
+       (A#account.id):32/little,
+       ?WALKSPEED:16/little, % TODO: Walk speed
+       0:16/little, % TODO: Status
+       0:16/little, % TODO: Ailments
+       0:16/little, % TODO: Option
+       0:16, % Nothing
+       (C#char.job):16/little,
+       (C#char.hair_style):16/little,
+       (C#char.view_weapon):16/little,
+       (C#char.view_shield):16/little,
+       (C#char.view_head_bottom):16/little,
+       (C#char.view_head_top):16/little,
+       (C#char.view_head_middle):16/little,
+       (C#char.hair_colour):16/little,
+       (C#char.clothes_colour):16/little,
+       0:16/little, % TODO: Head direction (test this)
+       (C#char.guild_id):32/little,
+       (C#char.guild_id):16/little, % Guild emblem ID
+       (C#char.manner):16/little, % Manners
+       0:16/little, % Effect
+       0:16, % Nothing,
+       (C#char.karma):8, % Karma
+       Gender:8, % Gender
+       (encode_position(C#char.x, C#char.y, 0)):3/binary-unit:8,
+       5:8,
+       5:8>>,
+     case State of
+         new -> <<(C#char.base_level):16/little>>;
+         _ ->
+             <<0:8, % Nothing
+               (C#char.base_level):16/little>>
+     end];
 pack(walking_actor, {A, C, Tick}) -> % TODO: Incomplete
     Gender = if
                  A#account.gender == 0 ->
