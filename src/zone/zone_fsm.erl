@@ -217,7 +217,7 @@ valid({walk, {ToX, ToY, ToD}},
     log:debug("Received walk request.",
               [{coords, {ToX, ToY, ToD}}]),
 
-    {Time, PathFound} = timer:tc(c_interface, pathfind, [Map, {X, Y}, {ToX, ToY}]),
+    {Time, PathFound} = timer:tc(nif, pathfind, [Map#map.id, [X | Y], [ToX | ToY]]),
 
     log:error("Path found.",
               [{map_size, {bit_size(Map#map.cells), byte_size(Map#map.cells)}},
@@ -225,9 +225,9 @@ valid({walk, {ToX, ToY, ToD}},
                {elapsed, Time}]),
 
     case PathFound of
-        {ok, [{SX, SY, SDir} | Path]} ->
+        [{SX, SY, SDir} | Path] ->
             {ok, Timer} = walk_interval(SDir),
-            {FX, FY, _FDir} = lists:last(element(2, PathFound)),
+            {FX, FY, _FDir} = lists:last(PathFound),
 
             gen_server:cast(MapServer,
                             {send_to_other_players_in_sight,
@@ -270,20 +270,15 @@ walking({walk, {ToX, ToY, ToD}},
               [{coords, {ToX, ToY, ToD}},
                {current_position, {X, Y}}]),
 
-    {Time, PathFound} = timer:tc(c_interface, pathfind, [Map, {X, Y}, {ToX, ToY}]),
+    {Time, Path} = timer:tc(nif, pathfind, [Map#map.id, [X | Y], [ToX | ToY]]),
 
     log:error("Path found.",
               [{map_size, {bit_size(Map#map.cells), byte_size(Map#map.cells)}},
-               {path, PathFound},
+               {path, Path},
                {elapsed, Time}]),
 
-    case PathFound of
-        {ok, Path} ->
-            {next_state, walking, State#zone_state{walk_path = Path,
-                                                   walk_changed = {X, Y}}};
-        _Error ->
-            {next_state, valid, State}
-    end;
+    {next_state, walking, State#zone_state{walk_path = Path,
+                                           walk_changed = {X, Y}}};
 walking(step, State = #zone_state{char = C,
                                   account = A,
                                   tcp = TCP,

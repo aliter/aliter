@@ -7,7 +7,7 @@
 #include <string.h>
 #include <zlib.h>
 
-#include "erl_interface.h"
+#include "erl_nif.h"
 
 struct map_cache_header {
     int file_size;
@@ -48,7 +48,7 @@ void debug(const char *fmt, ...) {
 
     va_start(ap, fmt);
 
-    FILE* fp = fopen("/home/alex/Projects/aliter/c.out", "a+");
+    FILE* fp = fopen("/Users/Alex/Projects/aliter/c.out", "a+");
 
     vfprintf(fp, fmt, ap);
 
@@ -257,8 +257,13 @@ static int add_path(int *heap,struct tmp_path *tp,int x,int y,int dist,int befor
     return 0;
 }
 
-ETERM *finish(ETERM **path, ETERM **step, int length) {
-    ETERM *list = erl_mk_list(path, length);
+ERL_NIF_TERM finish(ErlNifEnv *env, ERL_NIF_TERM *path, ERL_NIF_TERM *step, int length) {
+    int i;
+    ERL_NIF_TERM list = enif_make_list(env, 0);
+
+    for (i = length - 1; i >= 0; i--) {
+        list = enif_make_list_cell(env, path[i], list);
+    }
 
     free(step);
     free(path);
@@ -266,12 +271,28 @@ ETERM *finish(ETERM **path, ETERM **step, int length) {
     return list;
 }
 
-ETERM *pathfind(int id,
-                int x0,
-                int y0,
-                int x1,
-                int y1) {
-    /* debug("----------------------------\n"); */
+ERL_NIF_TERM pathfind(ErlNifEnv *env,
+                      ERL_NIF_TERM eid,
+                      ERL_NIF_TERM from,
+                      ERL_NIF_TERM to) {
+    /*debug("----------------------------\n");*/
+
+    int id, x0, y0, x1, y1;
+
+    // Get the map ID
+    enif_get_int(env, eid, &id);
+
+    ERL_NIF_TERM head, tail;
+
+    // Get the From X, Y
+    enif_get_list_cell(env, from, &head, &tail);
+    enif_get_int(env, head, &x0);
+    enif_get_int(env, tail, &y0);
+
+    // Get the To X, Y
+    enif_get_list_cell(env, to, &head, &tail);
+    enif_get_int(env, head, &x1);
+    enif_get_int(env, tail, &y1);
 
     struct map_data map = maps[id];
     struct tmp_path tp[MAX_WALKPATH * MAX_WALKPATH];
@@ -279,8 +300,8 @@ ETERM *pathfind(int id,
     int heap[151];
     int rp, xs, ys;
 
-    ETERM **path;
-    ETERM **step;
+    ERL_NIF_TERM *path;
+    ERL_NIF_TERM *step;
 
     register int
         i = 0,
@@ -299,8 +320,8 @@ ETERM *pathfind(int id,
     /* debug("\tTo: (%d, %d)\n", x1, y1); */
     /* debug("\tFirst step: %d\n", at(map, x + dx, y + dy)); */
 
-    step = (ETERM **)malloc(3 * sizeof(ETERM *));
-    path = (ETERM **)malloc(MAX_WALKPATH * sizeof(ETERM *));
+    step = (ERL_NIF_TERM *)malloc(3 * sizeof(ERL_NIF_TERM));
+    path = (ERL_NIF_TERM *)malloc(MAX_WALKPATH * sizeof(ERL_NIF_TERM));
 
     for (i = 0;
          i < MAX_WALKPATH &&
@@ -312,11 +333,11 @@ ETERM *pathfind(int id,
 
         /* debug("OK: (%d, %d)\n", x, y); */
 
-        step[0] = erl_mk_int(x);
-        step[1] = erl_mk_int(y);
-        step[2] = erl_mk_int(walk_choices[-dy + 1][dx + 1]);
+        step[0] = enif_make_int(env, x);
+        step[1] = enif_make_int(env, y);
+        step[2] = enif_make_int(env, walk_choices[-dy + 1][dx + 1]);
 
-        path[i] = erl_mk_tuple(step, 3);
+        path[i] = enif_make_tuple(env, 3, step[0], step[1], step[2]);
 
         if (x == x1)
             dx = 0;
@@ -328,7 +349,7 @@ ETERM *pathfind(int id,
 
     // Simple pathfinding was successful
     if (x == x1 && y == y1)
-        return finish(path, step, i);
+        return finish(env, path, step, i);
 
     memset(tp, 0, sizeof(tp));
 
@@ -353,7 +374,7 @@ ETERM *pathfind(int id,
             dc[4] = {0, 0, 0, 0};
 
         if(heap[0] == 0)
-            return finish(path, step, 0);
+            return finish(env, path, step, 0);
 
         rp = pop_heap_path(heap,tp);
         x = tp[rp].x;
@@ -405,21 +426,21 @@ ETERM *pathfind(int id,
         tp[rp].flag = 1;
 
         if (e || heap[0] >= 150 - 5)
-            return finish(path, step, 0);
+            return finish(env, path, step, 0);
     }
 
     for (len = 0, i = rp; len < 100 && i != calc_index(x0, y0); i = tp[i].before, len++);
 
     if (len == 100 || len >= MAX_WALKPATH)
-        return finish(path, step, 0);
+        return finish(env, path, step, 0);
 
     for (i = rp, j = len - 1; j >= 0; i = tp[i].before, j--) {
         int dx = tp[i].x - tp[tp[i].before].x;
         int dy = tp[i].y - tp[tp[i].before].y;
         /* int dir; */
 
-        step[0] = erl_mk_int(tp[i].x);
-        step[1] = erl_mk_int(tp[i].y);
+        step[0] = enif_make_int(env, tp[i].x);
+        step[1] = enif_make_int(env, tp[i].y);
 
         /* if (dx == 0) */
         /*     dir = (dy > 0 ? 0 : 4); */
@@ -428,11 +449,29 @@ ETERM *pathfind(int id,
         /* else */
         /*     dir = (dy == 0 ? 2 : (dy > 0 ? 1 : 3)); */
 
-        step[2] = erl_mk_int(walk_choices[-dy + 1][dx + 1]);
+        step[2] = enif_make_int(env, walk_choices[-dy + 1][dx + 1]);
 
-        path[j] = erl_mk_tuple(step, 3);
+        path[j] = enif_make_tuple(env, 3, step[0], step[1], step[2]);
     }
 
-    return finish(path, step, len);
+    return finish(env, path, step, len);
 }
 
+static ErlNifFunc funcs[] = {
+    {"pathfind", 3, pathfind}
+};
+
+int load(ErlNifEnv *env,
+         void **priv_data,
+         ERL_NIF_TERM load_info) {
+    debug("erl_nif loading.\n");
+    read_all_maps("/Users/Alex/Projects/aliter/priv/maps");
+    return 0;
+}
+
+void unload(ErlNifEnv *env,
+            void *priv_data) {
+    debug("erl_nif unloading.\n");
+}
+
+ERL_NIF_INIT(nif, funcs, load, load, NULL, unload);

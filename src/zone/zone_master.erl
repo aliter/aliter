@@ -36,11 +36,11 @@ init({server, Conf}) ->
 
     ok = mnesia:wait_for_tables([item, monster, guild, ids], 2000),
 
-    c_interface:start(),
-
     AllNPCs = zone_npc:load_all(),
 
     AllMaps = maps:read_cache("priv/maps"),
+
+    nif:init(),
 
     {zones, Zones} = config:find(server.zones, Conf),
     lists:foreach(fun({Port, ZoneMaps}) ->

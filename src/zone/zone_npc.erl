@@ -10,6 +10,9 @@
          next/2]).
 
 load_all() ->
+    log:debug("Loading scripts.",
+        [{directory, config:home("scripts")}]),
+
     {ok, Scripts} = file:list_dir(config:home("scripts")),
 
     load_script(Scripts, 5000000).
