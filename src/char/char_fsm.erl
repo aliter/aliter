@@ -14,8 +14,11 @@
 
 -export([init/1,
          locked/2,
+         locked/3,
          valid/2,
+         valid/3,
          renaming/2,
+         renaming/3,
          chosen/2,
          chosen/3]).
 
@@ -73,6 +76,10 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
     end;
 locked(Event, State) ->
     ?MODULE:handle_event(Event, locked, State).
+
+locked(Event, From, State) ->
+    handle_sync_event(Event, From, locked, State).
+
 
 valid({choose, Num}, State = #char_state{account = #account{id = AccountID}}) ->
     GetChar = fun() ->
@@ -205,17 +212,23 @@ valid({check_name, AccountID, CharacterID, NewName}, State = #char_state{account
 valid(Event, State) ->
     ?MODULE:handle_event(Event, valid, State).
 
+valid(Event, From, State) ->
+    handle_sync_event(Event, From, valid, State).
+
+
 chosen(stop, State) ->
     log:debug("Character FSM waiting 5 minutes to exit."),
-    gen_fsm:send_event_after(60 * 5 * 1000, exit),
-    {next_state, chosen, State};
+    {next_state,
+     valid,
+     State#char_state{die = gen_fsm:send_event_after(5 * 60 * 1000, exit)}};
 chosen(exit, State) ->
     {stop, normal, State};
 chosen(Event, State) ->
     ?MODULE:handle_event(Event, chosen, State).
 
-chosen(switch_zone, _From, State) ->
-    {stop, normal, {ok, State}, State}.
+chosen(Event, From, State) ->
+    handle_sync_event(Event, From, chosen, State).
+
 
 renaming({rename, CharacterID},
          State = #char_state{rename = {Char = #char{id = CharacterID,
@@ -245,24 +258,31 @@ renaming(Event, State) ->
                {state, renaming}]),
     {next_state, renaming, State}.
 
+renaming(Event, From, State) ->
+    handle_sync_event(Event, From, renaming, State).
+
+
 handle_event(stop, _StateName, StateData) ->
     log:info("Character FSM stopping."),
     {stop, normal, StateData};
+handle_event({set_server, Server}, StateName, StateData) ->
+    {next_state, StateName, StateData#char_state{server = Server}};
+handle_event({update_state, Fun}, StateName, StateData) ->
+    {next_state, StateName, Fun(StateData)};
 handle_event(Event, StateName, StateData) ->
     log:debug("Character FSM got event.", [{event, Event}, {state, StateName}, {state_data, StateData}]),
     {next_state, StateName, StateData}.
 
+handle_sync_event(switch_zone, _From, StateName, StateData) ->
+    gen_fsm:cancel_timer(StateData#char_state.die),
+    {reply, {ok, StateData}, StateName, StateData};
 handle_sync_event(_Event, _From, StateName, StateData) ->
     log:debug("Character FSM got sync event."),
     {next_state, StateName, StateData}.
 
-handle_info({'EXIT', _From, Reason}, StateName, StateData) ->
+handle_info({'EXIT', _From, Reason}, _StateName, StateData) ->
     log:debug("Character FSM got EXIT signal.", [{reason, Reason}]),
-
-    % Wait 5 minutes, then kill the FSM
-    gen_fsm:send_event_after(60 * 5 * 1000, stop),
-
-    {next_state, StateName, StateData};
+    {stop, normal, StateData};
 handle_info(Info, StateName, StateData) ->
     log:debug("Character FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.

@@ -474,4 +474,12 @@ void unload(ErlNifEnv *env,
     debug("erl_nif unloading.\n");
 }
 
-ERL_NIF_INIT(nif, funcs, load, load, NULL, unload);
+int upgrade(ErlNifEnv *env,
+            void **priv_data,
+            void **old_priv_data,
+            ERL_NIF_TERM load_info) {
+    debug("erl_nif upgrading.\n");
+    return 0;
+}
+
+ERL_NIF_INIT(nif, funcs, load, load, upgrade, unload);

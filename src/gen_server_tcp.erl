@@ -138,7 +138,15 @@ loop(Socket, FSM, PacketHandler) ->
             log:debug("Sending raw packet.", [{packet, Packet}]),
 
             gen_tcp:send(Socket, Packet),
-            ?MODULE:loop(Socket, FSM, PacketHandler)
+            ?MODULE:loop(Socket, FSM, PacketHandler);
+
+        close ->
+            log:debug("Closing TCP server from call."),
+            gen_tcp:close(Socket);
+
+        Other ->
+            log:warning("Generic TCP server got unknown data.",
+                        [{data, Other}])
     end.
 
 parse_loop(Socket, PacketHandler, Loop) ->

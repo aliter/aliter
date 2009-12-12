@@ -142,7 +142,7 @@ pack(warp_map, {Map, X, Y}) ->
      <<X:16/little,
        Y:16/little>>];
 pack(warp_zone, {Map, X, Y, {ZA, ZB, ZC, ZD}, Port}) ->
-    [<<16#91:16/little>>,
+    [<<16#92:16/little>>,
      list_to_binary(string:left(Map ++ ".gat", 16, 0)),
      <<X:16/little,
        Y:16/little,
@@ -303,13 +303,6 @@ pack(change_look, Character) ->
       (Character#char.view_weapon):16/little,
       (Character#char.view_shield):16/little>>;
 pack(actor, {State, A, C}) ->
-    Gender = if
-                 A#account.gender == 0 ->
-                     1;
-                 true ->
-                     0
-             end,
-
     Header = case State of
                  new -> 16#22b;
                  _ -> 16#22a
@@ -338,7 +331,7 @@ pack(actor, {State, A, C}) ->
        0:16/little, % Effect
        0:16, % Nothing,
        (C#char.karma):8, % Karma
-       Gender:8, % Gender
+       (A#account.gender):8, % Gender
        (encode_position(C#char.x, C#char.y, 0)):3/binary-unit:8,
        5:8,
        5:8>>,
@@ -349,13 +342,6 @@ pack(actor, {State, A, C}) ->
                (C#char.base_level):16/little>>
      end];
 pack(walking_actor, {A, C, Tick}) -> % TODO: Incomplete
-    Gender = if
-                 A#account.gender == 0 ->
-                     1;
-                 true ->
-                     0
-             end,
-
     <<16#22c:16/little,
       0:8, % Nothing
       (A#account.id):32/little,
@@ -381,7 +367,7 @@ pack(walking_actor, {A, C, Tick}) -> % TODO: Incomplete
       0:16/little, % Effect
       0:16, % Nothing,
       (C#char.karma):8, % Karma
-      Gender:8, % Gender
+      (A#account.gender):8, % Gender
       (encode_position(C#char.x, C#char.y, 0)):3/binary,
       5:8,
       5:8,

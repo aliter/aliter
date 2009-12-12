@@ -135,6 +135,15 @@ handle_cast({save_char, C}, Sessions) ->
 
     {atomic, ok} = mnesia:transaction(fun() -> mnesia:write(C) end),
 
+    case proplists:lookup(C#char.account_id, Sessions) of
+        {_AccountID, FSM, _SessionIDa, _SessionIDb} ->
+            gen_fsm:send_all_state_event(FSM,
+                                         {update_state,
+                                          fun(St) -> St#char_state{char = C} end});
+        _ ->
+            ok
+    end,
+
     {noreply, Sessions};
 handle_cast(Cast, State) ->
     log:debug("Character server got cast.", [{cast, Cast}]),

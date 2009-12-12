@@ -84,8 +84,6 @@ warp_to(FSM, Map, X, Y,
                              vanish,
                              {AccountID, 3}}),
 
-            TCP ! {warp_zone, {Map, X, Y, IP, Port}},
-
             % Move to new Map server
             gen_server_tcp:cast(MapServer, {remove_player, AccountID}),
             {ok, NewMap, NewMapServer}
@@ -107,7 +105,9 @@ warp_to(FSM, Map, X, Y,
 
             gen_fsm:send_all_state_event(FSM,
                                          {update_state,
-                                          NewStateFun});
+                                          NewStateFun}),
+
+            TCP ! {warp_zone, {Map, X, Y, IP, Port}};
         none ->
             zone_fsm:say("Invalid map provided.", State),
             ok

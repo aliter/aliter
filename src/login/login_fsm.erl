@@ -72,10 +72,12 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
                                               A#account.id,
                                               Servers}},
 
-            {next_state, valid, State#login_state{account = A,
-                                                  id_a = LoginIDa,
-                                                  id_b = LoginIDb,
-                                                  packet_ver = PacketVer}};
+            State#login_state.tcp ! close,
+
+            valid(stop, State#login_state{account = A,
+                                          id_a = LoginIDa,
+                                          id_b = LoginIDb,
+                                          packet_ver = PacketVer});
         [] ->
             L = fun() ->
                     qlc:e(qlc:q([X || X <- mnesia:table(account),
@@ -93,15 +95,18 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
     end.
 
 valid(stop, State) ->
-    gen_fsm:send_event_after(60 * 5 * 1000, exit),
-    {next_state, valid, State};
+    log:debug("Login FSM waiting 5 minutes to exit."),
+    {next_state,
+     valid,
+     State#login_state{die = gen_fsm:send_event_after(5 * 60 * 1000, exit)}};
 valid(exit, State) ->
     {stop, normal, State};
 valid(Event, State) ->
     ?MODULE:handle_event(Event, chosen, State).
 
 valid(switch_char, _From, State) ->
-    {stop, normal, {ok, State}, State}.
+    gen_fsm:cancel_timer(State#login_state.die),
+    {reply, {ok, State}, valid, State}.
 
 handle_event(stop, _StateName, StateData) ->
     log:info("Login FSM stopping."),
@@ -116,13 +121,9 @@ handle_sync_event(_Event, _From, StateName, StateData) ->
     log:debug("Login FSM got sync event."),
     {next_state, StateName, StateData}.
 
-handle_info({'EXIT', _From, Reason}, StateName, StateData) ->
+handle_info({'EXIT', _From, Reason}, _StateName, StateData) ->
     log:debug("Login FSM got EXIT signal.", [{reason, Reason}]),
-
-    % Wait 5 minutes, then kill the FSM
-    gen_fsm:send_event_after(60 * 5 * 1000, stop),
-
-    {next_state, StateName, StateData};
+    {stop, normal, StateData};
 handle_info(Info, StateName, StateData) ->
     log:debug("Login FSM got info.", [{info, Info}]),
     {next_state, StateName, StateData}.

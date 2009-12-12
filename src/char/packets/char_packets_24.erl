@@ -59,7 +59,7 @@ pack(characters, Characters) ->
     lists:map(fun(C) -> character(C) end, Characters);
 pack(refuse, Reason) ->
     <<16#6c:16/little,
-      Reason:16/little>>;
+      Reason:8/little>>;
 pack(character_created, Character) ->
     [<<16#6d:16/little>>,
      character(Character)];
