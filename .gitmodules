@@ -1,3 +1,6 @@
 [submodule "lib/protobuffs"]
 	path = lib/protobuffs
 	url = git://github.com/ngerakines/erlang_protobuffs.git
+[submodule "lib/lfe"]
+	path = lib/lfe
+	url = git://github.com/rvirding/lfe.git
