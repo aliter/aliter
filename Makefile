@@ -1,7 +1,7 @@
 all: compile
 
 compile:
-	gcc -arch i386 -fPIC -O2 -Wall -shared -flat_namespace -undefined suppress -o priv/nif.so src/nif.c -I/usr/local/lib/erlang/usr/include/
+	gcc -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -I/usr/lib/erlang/usr/include/
 	erl -pa ebin -make
 
 install: compile
