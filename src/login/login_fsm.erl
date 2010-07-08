@@ -17,6 +17,9 @@
          valid/2,
          valid/3]).
 
+-define(FEMALE, 0).
+-define(MALE, 1).
+
 
 start_link(Tcp) ->
     gen_fsm:start_link(?MODULE, Tcp, []).
@@ -25,12 +28,16 @@ init(Tcp) ->
     {ok, locked, #login_state{tcp = Tcp}}.
 
 
-locked({login, PacketVer, Login, Password, Region}, State) ->
+locked({login, PacketVer, RawLogin, Password, Region}, State) ->
     log:info("Received login request.",
              [{packetver, PacketVer},
-              {login, Login},
+              {login, RawLogin},
               {password, erlang:md5(Password)},
               {region, Region}]),
+
+    % Create new account if username ends with _M or _F.
+    GenderS = string:sub_string(RawLogin, length(RawLogin)-1, length(RawLogin)),
+    Login = register_account(RawLogin, Password, GenderS),
 
     F = fun() ->
            qlc:e(qlc:q([X || X <- mnesia:table(account),
@@ -93,6 +100,42 @@ locked({login, PacketVer, Login, Password, Region}, State) ->
 
             {next_state, locked, State}
     end.
+
+%% Create account when username ends with _M or _F
+register_account(RawLogin, Password, "_M") ->
+    create_new_account(RawLogin, Password, ?MALE);
+register_account(RawLogin, Password, "_F") ->
+    create_new_account(RawLogin, Password, ?FEMALE);
+register_account(Login, _Password, _) ->
+    Login.
+
+create_new_account(RawLogin, Password, Gender) ->
+    Login = string:sub_string(RawLogin, 1, length(RawLogin)-2),
+
+    F = fun() ->
+           qlc:e(qlc:q([X || X <- mnesia:table(account),
+                             X#account.login =:= Login,
+                             X#account.password =:= erlang:md5(Password)]))
+        end,
+    {atomic, Verify} = mnesia:transaction(F),
+
+    case Verify of
+        [_A] -> log:info("Account already exists.", [{login, Login}]);
+        [] ->
+            Create = fun() ->
+                 Account = #account{login = Login,
+                                    password = erlang:md5(Password),
+                                    gender = Gender,
+                                    id = mnesia:dirty_update_counter(ids, account, 0)},
+                 mnesia:write(Account),
+                 mnesia:dirty_update_counter(ids, account, 1),
+                 Account
+             end,
+             mnesia:transaction(Create),
+             log:info("Created account", [{login, Login}])
+    end,
+
+    Login.
 
 valid(stop, State) ->
     log:debug("Login FSM waiting 5 minutes to exit."),
