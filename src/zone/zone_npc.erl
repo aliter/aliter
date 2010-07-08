@@ -11,16 +11,16 @@
 
 load_all() ->
     log:debug("Loading scripts.",
-        [{directory, config:home("scripts")}]),
+        [{directory, config:scripts()}]),
 
-    {ok, Scripts} = file:list_dir(config:home("scripts")),
+    {ok, Scripts} = file:list_dir(config:scripts()),
 
     load_script(Scripts, 5000000).
 
 load_script([], _N) ->
     [];
 load_script([Script | Scripts], N) ->
-    Dir = config:home("scripts/" ++ Script),
+    Dir = config:scripts(Script),
 
     log:debug("Loading script.",
               [{script, Dir ++ "/" ++ Script ++ ".lfe"}]),
