@@ -22,6 +22,10 @@
          chosen/2,
          chosen/3]).
 
+-define(MAX_SLOTS, 9).
+-define(AVAILABLE_SLOTS, 9).
+-define(PREMIUM_SLOTS, 9).
+
 
 start_link(Tcp) ->
     gen_fsm:start_link(?MODULE, Tcp, []).
@@ -64,7 +68,7 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
             {atomic, Chars} = mnesia:transaction(GetChars),
 
             State#char_state.tcp ! {parse, char_packets:new(L#login_state.packet_ver)},
-            State#char_state.tcp ! {characters, Chars},
+            State#char_state.tcp ! {characters, {Chars, ?MAX_SLOTS, ?AVAILABLE_SLOTS, ?PREMIUM_SLOTS}},
 
             {next_state, valid, State#char_state{account = L#login_state.account,
                                                  id_a = L#login_state.id_a,

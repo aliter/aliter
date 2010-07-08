@@ -52,9 +52,12 @@ unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     false.
 
-pack(characters, Characters) ->
+pack(characters, {Characters, MaxSlots, AvailableSlots, PremiumSlots}) ->
     [<<16#6b:16/little,
-       (length(Characters) * 112 + 24):16/little>>,
+       (length(Characters) * 112 + 27):16/little,
+       MaxSlots:8/little,
+       AvailableSlots:8/little,
+       PremiumSlots:8/little>>,
      list_to_binary(lists:duplicate(20, 0))] ++
     lists:map(fun(C) -> character(C) end, Characters);
 pack(refuse, Reason) ->
