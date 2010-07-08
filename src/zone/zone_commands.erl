@@ -5,6 +5,8 @@
 -export([parse/1,
          execute/4]).
 
+-define(SP_ZENY, 20).
+
 parse(String) ->
     string:tokens(String, " ").
 
@@ -52,6 +54,15 @@ execute(FSM, "jumpto", [PlayerName | _], State) ->
             warp_to(FSM, C#char.map, C#char.x, C#char.y, State);
         none ->
             zone_fsm:say("Player not found.", State)
+    end;
+execute(FSM, "zeny", [AddZeny], State) ->
+    log:debug("Got zeny command."),
+
+    case string:to_integer(AddZeny) of
+        {Zeny, _} when is_integer(Zeny) ->
+            add_zeny(FSM, Zeny, State);
+        _Invalid ->
+            zone_fsm:say("Enter a number.", State)
     end;
 execute(_FSM, Unknown, Args, State) ->
     log:warning("Unknown command.",
@@ -112,3 +123,22 @@ warp_to(FSM, Map, X, Y,
             zone_fsm:say("Invalid map provided.", State),
             ok
     end.
+
+add_zeny(FSM, Zeny, State) ->
+    C = State#zone_state.char,
+
+    OldZeny = C#char.zeny,
+    TempNewZeny = OldZeny + Zeny,
+
+    NewZeny = if TempNewZeny > 1000000000 -> 1000000000;
+                 TempNewZeny < 0          -> 0;
+                 true                     -> TempNewZeny
+              end,
+
+    NewStateFun = fun(St) ->
+        St#zone_state{char = C#char{zeny = NewZeny}}
+    end,
+
+    gen_fsm:send_all_state_event(FSM, {update_state, NewStateFun}),
+
+    State#zone_state.tcp ! {param_change_long, {?SP_ZENY, NewZeny}}.
