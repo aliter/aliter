@@ -25,7 +25,7 @@ unpack(Unknown) ->
     log:warning("Got unknown data.", [{data, Unknown}]),
     false.
 
-pack(accept, {LoginIDa, LoginIDb, AccountID, Servers}) ->
+pack(accept, {LoginIDa, LoginIDb, AccountID, Gender, Servers}) ->
     [<<16#69:16/little,
        (length(Servers) * 32 + 47):16/little,
        LoginIDa:32/little,
@@ -34,7 +34,7 @@ pack(accept, {LoginIDa, LoginIDb, AccountID, Servers}) ->
        0:32>>,
      string_to_binary("", 24),
      <<0:16,
-       1:8>>] ++
+       Gender:8>>] ++
     lists:map(fun({{IA, IB, IC, ID}, Port, Name, 0, Maintenance, New}) ->
                   [<<IA, IB, IC, ID, Port:16/little>>,
                    string_to_binary(Name, 20),

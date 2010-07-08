@@ -77,6 +77,7 @@ locked({login, PacketVer, RawLogin, Password, Region}, State) ->
             State#login_state.tcp ! {accept, {LoginIDa,
                                               LoginIDb,
                                               A#account.id,
+                                              A#account.gender,
                                               Servers}},
 
             State#login_state.tcp ! close,
