@@ -3,6 +3,8 @@
 -export([home/0,
          home/1,
          db/0,
+         scripts/0,
+         scripts/1,
          load/0,
          load_path/1,
          find/2,
@@ -14,17 +16,20 @@ home() ->
 home(Path) ->
     {ok, [[Home]]} = init:get_argument(home),
 
-    lists:concat([Home,
-                  "/.",
-                  lists:takewhile(fun(C) -> C /= $@ end, atom_to_list(node())),
-                  "/",
-                  Path]).
+    lists:concat([Home, "/.aliter/", Path]).
 
 db() ->
-    {ok, [[Home]]} = init:get_argument(home),
-    lists:concat([Home, "/.aliter.db.", node(), "/"]).
+    home(lists:concat(["db/", node(), "/"])).
+
+scripts() ->
+    scripts("").
+scripts(Script) ->
+    lists:concat([home("scripts/"), Script]).
 
 load() ->
+    filelib:ensure_dir(home("db/")),
+    filelib:ensure_dir(home("scripts/")),
+
     LoadLogin = load_path("config/login"),
 
     {host, {LoginHost, LoginName}} = find(server.host, LoadLogin),
