@@ -111,6 +111,11 @@ valid({request_name, ActorID}, State = #zone_state{account = #account{id = Accou
     State#zone_state.tcp ! Name,
 
     {next_state, valid, State};
+valid({char_select, Type}, State) ->
+    log:debug("User requesting to go back to char screen.", [{type, Type}]),
+    State#zone_state.tcp ! {confirm_back_to_char, {1}},
+    {next_state, valid, State};
+
 valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
     log:warning("Activating NPC.",
                 [{id, ActorID}]),

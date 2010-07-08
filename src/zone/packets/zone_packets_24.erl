@@ -35,6 +35,9 @@ unpack(<<16#a7:16/little,
          _:32,
          Position:3/little-binary-unit:8>>) ->
     {walk, decode_position(Position)};
+unpack(<<16#b2:16/little,
+         Type:8>>) ->
+    {char_select, Type};
 unpack(<<16#b8:16/little,
          ActorID:32/little,
          Selection:8>>) ->
@@ -173,6 +176,9 @@ pack(param_change_long, {Type, Value}) ->
     <<16#b1:16/little,
       Type:16/little,
       Value:32/little>>;
+pack(confirm_back_to_char, {Type}) ->
+    <<16#b3:16/little,
+      Type:8>>;
 pack(dialog, {ActorID, Message}) ->
     [<<16#b4:16/little,
        (length(Message) + 9):16/little,
