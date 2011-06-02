@@ -25,5 +25,5 @@ uninstall:
 start: compile
 	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."
 
-configure:: compile
+configure: compile
 	erl -noshell -pa ebin -sname aliter -eval "config:setup(), halt()."
