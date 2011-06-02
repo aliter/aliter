@@ -12,7 +12,7 @@ clean:
 	rm ebin/*.beam
 
 install: compile
-	erl -noshell -pa ebin -sname aliter -eval "aliter:install()."
+	erl -noshell -pa ebin -sname aliter -eval "aliter:install(), halt()."
 
 uninstall:
 	rm -R ~/.aliter.db.*
@@ -21,4 +21,4 @@ start: compile
 	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."
 
 configure:
-	erl -noshell -pa ebin -sname aliter -eval "config:setup()."
+	erl -noshell -pa ebin -sname aliter -eval "config:setup(), halt()."

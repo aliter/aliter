@@ -224,6 +224,4 @@ setup() ->
 
     io:format("All done!~n"),
     io:format("You may want to go through ~~/.aliter/config and tweak things.~n"),
-    io:format("When you're finished, run `make install`.~n"),
-
-    halt().
+    io:format("When you're finished, run `make install`.~n").
