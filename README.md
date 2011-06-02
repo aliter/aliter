@@ -17,7 +17,7 @@ Some of this is a bit repetitive and may be simplified in the future:
     3. Set `zone` to the name of your zone server from step 3.
     4. (Optional.) Set the name for your server, and whatever IP/port
        configuration you want.
-6. Repeat the same steps from step 4. for
+6. Repeat the same steps from step 5. for
    `~/.aliter/config/zone/<name>/server.erl`, setting `char` to the same
    information from step 4. You may also want to tweak the individual `zones`,
    changing port numbers and map lists.
