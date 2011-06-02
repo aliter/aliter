@@ -8,14 +8,14 @@ compile:
 	erl -pa ebin -make
 
 clean:
-    rm priv/nif.so
-    rm ebin/*.beam
+	rm priv/nif.so
+	rm ebin/*.beam
 
 install: compile
 	erl -noshell -pa ebin -sname aliter -eval "aliter:install()."
 
 uninstall:
-    rm -R ~/.aliter.db.*
+	rm -R ~/.aliter.db.*
 
 start: compile
 	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."
