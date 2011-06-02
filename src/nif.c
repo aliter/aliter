@@ -272,10 +272,16 @@ ERL_NIF_TERM finish(ErlNifEnv *env, ERL_NIF_TERM *path, ERL_NIF_TERM *step, int 
 }
 
 ERL_NIF_TERM pathfind(ErlNifEnv *env,
-                      ERL_NIF_TERM eid,
-                      ERL_NIF_TERM from,
-                      ERL_NIF_TERM to) {
+                      int argc,
+                      const ERL_NIF_TERM argv[]) {
     /*debug("----------------------------\n");*/
+
+    if (argc < 3)
+      return enif_make_list(env, 0);
+
+    ERL_NIF_TERM eid = argv[0];
+    ERL_NIF_TERM from = argv[1];
+    ERL_NIF_TERM to = argv[2];
 
     int id, x0, y0, x1, y1;
 
