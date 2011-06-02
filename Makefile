@@ -1,10 +1,10 @@
 CC = gcc
-ERLANG = /usr/lib/erlang
+ERLANG = /usr/local/lib/erlang
 
 all: compile
 
 compile:
-	${CC} -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -I${ERLANG}/usr/include/
+	${CC} -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -lz -flat_namespace -undefined suppress -I${ERLANG}/usr/include/
 	erl -pa ebin -make
 
 clean:
