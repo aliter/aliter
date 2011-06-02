@@ -20,7 +20,7 @@ install: compile
 	erl -noshell -pa ebin -sname aliter -eval "aliter:install(), halt()."
 
 uninstall:
-	rm -R ~/.aliter.db.*
+	rm -R ~/.aliter
 
 start: compile
 	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."
