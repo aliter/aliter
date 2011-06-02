@@ -1,11 +1,21 @@
+CC = gcc
+ERLANG = /usr/lib/erlang
+
 all: compile
 
 compile:
-	gcc -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -I/usr/lib/erlang/usr/include/
+	${CC} -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -I${ERLANG}/usr/include/
 	erl -pa ebin -make
+
+clean:
+    rm priv/nif.so
+    rm ebin/*.beam
 
 install: compile
 	erl -noshell -pa ebin -sname aliter -eval "aliter:install()."
+
+uninstall:
+    rm -R ~/.aliter.db.*
 
 start: compile
 	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."
