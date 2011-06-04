@@ -28,6 +28,10 @@
 -define(WALKSPEED, 150).
 
 
+send(State, Packet) ->
+  State#zone_state.tcp ! Packet.
+
+
 start_link(TCP) ->
   gen_fsm:start_link(?MODULE, TCP, []).
 
@@ -43,7 +47,7 @@ format_status(_, [_, State]) ->
 
 locked(
     {connect, AccountID, CharacterID, SessionIDa, _Gender},
-    State = #zone_state{tcp = TCP}) ->
+    State) ->
   {char, CharNode} = config:get_env(zone, server.char),
   Session =
     gen_server_tcp:call(
@@ -68,16 +72,18 @@ locked(
           }
         ),
 
-      TCP ! {parse, zone_packets:new(C#char_state.packet_ver)},
+      send(State, {parse, zone_packets:new(C#char_state.packet_ver)}),
 
-      TCP ! {account_id, AccountID},
+      send(State, {account_id, AccountID}),
 
-      TCP !
+      send(
+        State,
         { accept,
           { zone_master:tick(),
             {Char#char.x, Char#char.y, 0}
           }
-        },
+        }
+      ),
 
       ?MODULE:say("Welcome to Aliter.", State),
 
@@ -105,10 +111,9 @@ locked(Event, State) ->
 
 
 valid(quit, State = #zone_state{account = #account{id = AccountID}}) ->
-  log:info("Player quitting.",
-            [{account, AccountID}]),
+  log:info("Player quitting.", [{account, AccountID}]),
 
-  State#zone_state.tcp ! {quit_response, 0},
+  send(State, {quit_response, 0}),
 
   {next_state, valid, State};
 
@@ -131,6 +136,7 @@ valid(
             "Guild Name",
             "Tester"}
         };
+
       true ->
         case gen_server:call(MapServer, {get_actor, ActorID}) of
           {player, FSM} ->
@@ -143,20 +149,22 @@ valid(
                 "Other Tester"
               }
             };
+
           {npc, NPC} ->
             {actor_name, {ActorID, NPC#npc.name}};
+
           none ->
             "Unknown"
         end
     end,
 
-  State#zone_state.tcp ! Name,
+  send(State, Name),
 
   {next_state, valid, State};
 
 valid({char_select, Type}, State) ->
   log:debug("User requesting to go back to char screen.", [{type, Type}]),
-  State#zone_state.tcp ! {confirm_back_to_char, {1}},
+  send(State, {confirm_back_to_char, {1}}),
   {next_state, valid, State};
 
 valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
@@ -214,14 +222,14 @@ valid(
 
       case mnesia:transaction(GetGuild) of
         {atomic, [#guild{master_id = CharacterID}]} ->
-          State#zone_state.tcp ! {guild_status, master};
+          send(State, {guild_status, master});
 
         _Error ->
-          State#zone_state.tcp ! {guild_status, member}
+          send(State, {guild_status, member})
       end;
 
     true ->
-        State#zone_state.tcp ! {guild_status, none}
+        send(State, {guild_status, none})
   end,
 
   {next_state, valid, State};
@@ -235,8 +243,8 @@ valid(
 
   case mnesia:transaction(GetGuild) of
     {atomic, [G]} ->
-      State#zone_state.tcp ! {guild_info, G},
-      State#zone_state.tcp ! {guild_relationships, G#guild.relationships};
+      send(State, {guild_info, G}),
+      send(State, {guild_relationships, G#guild.relationships});
 
     _Other ->
       ok
@@ -264,7 +272,7 @@ valid(
 
   case GetMembers of
     {atomic, Members} ->
-      State#zone_state.tcp ! {guild_members, Members};
+      send(State, {guild_members, Members});
 
     _Error ->
       ok
@@ -279,7 +287,6 @@ valid({request_guild_info, 2}, State) ->
 valid(
     {walk, {ToX, ToY, ToD}},
     State = #zone_state{
-      tcp = TCP,
       map = Map,
       map_server = MapServer,
       account = #account{id = AccountID},
@@ -318,7 +325,7 @@ valid(
         }
       ),
 
-      TCP ! {move, {{X, Y}, {FX, FY}, zone_master:tick()}},
+      send(State, {move, {{X, Y}, {FX, FY}, zone_master:tick()}}),
 
       { next_state,
         walking,
@@ -392,7 +399,6 @@ walking(
     State = #zone_state{
       char = C,
       account = A,
-      tcp = TCP,
       map_server = MapServer,
       walk_timer = Timer,
       walk_prev = {Time, PDir},
@@ -435,7 +441,7 @@ walking(
             }
           ),
 
-          TCP ! {move, {{X, Y}, {FX, FY}, zone_master:tick()}};
+          send(State, {move, {{X, Y}, {FX, FY}, zone_master:tick()}});
 
         _ -> ok
       end,
@@ -463,17 +469,16 @@ walking(Event, State) ->
   ?MODULE:handle_event(Event, walking, State).
 
 
-handle_event(player_count, StateName, StateData = #zone_state{tcp = TCP}) ->
+handle_event(player_count, StateName, State) ->
   Num = gen_server:call(zone_master, player_count),
   log:debug("Player count.", [{count, Num}]),
-  TCP ! {player_count, Num},
-  {next_state, StateName, StateData};
+  send(State, {player_count, Num}),
+  {next_state, StateName, State};
 
 handle_event(
     {emotion, Id},
     StateName,
-    StateData = #zone_state{
-      tcp = TCP,
+    State = #zone_state{
       map_server = MapServer,
       account = #account{id = AccountID},
       char = #char{
@@ -494,18 +499,22 @@ handle_event(
     }
   ),
 
-  TCP ! {emotion, {AccountID, Id}},
+  send(State, {emotion, {AccountID, Id}}),
 
-  {next_state, StateName, StateData};
+  {next_state, StateName, State};
 
-handle_event({speak, Message},
-       StateName,
-       StateData = #zone_state{tcp = TCP,
-                   map_server = MapServer,
-                   account = #account{id = AccountID},
-                   char = #char{id = CharacterID,
-                          x = X,
-                          y = Y}}) ->
+handle_event(
+    {speak, Message},
+     StateName,
+     State = #zone_state{
+       map_server = MapServer,
+       account = #account{id = AccountID},
+       char = #char{
+         id = CharacterID,
+         x = X,
+         y = Y
+       }
+     }) ->
   [Name | Rest] = re:split(Message, " : ", [{return, list}]),
   Said = lists:concat(Rest),
 
@@ -521,7 +530,7 @@ handle_event({speak, Message},
       FSM = self(),
       spawn(
         fun() ->
-          zone_commands:execute(FSM, Command, Args, StateData)
+          zone_commands:execute(FSM, Command, Args, State)
         end
       );
 
@@ -536,12 +545,12 @@ handle_event({speak, Message},
         }
       ),
 
-      TCP ! {message, Message}
+      send(State, {message, Message})
   end,
 
-  {next_state, StateName, StateData};
+  {next_state, StateName, State};
 
-handle_event({broadcast, Message}, StateName, StateData) ->
+handle_event({broadcast, Message}, StateName, State) ->
   gen_server:cast(
     zone_master,
     % i love how this looks like noise waves or something
@@ -555,45 +564,45 @@ handle_event({broadcast, Message}, StateName, StateData) ->
     }
   ),
 
-  {next_state, StateName, StateData};
+  {next_state, StateName, State};
 
-handle_event(stop, _StateName, StateData) ->
+handle_event(stop, _StateName, State) ->
   log:info("Zone FSM stopping."),
-  {stop, normal, StateData};
+  {stop, normal, State};
 
-handle_event({tick, Tick}, StateName, StateData) when StateName /= locked ->
+handle_event({tick, Tick}, StateName, State) when StateName /= locked ->
   log:debug("Got tick; syncing.", [{tick, Tick}]),
-  StateData#zone_state.tcp ! {tick, zone_master:tick()},
-  {next_state, StateName, StateData};
+  send(State, {tick, zone_master:tick()}),
+  {next_state, StateName, State};
 
-handle_event({set_server, Server}, StateName, StateData) ->
-  {next_state, StateName, StateData#zone_state{server = Server}};
+handle_event({set_server, Server}, StateName, State) ->
+  {next_state, StateName, State#zone_state{server = Server}};
 
-handle_event({send_packet, Packet, Data}, StateName, StateData) ->
+handle_event({send_packet, Packet, Data}, StateName, State) ->
   log:warning("Send packet.", [{packet, Packet}, {data, Data}]),
-  StateData#zone_state.tcp ! {Packet, Data},
-  {next_state, StateName, StateData};
+  send(State, {Packet, Data}),
+  {next_state, StateName, State};
 
-handle_event({send_packets, Packets}, StateName, StateData) ->
+handle_event({send_packets, Packets}, StateName, State) ->
   log:error("Send multiple packets.", []),
-  StateData#zone_state.tcp ! {send_packets, Packets},
-  {next_state, StateName, StateData};
+  send(State, {send_packets, Packets}),
+  {next_state, StateName, State};
 
-handle_event({send_packet_if, Pred, Packet, Data}, StateName, StateData) ->
-  case Pred(StateData) of
+handle_event({send_packet_if, Pred, Packet, Data}, StateName, State) ->
+  case Pred(State) of
     true ->
-      StateData#zone_state.tcp ! {Packet, Data};
+      send(State, {Packet, Data});
 
     false ->
       ok
   end,
 
-  {next_state, StateName, StateData};
+  {next_state, StateName, State};
 
 handle_event(
     {show_to, FSM},
     StateName,
-    StateData = #zone_state{
+    State = #zone_state{
       account = A,
       char = C
     }) ->
@@ -613,38 +622,38 @@ handle_event(
     }
   ),
 
-  {next_state, StateName, StateData};
+  {next_state, StateName, State};
 
-handle_event({get_state, From}, StateName, StateData) ->
-  From ! {ok, StateData},
-  {next_state, StateName, StateData};
+handle_event({get_state, From}, StateName, State) ->
+  From ! {ok, State},
+  {next_state, StateName, State};
 
-handle_event({update_state, Fun}, StateName, StateData) ->
-  {next_state, StateName, Fun(StateData)};
+handle_event({update_state, Fun}, StateName, State) ->
+  {next_state, StateName, Fun(State)};
 
-handle_event(Event, StateName, StateData) ->
+handle_event(Event, StateName, State) ->
   log:warning(
     "Zone FSM received unknown event.",
     [{event, Event}, {state, StateName}]
   ),
 
-  {next_state, StateName, StateData}.
+  {next_state, StateName, State}.
 
 
-handle_sync_event(get_state, _From, StateName, StateData) ->
+handle_sync_event(get_state, _From, StateName, State) ->
   log:debug("Handling get_state handle_sync_event."),
-  {reply, {ok, StateData}, StateName, StateData};
-handle_sync_event(_Event, _From, StateName, StateData) ->
+  {reply, {ok, State}, StateName, State};
+handle_sync_event(_Event, _From, StateName, State) ->
   log:debug("Zone FSM got sync event."),
-  {next_state, StateName, StateData}.
+  {next_state, StateName, State}.
 
 
-handle_info({'EXIT', From, Reason}, _StateName, StateData) ->
+handle_info({'EXIT', From, Reason}, _StateName, State) ->
   log:error("Zone FSM got EXIT signal.", [{from, From}, {reason, Reason}]),
-  {stop, normal, StateData};
-handle_info(Info, StateName, StateData) ->
+  {stop, normal, State};
+handle_info(Info, StateName, State) ->
   log:debug("Zone FSM got info.", [{info, Info}]),
-  {next_state, StateName, StateData}.
+  {next_state, StateName, State}.
 
 
 terminate(_Reason, _StateName, #zone_state{map_server = MapServer,
@@ -670,13 +679,13 @@ terminate(_Reason, _StateName, #zone_state{map_server = MapServer,
 
   gen_server_tcp:cast(MapServer, {remove_player, AccountID});
 
-terminate(_Reason, _StateName, _StateData) ->
+terminate(_Reason, _StateName, _State) ->
   log:debug("Zone FSM terminating."),
   ok.
 
 
-code_change(_OldVsn, StateName, StateData, _Extra) ->
-  {ok, StateName, StateData}.
+code_change(_OldVsn, StateName, State, _Extra) ->
+  {ok, StateName, State}.
 
 
 % Helper walking function
@@ -732,5 +741,5 @@ show_actors(
 
 
 say(Message, State) ->
-    State#zone_state.tcp ! {message, Message}.
+  send(State, {message, Message}).
 
