@@ -16,7 +16,3 @@
 {'./lib/*',
  [debug_info,
   {outdir, './ebin'}]}.
-
-{'./lib/*/src/*',
- [debug_info,
-  {outdir, './ebin'}]}.
