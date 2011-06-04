@@ -47,14 +47,19 @@ module NPC
   end
 
   def menu(dict)
-    items = dict.to_list.reverse
+    items = dict.to_list
     choices = items.map -> ({k, _}) k.to_list
     @builder <- { 'dialog_menu, { @id, choices } }
     @builder <- 'finish
 
     receive index
       Erlang.log.debug "Player selected menu item.", [{'index, index}]
-      (items[index - 1])[1]
+      chosen = (items[index - 1])[1]
+      if chosen.__parent__ == Function
+        chosen.call
+      else
+        chosen
+      end
     end
   end
 
