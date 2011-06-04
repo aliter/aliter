@@ -20,8 +20,11 @@
 -export([show_actors/1,
          say/2]).
 
+-export([format_status/2]).
+
 -define(WALKSPEED, 150).
 
+format_status(_, [_, State]) -> State#zone_state{map = snipped}.
 
 start_link(TCP) ->
     gen_fsm:start_link(?MODULE, TCP, []).
