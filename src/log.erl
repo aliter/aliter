@@ -69,7 +69,7 @@ warning(Msg, Args) ->
     log(yellow("WARNING"), Msg, Args).
 
 error(Msg) ->
-    error(Msg, []).
+    log:error(Msg, []).
 error(Msg, Args) ->
     log(red("ERROR"), Msg, Args).
 
