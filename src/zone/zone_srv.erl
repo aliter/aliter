@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/3]).
+-export([start_link/2]).
 
 -export([init/1,
          handle_call/3,
@@ -17,15 +17,11 @@
          maps}).
 
 
-start_link(Port, Maps, NPCs) ->
+start_link(Port, Maps) ->
     log:info("Starting zone server.", [{port, Port}]),
 
     MapServers = lists:map(fun(M) ->
-                               MapNPCs = lists:filter(fun(N) ->
-                                                          N#npc.map == M#map.name
-                                                      end, NPCs),
-
-                               {ok, MapServer} = zone_map:start_link(M, MapNPCs),
+                               {ok, MapServer} = zone_map:start_link(M),
                                {M#map.name, M, MapServer}
                            end, Maps),
 
@@ -71,6 +67,14 @@ handle_cast({send_to_all, Msg}, State) ->
                   end,
                   State#state.maps),
     {noreply, State};
+handle_cast({register_npc, NPC = #npc{map = MapName}}, State = #state{maps = Maps}) ->
+    case proplists:lookup(MapName, Maps) of
+        none ->
+            {noreply, State};
+        {_Name, _Map, MapServer} ->
+            gen_server:cast(MapServer, {register_npc, NPC}),
+            {noreply, State}
+    end;
 handle_cast(Cast, State) ->
     log:debug("Zone server got cast.", [{cast, Cast}]),
     {noreply, State}.

@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/2]).
+-export([start_link/1]).
 
 -export([init/1,
          handle_call/3,
@@ -13,11 +13,10 @@
          code_change/3]).
 
 
-start_link(Map, NPCs) ->
+start_link(Map) ->
     gen_server:start_link({local, list_to_atom("zone_map_" ++ Map#map.name)},
                           ?MODULE,
-                          #map_state{map = Map,
-                                     npcs = NPCs},
+                          #map_state{map = Map},
                           []).
 
 init(State) ->
@@ -51,6 +50,10 @@ handle_cast({add_player, Player}, State = #map_state{players = Players}) ->
               [{player, Player}]),
 
     {noreply, State#map_state{players = [Player | Players]}};
+handle_cast({register_npc, NPC}, State = #map_state{npcs = NPCs}) ->
+    log:warning("Registering NPC.", [{npc, NPC}]),
+    % TODO: make it appear on screen for anyone around it
+    {noreply, State#map_state{npcs = [NPC | NPCs]}};
 handle_cast({remove_player, AccountID}, State = #map_state{players = Players}) ->
     log:debug("Zone map server removing player.",
               [{account, AccountID}]),

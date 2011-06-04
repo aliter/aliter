@@ -15,6 +15,7 @@
 -export([tick/0,
          server_for/1]).
 
+-record(state, {npc_id}).
 
 start_link(Conf) ->
     config:set_env(zone, Conf),
@@ -38,8 +39,6 @@ init({server, Conf}) ->
 
     ok = elixir:start_app(),
 
-    AllNPCs = zone_npc:load_all(),
-
     AllMaps = maps:read_cache("priv/maps"),
 
     nif:init(),
@@ -48,21 +47,18 @@ init({server, Conf}) ->
     lists:foreach(fun({Port, ZoneMaps}) ->
                       log:debug("Starting slave.", [{port, Port}, {maps, ZoneMaps}]),
 
-                      NPCs = lists:filter(fun(N) ->
-                                              lists:member(N#npc.map, ZoneMaps)
-                                          end,
-                                          AllNPCs),
-
                       Maps = lists:filter(fun(M) ->
                                               lists:member(M#map.name, ZoneMaps)
                                           end,
                                           AllMaps),
 
-                      supervisor:start_child(zone_master_sup, [Port, Maps, NPCs])
+                      supervisor:start_child(zone_master_sup, [Port, Maps])
                   end,
                   Zones),
 
-    {ok, []};
+    zone_npc:load_all(),
+
+    {ok, #state{npc_id = 5000000}};
 init(supervisor) ->
     {ok, {{simple_one_for_one, 2, 60},
           [{undefined,
@@ -108,6 +104,20 @@ handle_cast({send_to_all, Msg}, State) ->
                   end,
                   supervisor:which_children(zone_master_sup)),
     {noreply, State};
+handle_cast({register_npc, Name, Sprite, Map, {X, Y}, Direction, Object}, State = #state{npc_id = Id}) ->
+    lists:foreach(fun({_ID, Server, _Type, _Modules}) ->
+                      gen_server_tcp:cast(Server,
+                          {register_npc,
+                           #npc{id = Id,
+                                name = Name,
+                                sprite = Sprite,
+                                map = Map,
+                                coordinates = {X, Y},
+                                direction = Direction,
+                                main = Object}})
+                  end,
+                  supervisor:which_children(zone_master_sup)),
+    {noreply, State#state{npc_id = Id + 1}};
 handle_cast(Cast, State) ->
     log:debug("Zone master server got cast.", [{cast, Cast}]),
     {noreply, State}.

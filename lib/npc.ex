@@ -1,8 +1,34 @@
 module NPC
+  module Meta
+    def name(name)
+      set_ivar('name, name)
+    end
+
+    def sprite(sprite)
+      set_ivar('sprite, sprite)
+    end
+
+    def register(info)
+      IO.puts "registering! #{info}"
+      Erlang.gen_server.cast 'zone_master,
+        {'register_npc,
+          (info['name] || @name).to_list,
+          info['sprite] || @sprite,
+          info['map].to_list,
+          info['coordinates],
+          info['direction],
+          self}
+    end
+  end
+
+  def __added_as_proto__(base)
+    base.mixin NPC::Meta
+  end
+
   def initialize(player, id)
     @('player: player, 'id: id, 'builder: Process.spawn -> buildup(player, id))
   end
-  
+
   def buildup(player, id, packets := [])
     receive
     match 'finish
