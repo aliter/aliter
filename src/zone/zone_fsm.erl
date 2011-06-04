@@ -6,19 +6,22 @@
 
 -export([start_link/1]).
 
--export([handle_event/3,
-         handle_sync_event/4,
-         handle_info/3,
-         terminate/3,
-         code_change/4]).
+-export([
+    handle_event/3,
+    handle_sync_event/4,
+    handle_info/3,
+    terminate/3,
+    code_change/4]).
 
--export([init/1,
-         locked/2,
-         valid/2,
-         walking/2]).
+-export([
+    init/1,
+    locked/2,
+    valid/2,
+    walking/2]).
 
--export([show_actors/1,
-         say/2]).
+-export([
+    show_actors/1,
+    say/2]).
 
 -export([format_status/2]).
 
