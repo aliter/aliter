@@ -342,6 +342,12 @@ walking(step, State = #zone_state{char = C,
 walking(Event, State) ->
     ?MODULE:handle_event(Event, walking, State).
 
+handle_event(player_count, StateName, StateData = #zone_state{tcp = TCP}) ->
+    Num = gen_server:call(zone_master, player_count),
+    log:debug("Player count.", [{count, Num}]),
+    TCP ! {player_count, Num},
+    {next_state, StateName, StateData};
+
 handle_event({emotion, Id},
              StateName,
              StateData = #zone_state{tcp = TCP,

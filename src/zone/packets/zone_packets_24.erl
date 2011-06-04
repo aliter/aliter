@@ -48,6 +48,8 @@ unpack(<<16#b9:16/little,
 unpack(<<16#bf:16/little,
          EmoticonID:8>>) ->
     {emotion, EmoticonID};
+unpack(<<16#c1:16/little>>) ->
+    player_count;
 unpack(<<16#f3:16/little,
          Length:16/little,
          Message/little-binary-unit:8>>) when byte_size(Message) == (Length - 4) ->
@@ -232,6 +234,9 @@ pack(emotion, {ActorID, EmoticonID}) ->
     <<16#c0:16/little,
       ActorID:32/little,
       EmoticonID:8>>;
+pack(player_count, Count) ->
+    <<16#c2:16/little,
+      Count:32/little>>;
 pack(skill_list, Skills) ->
     [<<16#10f:16/little,
        (37 * length(Skills) + 4):16/little>>,

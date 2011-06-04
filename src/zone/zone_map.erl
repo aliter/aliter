@@ -40,6 +40,8 @@ handle_call({get_actor, ActorID},
     end;
 handle_call({get_player_by, Pred}, _From, State = #map_state{players = Players}) ->
     {reply, get_player_by(Pred, Players), State};
+handle_call(player_count, _From, State = #map_state{players = Players}) ->
+    {reply, length(Players), State};
 handle_call(Request, _From, State) ->
     log:debug("Zone map server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.

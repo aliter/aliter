@@ -93,6 +93,10 @@ handle_call({get_player_by, Pred}, _From, State) ->
      get_player_by(Pred,
                    supervisor:which_children(zone_master_sup)),
      State};
+handle_call(player_count, _from, State) ->
+    {reply,
+     get_player_count(supervisor:which_children(zone_master_sup)),
+     State};
 handle_call(Request, _From, State) ->
     log:debug("Zone master server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
@@ -133,6 +137,12 @@ who_serves(Map, [{_Id, Server, _Type, _Modules} | Servers]) ->
         no ->
             who_serves(Map, Servers)
     end.
+
+get_player_count([]) ->
+    0;
+get_player_count([{_Id, Server, _Type, _Modules} | Servers]) ->
+    gen_server_tcp:call(Server, player_count) +
+        get_player_count(Servers).
 
 get_player(_ActorID, []) ->
     none;

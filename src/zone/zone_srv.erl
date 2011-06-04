@@ -56,9 +56,13 @@ handle_call({get_actor, ActorID}, _From, State = #state{maps = Maps}) ->
 handle_call({get_player_by, Pred}, _From, State = #state{maps = Maps}) ->
     log:debug("Zone server got get_player_by call."),
     {reply, get_player_by(Pred, Maps), State};
+handle_call(player_count, _From, State = #state{maps = Maps}) ->
+    log:debug("Zone server got player_count call."),
+    {reply, get_player_count(Maps), State};
 handle_call(Request, _From, State) ->
     log:debug("Zone server got call.", [{call, Request}]),
     {reply, {illegal_request, Request}, State}.
+
 
 handle_cast({send_to_all, Msg}, State) ->
     lists:foreach(fun({_Name, _Map, MapServer}) ->
@@ -86,6 +90,12 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+
+get_player_count([]) ->
+    0;
+get_player_count([{_Name, _Map, MapServer} | Maps]) ->
+    gen_server_tcp:call(MapServer, player_count) +
+        get_player_count(Maps).
 
 get_actor(_ActorID, []) ->
     none;
