@@ -187,6 +187,7 @@ who_serves(Map, [{_Id, Server, _Type, _Modules} | Servers]) ->
   case gen_server_tcp:call(Server, {provides, Map}) of
     {yes, Port} ->
       {zone, Port, Server};
+
     no ->
       who_serves(Map, Servers)
   end.
