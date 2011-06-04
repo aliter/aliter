@@ -162,7 +162,7 @@ handle_cast(Cast, State) ->
 
 
 handle_info({'EXIT', From, Reason}, State) ->
-  log:error("Zone mster got EXIT signal.", [{from, From}, {reason, Reason}]),
+  log:error("Zone master got EXIT signal.", [{from, From}, {reason, Reason}]),
   {stop, normal, State};
 
 handle_info(Info, State) ->

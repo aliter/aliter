@@ -62,7 +62,7 @@
     "pay_fild10",
     "pay_fild11"]},
   {6124,
-   ["morroc",
+   ["morocc",
     "moc_fild01",
     "moc_fild02",
     "moc_fild03",
