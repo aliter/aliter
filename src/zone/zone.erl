@@ -19,7 +19,9 @@ start_link(Config) ->
 
                       {ok, Node} = slave:start_link(Host,
                                                     Name,
-                                                    "-pa " ++ Aliter ++ "/ebin"),
+                                                    "-pa " ++ Aliter ++ "/ebin" ++
+                                                        " -pa " ++ Aliter ++ "/lib/elixir/ebin" ++
+                                                        " -pa " ++ Aliter ++ "/lib/elixir/exbin"),
 
                       supervisor:start_child(?MODULE,
                                              [Node,

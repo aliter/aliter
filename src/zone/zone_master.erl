@@ -36,6 +36,8 @@ init({server, Conf}) ->
 
     ok = mnesia:wait_for_tables([item, monster, guild, ids], 2000),
 
+    ok = elixir:start_app(),
+
     AllNPCs = zone_npc:load_all(),
 
     AllMaps = maps:read_cache("priv/maps"),

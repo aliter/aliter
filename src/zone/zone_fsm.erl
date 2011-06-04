@@ -128,11 +128,13 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
             log:warning("NPC found.",
                         [{id, ActorID}]),
 
-            Mod = (NPC#npc.main):new(self()),
-            log:debug("NPC initialized.",
-                      [{result, Mod}]),
+            Env = [{x, NPC#npc.main}, {p, self()}, {i, NPC#npc.id}],
+            Pid = spawn(fun() ->
+                            elixir:eval("x.new(p, i).main", Env)
+                        end),
 
-            Pid = spawn(fun() -> Mod:main() end),
+            log:debug("NPC initialized.",
+                      [{id, Pid}]),
 
             {next_state, valid, State#zone_state{npc = {Pid, NPC}}};
         _Invalid ->

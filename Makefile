@@ -1,6 +1,7 @@
 CC = gcc
 ERLANG = /usr/local/lib/erlang
 OS = $(shell uname -s)
+ERL = erl -pa ebin -pa lib/elixir/ebin -pa lib/elixir/exbin
 
 all: compile
 
@@ -17,13 +18,13 @@ clean:
 	rm ebin/*.beam
 
 install: compile
-	erl -noshell -pa ebin -sname aliter -eval "aliter:install(), halt()."
+	${ERL} -noshell -sname aliter -eval "aliter:install(), halt()."
 
 uninstall:
 	rm -R ~/.aliter
 
 start: compile
-	erl -noshell -pa ebin -sname aliter -eval "application:start(aliter)."
+	${ERL} -noshell -sname aliter -eval "application:start(aliter)."
 
 configure: compile
-	erl -noshell -pa ebin -sname aliter -eval "config:setup(), halt()."
+	${ERL} -noshell -sname aliter -eval "config:setup(), halt()."
