@@ -59,7 +59,7 @@ module NPC
   end
 
   def close
-    Erlang.log.debug "Sending blose button."
+    Erlang.log.debug "Sending close button."
     @builder <- { 'dialog_close, @id }
     @builder <- 'finish
 
