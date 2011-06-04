@@ -390,7 +390,12 @@ handle_event({tick, Tick}, StateName, StateData) when StateName /= locked ->
 handle_event({set_server, Server}, StateName, StateData) ->
     {next_state, StateName, StateData#zone_state{server = Server}};
 handle_event({send_packet, Packet, Data}, StateName, StateData) ->
+    log:warning("Send packet.", [{packet, Packet}, {data, Data}]),
     StateData#zone_state.tcp ! {Packet, Data},
+    {next_state, StateName, StateData};
+handle_event({send_packets, Packets}, StateName, StateData) ->
+    log:error("Send multiple packets.", []),
+    StateData#zone_state.tcp ! {send_packets, Packets},
     {next_state, StateName, StateData};
 handle_event({send_packet_if, Pred, Packet, Data}, StateName, StateData) ->
     case Pred(StateData) of

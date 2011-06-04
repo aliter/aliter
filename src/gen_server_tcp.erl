@@ -84,6 +84,21 @@ abcast(Nodes, Name, Request) ->
 reply(Client, Reply) ->
     gen_server:reply(Client, Reply).
 
+verify({Packet, Data}, PacketHandler) ->
+    Packed = iolist_to_binary(PacketHandler:pack(Packet, Data)),
+
+    <<Header:16/little, _/binary>> = Packed,
+    Size = PacketHandler:packet_size(Header),
+
+    if
+        Size == 0;
+        byte_size(Packed) == Size ->
+            {ok, Packed};
+
+        true ->
+            {badsize, Size}
+    end.
+
 loop(Socket, FSM, PacketHandler) ->
     receive
         {tcp, Socket, Packet} ->
@@ -111,24 +126,32 @@ loop(Socket, FSM, PacketHandler) ->
 
             ?MODULE:loop(Socket, FSM, PacketHandler);
 
+        {send_packets, Packets} ->
+            log:warning("Sending multiple packets.", [{packets, Packets}]),
+
+            Binaries = lists:map(
+                fun(Packet) ->
+                    case verify(Packet, PacketHandler) of
+                        {ok, Binary} -> Binary
+                    end
+                end, Packets),
+
+            gen_tcp:send(Socket, iolist_to_binary(Binaries)),
+            ?MODULE:loop(Socket, FSM, PacketHandler);
+
         {Packet, Data} ->
-            log:debug("Sending data.",
-                      [{data, Data},
-                       {packet, iolist_to_binary(PacketHandler:pack(Packet, Data))}]),
+            Packed = iolist_to_binary(PacketHandler:pack(Packet, Data)),
 
-            <<Header:16/little, _/binary>> = Packed = iolist_to_binary(PacketHandler:pack(Packet, Data)),
-            Size = PacketHandler:packet_size(Header),
+            case verify({Packet, Data}, PacketHandler) of
+                {ok, Binary} ->
+                    log:debug("Sending data.", [{data, Data}, {packet, Packed}]),
+                    gen_tcp:send(Socket, Binary);
 
-            if
-                Size == 0;
-                byte_size(Packed) == Size ->
-                    gen_tcp:send(Socket, Packed);
-                true ->
+                {badsize, Wanted} ->
                     log:error("Ignored attempt to send packet of invalid length.",
                               [{packet, Packet},
-                               {header, Header, "~4.16.0B"},
                                {data, Data},
-                               {wanted, Size},
+                               {wanted, Wanted},
                                {got, byte_size(Packed)}])
             end,
 
