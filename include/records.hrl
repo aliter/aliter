@@ -7,8 +7,7 @@
         {id,
          name,
          width,
-         height,
-         cells}).
+         height}).
 
 -record(npc,
         {id,

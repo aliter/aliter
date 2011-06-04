@@ -44,8 +44,6 @@ handle_call(
     {provides, MapName},
     _From,
     State = #state{port = Port, maps = Maps}) ->
-  log:debug("Got provides call.", [{map, MapName}, {have, lists:map(fun({N, _, _}) -> N end, Maps)}]),
-
   case proplists:lookup(MapName, Maps) of
     none ->
       {reply, no, State};

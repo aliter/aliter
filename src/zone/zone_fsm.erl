@@ -23,8 +23,6 @@
     show_actors/1,
     say/2]).
 
--export([format_status/2]).
-
 -define(WALKSPEED, 150).
 
 
@@ -38,11 +36,6 @@ start_link(TCP) ->
 
 init(TCP) ->
   {ok, locked, #zone_state{tcp = TCP}}.
-
-
-% prevent dumping the giant map data
-format_status(_, [_, State]) ->
-  State#zone_state{map = snipped}.
 
 
 locked(
@@ -304,8 +297,7 @@ valid(
 
   log:error(
     "Path found.",
-    [ {map_size, {bit_size(Map#map.cells), byte_size(Map#map.cells)}},
-      {path, PathFound},
+    [ {path, PathFound},
       {elapsed, Time}
     ]
   ),
@@ -385,8 +377,7 @@ walking(
 
   log:error(
     "Path found.",
-    [ {map_size, {bit_size(Map#map.cells), byte_size(Map#map.cells)}},
-      {path, Path},
+    [ {path, Path},
       {elapsed, Time}
     ]
   ),
