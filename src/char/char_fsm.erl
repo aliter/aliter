@@ -284,8 +284,8 @@ handle_sync_event(_Event, _From, StateName, StateData) ->
     log:debug("Character FSM got sync event."),
     {next_state, StateName, StateData}.
 
-handle_info({'EXIT', _From, Reason}, _StateName, StateData) ->
-    log:debug("Character FSM got EXIT signal.", [{reason, Reason}]),
+handle_info({'EXIT', From, Reason}, _StateName, StateData) ->
+    log:error("Character FSM got EXIT signal.", [{from, From}, {reason, Reason}]),
     {stop, normal, StateData};
 handle_info(Info, StateName, StateData) ->
     log:debug("Character FSM got info.", [{info, Info}]),

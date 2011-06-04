@@ -126,8 +126,8 @@ handle_cast(Cast, Sessions) ->
     log:debug("Login server got cast.", [{cast, Cast}]),
     {noreply, Sessions}.
 
-handle_info({'EXIT', _From, Reason}, Sessions) ->
-    log:debug("Login server got EXIT signal.", [{reason, Reason}]),
+handle_info({'EXIT', From, Reason}, Sessions) ->
+    log:error("Login server got EXIT signal.", [{from, From}, {reason, Reason}]),
     {stop, normal, Sessions};
 handle_info(Info, Sessions) ->
     log:debug("Login server got info.", [{info, Info}]),

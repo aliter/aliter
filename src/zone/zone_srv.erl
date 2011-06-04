@@ -71,8 +71,8 @@ handle_cast(Cast, State) ->
     log:debug("Zone server got cast.", [{cast, Cast}]),
     {noreply, State}.
 
-handle_info({'EXIT', _From, Reason}, State) ->
-    log:debug("Zone server got EXIT signal.", [{reason, Reason}]),
+handle_info({'EXIT', From, Reason}, State) ->
+    log:error("Zone server got EXIT signal.", [{from, From}, {reason, Reason}]),
     {stop, normal, State};
 handle_info(Info, State) ->
     log:debug("Zone server got info.", [{info, Info}]),
