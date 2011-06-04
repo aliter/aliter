@@ -342,6 +342,27 @@ walking(step, State = #zone_state{char = C,
 walking(Event, State) ->
     ?MODULE:handle_event(Event, walking, State).
 
+handle_event({emotion, Id},
+             StateName,
+             StateData = #zone_state{tcp = TCP,
+                                     map_server = MapServer,
+                                     account = #account{id = AccountID},
+                                     char = #char{id = CharacterID,
+                                                   x = X,
+                                                   y = Y}}) ->
+    log:debug("Emotion.", [{id, Id}]),
+
+    gen_server:cast(MapServer,
+                    {send_to_other_players_in_sight,
+                        {X, Y},
+                        CharacterID,
+                        emotion,
+                        {AccountID, Id}}),
+
+    TCP ! {emotion, {AccountID, Id}},
+
+    {next_state, StateName, StateData};
+
 handle_event({speak, Message},
              StateName,
              StateData = #zone_state{tcp = TCP,
