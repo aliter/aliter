@@ -1,5 +1,9 @@
 module NPC
   module Meta
+    def new(player, id)
+      #self(player, id)
+    end
+
     def name(name)
       set_ivar('name, name)
     end
@@ -9,7 +13,6 @@ module NPC
     end
 
     def register(info)
-      IO.puts "registering! #{info}"
       Erlang.gen_server.cast 'zone_master,
         {'register_npc,
           (info['name] || @name).to_list,
@@ -17,28 +20,29 @@ module NPC
           info['map].to_list,
           info['coordinates],
           info['direction],
-          self}
+          % Hacky.
+          self.__module_name__.to_s.to_list}
+    end
+
+    def buildup(player, id, packets := [])
+      receive
+      match 'finish
+        Erlang.zone_npc.do_all player, packets
+        buildup(player, id)
+      match x
+        buildup(player, id, packets + [x])
+      end
+    end
+
+    def __bound__(player, id)
+      @('player: player,
+        'id: id,
+        'builder: Process.spawn -> buildup(player, id))
     end
   end
 
-  def __added_as_proto__(base)
+  def __added_as_mixin__(base)
     base.mixin NPC::Meta
-  end
-
-  def initialize(player, id)
-    @('player: player, 'id: id, 'builder: Process.spawn -> buildup(player, id))
-  end
-
-  def buildup(player, id, packets := [])
-    receive
-    match 'finish
-      Erlang.log.error "Done building up packets!", []
-      Erlang.zone_npc.do_all player, packets
-      buildup(player, id)
-    match x
-      Erlang.log.error "Building packets up.", [{'packet, x}]
-      buildup(player, id, packets + [x])
-    end
   end
 
   def red(text)
@@ -81,7 +85,7 @@ module NPC
     receive index
       Erlang.log.debug "Player selected menu item.", [{'index, index}]
       chosen = (items[index - 1])[1]
-      if chosen.__parent__ == Function
+      if Erlang.is_function(chosen)
         chosen.call
       else
         chosen
