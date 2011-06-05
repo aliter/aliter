@@ -24,8 +24,7 @@ module NPC
           info['map].to_list,
           info['coordinates],
           info['direction],
-          % Hacky.
-          self.__module_name__.to_s.to_list}
+          self}
     end
 
     def buildup(player, id, packets := [])
@@ -45,7 +44,7 @@ module NPC
     end
   end
 
-  def __added_as_mixin__(base)
+  def __mixed_in__(base)
     base.mixin NPC::Meta
   end
 

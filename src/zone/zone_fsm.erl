@@ -167,12 +167,11 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
     {npc, NPC} ->
       log:warning("NPC found.", [{id, ActorID}, {module, NPC#npc.main}]),
 
-      Env = [{p, self()}, {i, NPC#npc.id}],
+      Env = [{x, NPC#npc.main}, {p, self()}, {i, NPC#npc.id}],
 
       Pid = spawn(
         fun() ->
-          % Hacky.
-          elixir:eval(NPC#npc.main ++ ".new(p, i).main", Env)
+          elixir:eval("x.new(p, i).main", Env)
         end
       ),
 
