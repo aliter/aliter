@@ -4,6 +4,10 @@ module NPC
       set_ivar('name, name)
     end
 
+    def display_name
+      "[" + name + "]"
+    end
+
     def sprite(sprite)
       set_ivar('sprite, sprite)
     end
