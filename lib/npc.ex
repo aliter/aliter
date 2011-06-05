@@ -9,7 +9,7 @@ module NPC
     end
 
     def display_name
-      "[" + name + "]"
+      "[" + @name + "]"
     end
 
     def sprite(sprite)
