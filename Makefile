@@ -1,16 +1,15 @@
 CC = gcc
-ERLANG = /usr/local/lib/erlang
-OS = $(shell uname -s)
+CFLAGS = -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -lz
 ERL = erl -pa ebin -pa lib/elixir/ebin -pa lib/elixir/exbin
+ERLANG = /usr/local/lib/erlang
+OS = ${shell uname -s}
+
+include arch/${OS}/Makefile
 
 all: compile
 
 compile:
-ifeq ($(OS), Darwin)
-	${CC} -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -lz -flat_namespace -undefined suppress -I${ERLANG}/usr/include/
-else
-	${CC} -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -lz -I${ERLANG}/usr/include/
-endif
+	${CC} ${CFLAGS} ${ARCHFLAGS} -I${ERLANG}/usr/include/
 	erl -pa ebin -make
 
 clean:
