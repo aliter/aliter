@@ -1,3 +1,7 @@
+{'./lib/*',
+ [debug_info,
+  {outdir, './ebin'}]}.
+
 {'./src/*',
  [debug_info,
   {i, './includes'},
@@ -11,8 +15,4 @@
 {'./src/*/*',
  [debug_info,
   {i, './includes'},
-  {outdir, './ebin'}]}.
-
-{'./lib/*',
- [debug_info,
   {outdir, './ebin'}]}.
