@@ -2,40 +2,48 @@
 
 -include("include/records.hrl").
 
--export([parse/1,
-         execute/4]).
+-export([
+    parse/1,
+    execute/4]).
 
 -define(SP_ZENY, 20).
+
 
 parse(String) ->
     string:tokens(String, " ").
 
+
 execute(_FSM, "caps", Args,
-        State = #zone_state{tcp = TCP,
-                            map_server = MapServer,
-                            account = #account{id = AccountID},
-                            char = #char{id = CharacterID,
-                                         x = X,
-                                         y = Y}}) ->
-    Capitalized = string:to_upper(string:join(Args, " ")),
+    State = #zone_state{
+      tcp = TCP,
+      map_server = MapServer,
+      account = #account{id = AccountID},
+      char = #char{
+        id = CharacterID,
+        x = X,
+        y = Y}}) ->
+  Capitalized = string:to_upper(string:join(Args, " ")),
 
-    gen_server:cast(MapServer,
-                    {send_to_other_players_in_sight,
-                     {X, Y},
-                     CharacterID,
-                     actor_message,
-                     {AccountID, Capitalized}}),
+  gen_server:cast(
+    MapServer,
+    { send_to_other_players_in_sight,
+      {X, Y},
+      CharacterID,
+      actor_message,
+      {AccountID, Capitalized}
+    }
+  ),
 
-    TCP ! {message, Capitalized},
+  TCP ! {message, Capitalized},
 
-    {ok, State};
+  {ok, State};
+
 execute(FSM, "load", _Args, State = #zone_state{char = C}) ->
     log:error("Got load command."),
-
     warp_to(FSM, C#char.save_map, C#char.save_x, C#char.save_y, State);
+
 execute(FSM, "warp", [Map | [XStr | [YStr | _]]], State) ->
     log:error("Got warp command."),
-
     case {string:to_integer(XStr),
           string:to_integer(YStr)} of
         {{X,_}, {Y,_}} when is_integer(X), is_integer(Y) ->
@@ -44,6 +52,7 @@ execute(FSM, "warp", [Map | [XStr | [YStr | _]]], State) ->
             zone_fsm:say("Invalid coordinates.", State),
             {ok, State}
     end;
+
 execute(FSM, "jumpto", [PlayerName | _], State) ->
     case gen_server:call(zone_master,
                          {get_player_by,
@@ -55,31 +64,29 @@ execute(FSM, "jumpto", [PlayerName | _], State) ->
         none ->
             zone_fsm:say("Player not found.", State)
     end;
+
 execute(FSM, "zeny", [AddZeny], State) ->
     log:debug("Got zeny command."),
-
     case string:to_integer(AddZeny) of
-        {Zeny, _} when is_integer(Zeny) ->
-            add_zeny(FSM, Zeny, State);
-        _Invalid ->
-            zone_fsm:say("Enter a number.", State)
+      {Zeny, _} when is_integer(Zeny) -> add_zeny(FSM, Zeny, State);
+      _Invalid -> zone_fsm:say("Enter a number.", State)
     end;
+
 execute(_FSM, Unknown, Args, State) ->
-    log:warning("Unknown command.",
-                [{command, Unknown},
-                 {args, Args}]),
-
+    log:warning("Unknown command.", [{command, Unknown}, {args, Args}]),
     zone_fsm:say("Unknown command `" ++ Unknown ++ "'.", State),
-
     ok.
 
 
-warp_to(FSM, Map, X, Y,
-        State = #zone_state{tcp = TCP,
-                            map_server = MapServer,
-                            account = #account{id = AccountID},
-                            char = C}) ->
-    case gen_server:call(zone_master,
+warp_to(
+    FSM, Map, X, Y,
+    State = #zone_state{
+      tcp = TCP,
+      map_server = MapServer,
+      account = #account{id = AccountID},
+      char = C
+    }) ->
+  case gen_server:call(zone_master,
                          {who_serves, Map}) of
         {zone, Port, ZoneServer} ->
             {ip, IP} = config:get_env(zone, server.ip),
@@ -124,21 +131,22 @@ warp_to(FSM, Map, X, Y,
             ok
     end.
 
+
 add_zeny(FSM, Zeny, State) ->
-    C = State#zone_state.char,
+  C = State#zone_state.char,
+  OldZeny = C#char.zeny,
+  TempNewZeny = OldZeny + Zeny,
 
-    OldZeny = C#char.zeny,
-    TempNewZeny = OldZeny + Zeny,
+  NewZeny = if TempNewZeny > 1000000000 -> 1000000000;
+    TempNewZeny < 0 -> 0;
+    true -> TempNewZeny
+  end,
 
-    NewZeny = if TempNewZeny > 1000000000 -> 1000000000;
-                 TempNewZeny < 0          -> 0;
-                 true                     -> TempNewZeny
-              end,
+  NewStateFun = fun(St) ->
+    St#zone_state{char = C#char{zeny = NewZeny}}
+  end,
 
-    NewStateFun = fun(St) ->
-        St#zone_state{char = C#char{zeny = NewZeny}}
-    end,
+  gen_fsm:send_all_state_event(FSM, {update_state, NewStateFun}),
 
-    gen_fsm:send_all_state_event(FSM, {update_state, NewStateFun}),
+  State#zone_state.tcp ! {param_change_long, {?SP_ZENY, NewZeny}}.
 
-    State#zone_state.tcp ! {param_change_long, {?SP_ZENY, NewZeny}}.
