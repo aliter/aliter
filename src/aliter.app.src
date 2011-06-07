@@ -1,0 +1,9 @@
+{application, aliter,
+ [{description, "Aliter Ragnarok Online server emulator."},
+  {vsn, "0"},
+  {registered, []},
+  {modules, [aliter]},
+  {applications, [kernel, stdlib]},
+  {mod, {aliter, []}},
+  {env, []}
+ ]}.
