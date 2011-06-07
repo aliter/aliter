@@ -258,6 +258,15 @@ init([{'__gen_server_tcp_mod', Module} | InitArgs]) ->
 
   case Module:init(InitArgs) of
     {ok, {Port, FSM, PacketHandler}, ModState} ->
+      log:debug(
+        "TCP server started.",
+        [ {module, Module},
+          {port, Port},
+          {fsm, FSM},
+          {handler, PacketHandler}
+        ]
+      ),
+
       St = #server_state{port = Port,
                  module = Module,
                  module_state = ModState,
@@ -268,11 +277,23 @@ init([{'__gen_server_tcp_mod', Module} | InitArgs]) ->
                   {all, St}),
 
       {ok, St};
+
     ignore ->
+      log:error("TCP server got ignore init result.", [{module, Module}]),
       ignore;
+
     {stop, Reason} ->
+      log:error(
+        "TCP server got stop init result.",
+        [{module, Module}, {reason, Reason}]
+      ),
       {stop, Reason};
+
     Other ->
+      log:error(
+        "TCP server got unknown init result.",
+        [{module, Module}, {result, Other}]
+      ),
       {stop, Other}
   end;
 

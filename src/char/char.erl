@@ -13,16 +13,16 @@
 start_link(Config) ->
   Supervisor = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
 
-  lists:foreach(fun({Node, Conf}) ->
-    {host, {Host, Name}} = config:find(server.host, Conf),
-    {aliter, Aliter} = config:find(server.aliter, Conf),
+  lists:foreach(
+    fun({Node, Conf}) ->
+      {host, {Host, Name}} = config:find(server.host, Conf),
+      {aliter, Aliter} = config:find(server.aliter, Conf),
+      {ok, Node} = slave:start_link(Host, Name, aliter:path(Aliter)),
 
-    Args = "-pa " ++ Aliter ++ "/ebin",
-    {ok, Node} = slave:start_link(Host, Name, Args),
-
-    supervisor:start_child(?MODULE, [Node, char_srv, start_link, [Conf]])
-  end,
-  Config),
+      supervisor:start_child(?MODULE, [Node, char_srv, start_link, [Conf]])
+    end,
+    Config
+  ),
 
   Supervisor.
 

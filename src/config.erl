@@ -57,8 +57,6 @@ load() ->
     {list_to_atom(Node), load_path("config/zone/" ++ Node)}
   end, Zone),
 
-  {ok, API} = file:consult(home("config/api.erl")),
-
   CharsFinal = lists:map(fun({Node, Conf}) ->
     {zone, ZoneNode} = find(server.zone, Conf),
     {ZoneNode, ZoneConf} = proplists:lookup(ZoneNode, Zones),
@@ -73,7 +71,7 @@ load() ->
 
   LoginFinal = Login ++ [{chars, CharsFinal}, {zones, ZonesFinal}],
 
-  {LoginFinal, CharsFinal, ZonesFinal, API}.
+  {LoginFinal, CharsFinal, ZonesFinal}.
 
 
 load_path(Base) ->
@@ -121,10 +119,6 @@ setup() ->
   file:make_dir(home("config/char/char@" ++ Host)),
   file:make_dir(home("config/zone")),
   file:make_dir(home("config/zone/zone@" ++ Host)),
-
-  {ok, Api} = file:open(home("config/api.erl"), write),
-  io:format(Api, "~w.~n~w.~n", [{port, 8000}, {key, "change-me-you-fool"}]),
-  file:close(Api),
 
   {ok, Login} = file:open(home("config/login/server.erl"), write),
 
