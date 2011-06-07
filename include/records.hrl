@@ -70,11 +70,11 @@
         {id,
          login,
          password,
-         email,
+         email = "",
          gender = 0,
          login_count = 0,
          last_login = 0,
-         last_ip,
+         last_ip = "",
          gm_level = 0}).
 
 

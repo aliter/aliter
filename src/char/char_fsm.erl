@@ -29,16 +29,19 @@
 -define(PREMIUM_SLOTS, 9).
 
 
-start_link(Tcp) ->
-  gen_fsm:start_link(?MODULE, Tcp, []).
+start_link(TCP) ->
+  gen_fsm:start_link(?MODULE, TCP, []).
 
 
-init(Tcp) ->
-  {ok, locked, #char_state{tcp=Tcp}}.
+init(TCP) ->
+  {ok, DB} = erldis:connect(), % TODO: config
+  {ok, locked, #char_state{tcp = TCP, db = DB}}.
 
 
-locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
-  State#char_state.tcp ! <<AccountID:32/little>>,
+locked(
+    {connect, AccountID, LoginIDa, LoginIDb, _Gender},
+    State = #char_state{tcp = TCP, db = DB}) ->
+  TCP ! <<AccountID:32/little>>,
 
   {node, LoginNode} = config:get_env(char, login.node),
 
@@ -61,23 +64,21 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
 
       gen_server_tcp:cast(
         server,
-        { add_session, {AccountID,
-          self(),
-          L#login_state.id_a,
-          L#login_state.id_b}
+        { add_session,
+          { AccountID,
+            self(),
+            L#login_state.id_a,
+            L#login_state.id_b
+          }
         }
       ),
 
-      GetChars = fun() ->
-        qlc:e(qlc:q([X || X <- mnesia:table(char), X#char.account_id =:= AccountID]))
-      end,
+      Chars = db:get_account_chars(DB, AccountID),
 
-      {atomic, Chars} = mnesia:transaction(GetChars),
-
-      State#char_state.tcp !
+      TCP !
         {parse, char_packets:new(L#login_state.packet_ver)},
 
-      State#char_state.tcp !
+      TCP !
         {characters, {Chars, ?MAX_SLOTS, ?AVAILABLE_SLOTS, ?PREMIUM_SLOTS}},
 
       { next_state, valid,
@@ -90,7 +91,7 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
       };
 
     invalid ->
-      State#char_state.tcp ! {refuse, 0},
+      TCP ! {refuse, 0},
       {next_state, locked, State}
   end;
 
@@ -103,15 +104,16 @@ locked(Event, From, State) ->
 
 valid(
     {choose, Num},
-    State = #char_state{account = #account{id = AccountID}}) ->
-  GetChar = fun() ->
-    qlc:e(qlc:q([X || X <- mnesia:table(char),
-      X#char.num =:= Num,
-      X#char.account_id =:= AccountID]))
-  end,
+    State = #char_state{db = DB, account = #account{id = AccountID}}) ->
+  GetChar = db:get_account_char(DB, AccountID, Num),
 
-  case mnesia:transaction(GetChar) of
-    {atomic, [C]} ->
+  case GetChar of
+    nil ->
+      log:warning("Selected invalid character.", [{account, AccountID}]),
+      State#char_state.tcp ! {refuse, 1},
+      {next_state, valid, State};
+
+    C ->
       log:debug(
         "Player selected character.",
         [{account, AccountID}, {character, C#char.id}]
@@ -120,33 +122,27 @@ valid(
       {ip, ZoneIP} = config:get_env(char, zone.server.ip),
       {zone, ZoneNode} = config:get_env(char, server.zone),
 
-      {zone, ZonePort, _ZoneServer}
-        = gen_server:call({zone_master, ZoneNode},
-         {who_serves, C#char.map}),
+      {zone, ZonePort, _ZoneServer} =
+        gen_server:call(
+          {zone_master, ZoneNode},
+          {who_serves, C#char.map}
+        ),
 
       State#char_state.tcp ! {zone_connect, {C, ZoneIP, ZonePort}},
 
-      {next_state, chosen, State#char_state{char = C}};
-
-    {atomic, []} ->
-      log:warning("Selected invalid character.", [{account, AccountID}]),
-      State#char_state.tcp ! {refuse, 1},
-      {next_state, valid, State};
-
-    Error ->
-      log:warning("Error grabbing selected character.", [{result, Error}]),
-      State#char_state.tcp ! {refuse, 1},
-      {next_state, valid, State}
+      {next_state, chosen, State#char_state{char = C}}
   end;
 
 valid(
     {create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
-    State = #char_state{account = Account}) ->
-  Create = fun() ->
-    case qlc:e(qlc:q([C || C <- mnesia:table(char),
-      C#char.name =:= Name])) of
-      [] ->
-        Char = #char{id = mnesia:dirty_update_counter(ids, char, 0),
+    State = #char_state{db = DB, account = Account}) ->
+  Exists = erldis:get(DB, ["char:", Name]),
+
+  case Exists of
+    nil ->
+      Char = db:save_char(
+        DB,
+        #char{
           num = Num,
           name = Name,
           zeny = 500, % TODO: Config flag
@@ -158,31 +154,20 @@ valid(
           luk = Luk,
           hair_colour = HairColour,
           hair_style = HairStyle,
-          account_id = Account#account.id},
-        mnesia:dirty_update_counter(ids, char, 1),
-        mnesia:write(Char),
-        Char;
-      _Exists ->
-        exists
-    end
-  end,
+          account_id = Account#account.id
+        }
+      ),
 
-  case mnesia:transaction(Create) of
-    {atomic, Char} when is_record(Char, char)->
       log:info("Created character.", [{account, Account}, {char, Char}]),
       State#char_state.tcp ! {character_created, Char};
 
-    {atomic, exists} ->
+    _ ->
       log:info(
         "Character creation denied (name already in use).",
         [{account, Account}]
       ),
 
-      State#char_state.tcp ! {creation_failed, 0};
-
-    Error ->
-      log:info("Character creation failed.", [{account, Account}, {result, Error}]),
-      State#char_state.tcp ! {creation_failed, 16#FF}
+      State#char_state.tcp ! {creation_failed, 0}
   end,
 
   {next_state, valid, State};

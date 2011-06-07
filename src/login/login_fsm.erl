@@ -31,7 +31,7 @@ init(TCP) ->
 
 locked(
     {login, PacketVer, RawLogin, Password, Region},
-    State = #login_state{db = DB, tcp = TCP}) ->
+    State = #login_state{tcp = TCP, db = DB}) ->
   log:info(
     "Received login request.",
     [ {packetver, PacketVer},
@@ -143,11 +143,11 @@ register_account(C, RawLogin, Password, "_F") ->
   create_new_account(C, RawLogin, Password, ?FEMALE);
 
 register_account(_, Login, _Password, _) ->
-  list_to_binary(Login).
+  Login.
 
 
 create_new_account(C, RawLogin, Password, Gender) ->
-  Login = list_to_binary(string:sub_string(RawLogin, 1, length(RawLogin)-2)),
+  Login = string:sub_string(RawLogin, 1, length(RawLogin)-2),
 
   Check = erldis:get(C, ["account:", Login]),
 
