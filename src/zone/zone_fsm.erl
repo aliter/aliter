@@ -182,6 +182,7 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
       {next_state, valid, State}
   end;
 
+% TODO: handle selecting 255 (Cancel button)
 valid(
     {npc_menu_select, _ActorID, Selection},
     State = #zone_state{npc = {Pid, _NPC}}) ->
