@@ -2,7 +2,6 @@
 -behaviour(gen_fsm).
 
 -include("include/records.hrl").
--include_lib("stdlib/include/qlc.hrl").
 
 -export([start_link/1]).
 
@@ -21,124 +20,156 @@
 -define(MALE, 1).
 
 
-start_link(Tcp) ->
-  gen_fsm:start_link(?MODULE, Tcp, []).
+start_link(TCP) ->
+  gen_fsm:start_link(?MODULE, TCP, []).
 
 
-init(Tcp) ->
-  {ok, locked, #login_state{tcp = Tcp}}.
+init(TCP) ->
+  {ok, DB} = erldis:connect(), % TODO: config
+  {ok, locked, #login_state{tcp = TCP, db = DB}}.
 
 
-locked({login, PacketVer, RawLogin, Password, Region}, State) ->
-  log:info("Received login request.",
+locked(
+    {login, PacketVer, RawLogin, Password, Region},
+    State = #login_state{db = DB, tcp = TCP}) ->
+  log:info(
+    "Received login request.",
     [ {packetver, PacketVer},
       {login, RawLogin},
       {password, erlang:md5(Password)},
-      {region, Region}]),
+      {region, Region}
+    ]
+  ),
 
   % Create new account if username ends with _M or _F.
   GenderS = string:sub_string(RawLogin, length(RawLogin)-1, length(RawLogin)),
-  Login = register_account(RawLogin, Password, GenderS),
+  Login = register_account(DB, RawLogin, Password, GenderS),
 
-  F = fun() ->
-    qlc:e(qlc:q([X || X <- mnesia:table(account),
-      X#account.login =:= Login,
-      X#account.password =:= erlang:md5(Password)]))
-  end,
+  Versioned = State#login_state{packet_ver = PacketVer},
 
-  {atomic, Verify} = mnesia:transaction(F),
+  log:info("Pre-auth.", [{login, Login}]),
 
-  case Verify of
-    [A] ->
-      % Generate random IDs using current time as initial seed
-      {A1, A2, A3} = now(),
-      random:seed(A1, A2, A3),
+  case Login of
+    A = #account{} ->
+      successful_login(A, Versioned);
 
-      {LoginIDa, LoginIDb} = {random:uniform(16#FFFFFFFF),
-        random:uniform(16#FFFFFFFF)},
+    _ ->
+    GetID = erldis:get(DB, ["account:", Login]),
+    case GetID of
+      % Bad login
+      nil ->
+        TCP ! {refuse, {0, ""}},
+        {next_state, locked, State};
 
-      gen_server_tcp:cast(server,
-        {add_session, {A#account.id, self(), LoginIDa, LoginIDb}}),
+      ID ->
+        GetPassword = erldis:hget(DB, ["account:", ID], "password"),
 
-      {chars, CharServers} = config:get_env(login, chars),
-      Servers = lists:map(fun({_Node, Conf}) ->
+        Hashed = erlang:md5(Password),
+
+        if
+          % Bad password
+          GetPassword /= Hashed ->
+            TCP ! {refuse, {1, ""}},
+            {next_state, locked, State};
+
+          % Successful auth
+          true ->
+            successful_login(db:get_account(DB, ID), Versioned)
+        end
+    end
+  end.
+
+
+successful_login(A, State) ->
+  % Generate random IDs using current time as initial seed
+  {A1, A2, A3} = now(),
+  random:seed(A1, A2, A3),
+
+  {LoginIDa, LoginIDb} =
+    {random:uniform(16#FFFFFFFF), random:uniform(16#FFFFFFFF)},
+
+  gen_server_tcp:cast(
+    server,
+    {add_session, {A#account.id, self(), LoginIDa, LoginIDb}}
+  ),
+
+  {chars, CharServers} = config:get_env(login, chars),
+  Servers =
+    lists:map(
+      fun({_Node, Conf}) ->
         {name, Name} = config:find(server.name, Conf),
+
         {ip, IP} = config:find(server.ip, Conf),
         {port, Port} = config:find(server.port, Conf),
-        {maintenance, Maintenance} = config:find(server.maintenance, Conf),
+
+        {maintenance, Maintenance} =
+          config:find(server.maintenance, Conf),
+
         {new, New} = config:find(server.new, Conf),
 
         {IP, Port, Name, 0, Maintenance, New}
       end,
-      CharServers),
 
-      State#login_state.tcp ! {accept, {LoginIDa,
+      CharServers
+    ),
+
+  State#login_state.tcp !
+    { accept,
+      { LoginIDa,
         LoginIDb,
         A#account.id,
         A#account.gender,
-        Servers}},
+        Servers
+      }
+    },
 
-      State#login_state.tcp ! close,
+  State#login_state.tcp ! close,
 
-      valid(stop, State#login_state{
-        account = A,
-        id_a = LoginIDa,
-        id_b = LoginIDb,
-        packet_ver = PacketVer});
-    [] ->
-      L = fun() ->
-        qlc:e(qlc:q([X || X <- mnesia:table(account), X#account.login =:= Login]))
-      end,
-
-      {atomic, ValidName} = mnesia:transaction(L),
-
-      case ValidName of
-        [_A] -> State#login_state.tcp ! {refuse, {1, ""}};
-        [] -> State#login_state.tcp ! {refuse, {0, ""}}
-      end,
-
-      {next_state, locked, State}
-  end.
+  valid(
+    stop,
+    State#login_state{
+      account = A,
+      id_a = LoginIDa,
+      id_b = LoginIDb
+    }
+  ).
 
 
 %% Create account when username ends with _M or _F
-register_account(RawLogin, Password, "_M") ->
-  create_new_account(RawLogin, Password, ?MALE);
+register_account(C, RawLogin, Password, "_M") ->
+  create_new_account(C, RawLogin, Password, ?MALE);
 
-register_account(RawLogin, Password, "_F") ->
-  create_new_account(RawLogin, Password, ?FEMALE);
+register_account(C, RawLogin, Password, "_F") ->
+  create_new_account(C, RawLogin, Password, ?FEMALE);
 
-register_account(Login, _Password, _) ->
-  Login.
+register_account(_, Login, _Password, _) ->
+  list_to_binary(Login).
 
-create_new_account(RawLogin, Password, Gender) ->
-  Login = string:sub_string(RawLogin, 1, length(RawLogin)-2),
 
-  F = fun() ->
-    qlc:e(qlc:q([X || X <- mnesia:table(account),
-      X#account.login =:= Login,
-      X#account.password =:= erlang:md5(Password)]))
-  end,
-  {atomic, Verify} = mnesia:transaction(F),
+create_new_account(C, RawLogin, Password, Gender) ->
+  Login = list_to_binary(string:sub_string(RawLogin, 1, length(RawLogin)-2)),
 
-  case Verify of
-    [_A] -> log:info("Account already exists.", [{login, Login}]);
-    [] ->
-      Create = fun() ->
-        Account = #account{
+  Check = erldis:get(C, ["account:", Login]),
+
+  log:info("Check.", [{check, Check}]),
+
+  case Check of
+    nil ->
+      log:info("Created account", [{login, Login}]),
+
+      db:save_account(
+        C,
+        #account{
           login = Login,
           password = erlang:md5(Password),
-          gender = Gender,
-          id = mnesia:dirty_update_counter(ids, account, 0)},
-        mnesia:write(Account),
-        mnesia:dirty_update_counter(ids, account, 1),
-        Account
-      end,
-    mnesia:transaction(Create),
-    log:info("Created account", [{login, Login}])
-  end,
+          gender = Gender
+        }
+      );
 
-  Login.
+    _ ->
+      log:info("Account already exists; ignore.", [{login, Login}]),
+      Login
+  end.
 
 
 valid(stop, State) ->
