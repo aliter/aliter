@@ -169,11 +169,9 @@ valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
 
       Env = [{x, NPC#npc.main}, {p, self()}, {i, NPC#npc.id}],
 
-      Pid = spawn(
-        fun() ->
-          elixir:eval("x.new(p, i).main", Env)
-        end
-      ),
+      Pid = spawn(fun() ->
+        elixir:eval("x.new(p, i).main", Env)
+      end),
 
       log:debug("NPC initialized.", [{id, Pid}]),
 
