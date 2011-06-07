@@ -23,7 +23,7 @@ uninstall:
 	rm -R ~/.aliter
 
 start: compile
-	${ERL} -noshell -sname aliter -eval "application:start(aliter)."
+	${ERL} -noshell -sname aliter -eval "application:start(sasl), application:start(aliter)."
 
 configure: compile
 	${ERL} -noshell -sname aliter -eval "config:setup(), halt()."
