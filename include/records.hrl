@@ -70,10 +70,10 @@
          email,
          gender = 0,
          login_count = 0,
-         last_login,
+         last_login = 0,
          last_ip,
-         gm_level = 0,
-         ban_until}).
+         gm_level = 0}).
+
 
 %%% Character tables
 -record(char,
