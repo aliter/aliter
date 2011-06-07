@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -lz
-ERL = erl -pa ebin -pa lib/erldis/ebin -pa lib/elixir/ebin -pa lib/elixir/exbin
+ERL = erl -pa ebin -pa lib/erldis/ebin -pa lib/erldis/deps/gen_server2/ebin -pa lib/elixir/ebin -pa lib/elixir/exbin
 ERLANG = /usr/local/lib/erlang
 OS = ${shell uname -s}
 
