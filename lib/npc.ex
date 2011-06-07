@@ -21,7 +21,7 @@ module NPC
         {'register_npc,
           (info['name] || @name).to_list,
           info['sprite] || @sprite,
-          info['map].to_list,
+          info['map],
           info['coordinates],
           info['direction],
           self}

@@ -77,14 +77,18 @@ load() ->
 load_path(Base) ->
   {ok, Files} = file:list_dir(home(Base)),
 
-  lists:map(fun(Filename) ->
-    {ok, Config} = file:consult(home(Base ++ "/" ++ Filename)),
-    {list_to_atom(filename:basename(Filename, ".erl")), Config}
-  end,
-  lists:filter(fun(Filename) ->
-    filename:extension(Filename) == ".erl"
-  end,
-  Files)).
+  lists:map(
+    fun(Filename) ->
+      {ok, Config} = file:consult(home(Base ++ "/" ++ Filename)),
+      {list_to_atom(filename:basename(Filename, ".erl")), Config}
+    end,
+    lists:filter(
+      fun(Filename) ->
+        filename:extension(Filename) == ".erl"
+      end,
+      Files
+    )
+  ).
 
 
 get_env(App, Setting) ->
@@ -103,9 +107,12 @@ find(Setting, From) ->
 
 
 set_env(App, Config) ->
-  lists:foreach(fun({Key, Val}) ->
-            application:set_env(App, Key, Val)
-          end, Config).
+  lists:foreach(
+    fun({Key, Val}) ->
+      application:set_env(App, Key, Val)
+    end,
+    Config
+  ).
 
 
 setup() ->

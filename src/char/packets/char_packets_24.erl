@@ -110,7 +110,7 @@ pack(
     binary:part(
       list_to_binary([Map, <<".gat">>]),
       0,
-      min(byte_size(Map), 16)
+      min(byte_size(Map) + 4, 16)
     ),
     binary:copy(<<0>>, 16 - (byte_size(Map) + 4)),
     <<ZA, ZB, ZC, ZD, ZonePort:16/little>>

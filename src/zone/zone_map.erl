@@ -14,13 +14,15 @@
 
 
 start_link(Map) ->
-    gen_server:start_link({local, list_to_atom("zone_map_" ++ Map#map.name)},
-                          ?MODULE,
-                          #map_state{map = Map},
-                          []).
+  gen_server:start_link(
+    {local, list_to_atom("zone_map_" ++ binary_to_list(Map#map.name))},
+    ?MODULE,
+    #map_state{map = Map},
+    []
+  ).
 
 init(State) ->
-    {ok, State}.
+  {ok, State}.
 
 handle_call({get_actor, ActorID},
             _From,

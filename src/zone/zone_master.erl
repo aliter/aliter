@@ -44,12 +44,14 @@ init({server, Conf}) ->
   {zones, Zones} = config:find(server.zones, Conf),
   lists:foreach(
     fun({Port, ZoneMaps}) ->
-      log:debug("Starting slave.", [{port, Port}, {maps, ZoneMaps}]),
+      Names = [list_to_binary(X) || X <- ZoneMaps],
+
+      log:debug("Starting slave.", [{port, Port}, {maps, Names}]),
 
       Maps =
         lists:filter(
           fun(M) ->
-            lists:member(M#map.name, ZoneMaps)
+            lists:member(M#map.name, Names)
           end,
           AllMaps
         ),
