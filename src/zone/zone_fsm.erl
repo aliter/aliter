@@ -16,8 +16,11 @@
 -export([
     init/1,
     locked/2,
+    locked/3,
     valid/2,
-    walking/2]).
+    valid/3,
+    walking/2,
+    walking/3]).
 
 -export([
     show_actors/1,
@@ -99,8 +102,13 @@ locked(
       {next_state, locked, State}
   end;
 
+
 locked(Event, State) ->
   ?MODULE:handle_event(Event, locked, State).
+
+
+locked(Event, From, State) ->
+  ?MODULE:handle_sync_event(Event, From, locked, State).
 
 
 valid(quit, State = #zone_state{account = #account{id = AccountID}}) ->
@@ -355,8 +363,13 @@ valid(
 
   {next_state, valid, State};
 
+
 valid(Event, State) ->
   ?MODULE:handle_event(Event, valid, State).
+
+
+valid(Event, From, State) ->
+  ?MODULE:handle_sync_event(Event, From, valid, State).
 
 
 walking(
@@ -455,8 +468,14 @@ walking(
         }
       }
   end;
+
+
 walking(Event, State) ->
   ?MODULE:handle_event(Event, walking, State).
+
+
+walking(Event, From, State) ->
+  ?MODULE:handle_sync_event(Event, From, walking, State).
 
 
 handle_event(player_count, StateName, State) ->

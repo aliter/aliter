@@ -28,13 +28,18 @@ start_link(Config) ->
 
 
 init([]) ->
-  {ok, {{simple_one_for_one, 2, 60},
-    [{ undefined,
-    {rpc, block_call, []},
-    permanent,
-    1000,
-    worker,
-    []}]}}.
+  { ok,
+    { {simple_one_for_one, 2, 60},
+      [ { undefined,
+          {rpc, block_call, []},
+          permanent,
+          1000,
+          workeriiii,
+          []
+        }
+      ]
+    }
+  }.
 
 
 install() ->
