@@ -20,12 +20,6 @@ start_link(Conf) ->
 
   log:info("Starting login server.", [{port, Port}]),
 
-  application:set_env(mnesia, dir, config:db()),
-
-  ok = mnesia:start(),
-
-  ok = mnesia:wait_for_tables([account], 2000),
-
   gen_server_tcp:start_link({local, server}, ?MODULE, Port, []).
 
 
@@ -75,7 +69,6 @@ handle_info(Info, Sessions) ->
 
 terminate(_Reason, _Sessions) ->
   log:info("Login server terminating.", [{node, node()}]),
-  mnesia:stop(),
   ok.
 
 

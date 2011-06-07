@@ -113,7 +113,6 @@ handle_info(Info, State) ->
 
 terminate(_Reason, _State) ->
   log:info("Zone server terminating."),
-  mnesia:stop(),
   ok.
 
 

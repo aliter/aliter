@@ -28,37 +28,24 @@ start_link(Config) ->
 
 
 init([]) ->
-  {ok, {{simple_one_for_one, 2, 60},
-    [{ undefined,
-    {rpc, block_call, []},
-    permanent,
-    1000,
-    worker,
-    []}]}}.
+  { ok,
+    { {simple_one_for_one, 2, 60},
+      [ { undefined,
+          {rpc, block_call, []},
+          permanent,
+          1000,
+          worker,
+          []
+        }
+      ]
+    }
+  }.
 
 
-install() ->
-  application:set_env(mnesia, dir, config:db()),
-
-  ok = mnesia:create_schema([node()]),
-
-  ok = mnesia:start(),
-
-  mnesia:create_table(char,
-    [{attributes, record_info(fields, char)}, {disc_copies, [node()]}]),
-
-  mnesia:create_table(ids,
-    [{attributes, record_info(fields, ids)}, {disc_copies, [node()]}]),
-
-  mnesia:dirty_update_counter(ids, char, 150000),
-
-  mnesia:stop().
+install() -> ok.
 
 
-uninstall() ->
-  application:set_env(mnesia, dir, config:db()),
-
-  mnesia:delete_schema([node()]).
+uninstall() -> ok.
 
 
 stop() ->

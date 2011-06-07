@@ -19,6 +19,7 @@
 
 -record(state, {npc_id}).
 
+
 start_link(Conf) ->
   config:set_env(zone, Conf),
 
@@ -33,12 +34,6 @@ init({server, Conf}) ->
   supervisor:start_link({local, zone_master_sup}, ?MODULE, supervisor),
 
   application:set_env(zone, tick, 0),
-
-  application:set_env(mnesia, dir, config:db()),
-
-  ok = mnesia:start(),
-
-  ok = mnesia:wait_for_tables([item, monster, guild, ids], 2000),
 
   ok = elixir:start_app(),
 
@@ -67,6 +62,7 @@ init({server, Conf}) ->
   zone_npc:load_all(),
 
   {ok, #state{npc_id = 5000000}};
+
 
 init(supervisor) ->
   { ok,
@@ -172,7 +168,6 @@ handle_info(Info, State) ->
 
 terminate(_Reason, _State) ->
   log:info("Zone master server terminating."),
-  mnesia:stop(),
   ok.
 
 

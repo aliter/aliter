@@ -22,12 +22,6 @@ start_link(Conf) ->
 
   log:info("Starting character server.", [{name, Name}, {port, Port}]),
 
-  application:set_env(mnesia, dir, config:db()),
-
-  ok = mnesia:start(),
-
-  ok = mnesia:wait_for_tables([char, ids], 2000),
-
   gen_server_tcp:start_link({local, server}, ?MODULE, Port, []).
 
 
@@ -96,7 +90,6 @@ handle_info(Info, State) ->
 
 terminate(_Reason, _State) ->
   log:info("Character server terminating."),
-  mnesia:stop(),
   ok.
 
 
