@@ -92,13 +92,13 @@ pack(character_created, Character) ->
   [<<16#6d:16/little>>, character(Character)];
 
 pack(creation_failed, Reason) ->
-  <<16#6e:16/little, Reason:16/little>>;
+  <<16#6e:16/little, Reason:8/little>>;
 
 pack(character_deleted, ok) ->
   <<16#6f:16/little>>;
 
 pack(deletion_failed, Reason) ->
-  <<16#70:16/little, Reason:16/little>>;
+  <<16#70:16/little, Reason:8/little>>;
 
 pack(
     zone_connect,
