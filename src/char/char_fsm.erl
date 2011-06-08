@@ -174,34 +174,33 @@ valid(
 valid(
     {delete, CharacterID, EMail},
     State = #char_state{
+      db = DB,
       account = #account{id = AccountID, email = AccountEMail}
     }) ->
-  case EMail of
+  Address =
+    case EMail of
+      "" -> nil;
+      _ -> EMail
+    end,
+
+  case Address of
     AccountEMail ->
-      Delete = fun() ->
-        [Char] = qlc:e(qlc:q([C || C <- mnesia:table(char),
-          C#char.id =:= CharacterID,
-          C#char.account_id =:= AccountID])),
-        mnesia:delete_object(Char),
-        Char
-      end,
-
-      case mnesia:transaction(Delete) of
-        {atomic, Char} ->
-          log:info("Character deleted.", [{char, Char}]),
-          State#char_state.tcp ! {character_deleted, ok};
-
-        Error ->
+      case db:get_char(DB, CharacterID) of
+        nil ->
           log:warning(
             "Character deletion failed.",
             [ {char_id, CharacterID},
               {account_id, AccountID},
-              {email, EMail},
-              {result, Error}
+              {email, EMail}
             ]
           ),
 
-          State#char_state.tcp ! {deletion_failed, 0}
+          State#char_state.tcp ! {deletion_failed, 0};
+
+        Char ->
+          db:delete_char(DB, Char),
+          log:info("Character deleted.", [{char, Char}]),
+          State#char_state.tcp ! {character_deleted, ok}
       end;
 
     _Invalid ->

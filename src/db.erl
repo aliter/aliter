@@ -6,9 +6,11 @@
 
 -export([
     save_char/2,
+    delete_char/2,
     get_char/2,
     get_account_chars/2,
     get_account_char/3]).
+
 
 save_account(C, Account) ->
   ID =
@@ -114,6 +116,18 @@ save_char(C, Char) ->
   ),
 
   Char#char{id = ID}.
+
+
+delete_char(C, Char) ->
+  Hash = "char:" ++ integer_to_list(Char#char.id),
+  erldis:del(C, Hash),
+  erldis:del(C, ["char:", Char#char.name]),
+  erldis:hdel(
+    C,
+    ["account:", integer_to_list(Char#char.account_id), ":chars"],
+    Char#char.num
+  ),
+  ok.
 
 
 get_char(C, ID) ->
