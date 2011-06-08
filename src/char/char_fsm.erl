@@ -33,8 +33,7 @@ start_link(TCP) ->
   gen_fsm:start_link(?MODULE, TCP, []).
 
 
-init(TCP) ->
-  {ok, DB} = erldis:connect(), % TODO: config
+init({TCP, [DB]}) ->
   {ok, locked, #char_state{tcp = TCP, db = DB}}.
 
 

@@ -38,7 +38,8 @@
       module,
       module_state,
       packet_handler,
-      fsm}).
+      fsm,
+      fsm_args}).
 
 behaviour_info(callbacks) ->
   [ {init, 1},
@@ -231,16 +232,28 @@ parse_loop(Socket, PacketHandler, Loop) ->
 
 % gen_listener_tcp callbacks
 
-handle_accept(Sock, #server_state{port = Port, packet_handler = PacketHandler} = St) ->
+handle_accept(
+    Sock,
+    St = #server_state{
+      port = Port, 
+      packet_handler = PacketHandler,
+      fsm_args = FArgs
+    }) ->
   log:info("Client connected.", [{client, element(2, inet:peername(Sock))}]),
 
   Server = self(),
 
   Pid = spawn(fun() ->
-          {ok, FSM} = supervisor:start_child(client_sup(Port), [self()]),
-          gen_fsm:send_all_state_event(FSM, {set_server, Server}),
-          loop(Sock, FSM, PacketHandler)
-        end),
+    Args =
+      case FArgs of
+        [] -> [self()];
+        _ -> [{self(), FArgs}]
+      end,
+
+    {ok, FSM} = supervisor:start_child(client_sup(Port), Args),
+    gen_fsm:send_all_state_event(FSM, {set_server, Server}),
+    loop(Sock, FSM, PacketHandler)
+  end),
 
   gen_tcp:controlling_process(Sock, Pid),
 
@@ -267,14 +280,22 @@ init([{'__gen_server_tcp_mod', Module} | InitArgs]) ->
         ]
       ),
 
-      St = #server_state{port = Port,
-                 module = Module,
-                 module_state = ModState,
-                 fsm = FSM,
-                 packet_handler = PacketHandler},
+      {MState, FArgs} =
+        case ModState of
+          {X, Y} -> {X, Y};
+          X -> {X, []}
+        end,
 
-      supervisor:start_link(?MODULE,
-                  {all, St}),
+      St = #server_state{
+        port = Port,
+        module = Module,
+        module_state = MState,
+        fsm = FSM,
+        fsm_args = FArgs,
+        packet_handler = PacketHandler
+      },
+
+      supervisor:start_link(?MODULE, {all, St}),
 
       {ok, St};
 

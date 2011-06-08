@@ -13,6 +13,8 @@
     terminate/2,
     code_change/3]).
 
+-record(state, {db, sessions}).
+
 
 start_link(Conf) ->
   config:set_env(char, Conf),
@@ -26,10 +28,18 @@ start_link(Conf) ->
 
 
 init(Port) ->
-  {ok, {Port, char_fsm, char_packets:new(24)}, []}.
+  {ok, DB} = erldis:connect(), % TODO: config
+
+  { ok,
+    {Port, char_fsm, char_packets:new(24)},
+    {#state{db = DB, sessions = []}, [DB]}
+  }.
 
 
-handle_call({verify_session, AccountID, CharacterID, SessionIDa}, _From, Sessions) ->
+handle_call(
+    {verify_session, AccountID, CharacterID, SessionIDa},
+    _From,
+    State = #state{sessions = Sessions}) ->
   log:debug("Verifying session.",
     [ {account, AccountID},
       {character, CharacterID},
@@ -38,41 +48,46 @@ handle_call({verify_session, AccountID, CharacterID, SessionIDa}, _From, Session
 
   case proplists:lookup(AccountID, Sessions) of
     {AccountID, FSM, SessionIDa, _SessionIDb} ->
-      {reply, {ok, FSM}, Sessions};
+      {reply, {ok, FSM}, State};
     _ ->
-      {reply, invalid, Sessions}
+      {reply, invalid, State}
   end;
 
-handle_call({get_session, AccountID}, _From, Sessions) ->
-  {reply, proplists:lookup(AccountID, Sessions), Sessions};
+handle_call({get_session, AccountID}, _From, State = #state{sessions = Sessions}) ->
+  {reply, proplists:lookup(AccountID, Sessions), State};
 
 handle_call(Request, _From, State) ->
   log:debug("Character server got call.", [{call, Request}]),
   {reply, {illegal_request, Request}, State}.
 
 
-handle_cast({add_session, Session}, Sessions) ->
+handle_cast({add_session, Session}, State = #state{sessions = Sessions}) ->
   log:debug("Character server adding session.", [{session, Session}]),
-  {noreply, [Session | Sessions]};
+  {noreply, State#state{sessions = [Session | Sessions]}};
 
-handle_cast({remove_session, AccountID}, Sessions) ->
+handle_cast({remove_session, AccountID}, State = #state{sessions = Sessions}) ->
   log:debug("Character server removing session.", [{account, AccountID}]),
-  {noreply, lists:keydelete(AccountID, 1, Sessions)};
+  {noreply, State#state{sessions = lists:keydelete(AccountID, 1, Sessions)}};
 
-handle_cast({save_char, C}, Sessions) ->
+handle_cast({save_char, C}, State = #state{db = DB, sessions = Sessions}) ->
   log:debug("Saving character.", [{character, C}]),
 
-  {atomic, ok} = mnesia:transaction(fun() -> mnesia:write(C) end),
+  db:save_char(DB, C),
 
   case proplists:lookup(C#char.account_id, Sessions) of
     {_AccountID, FSM, _SessionIDa, _SessionIDb} ->
-      gen_fsm:send_all_state_event(FSM,
-        {update_state, fun(St) -> St#char_state{char = C} end});
+      gen_fsm:send_all_state_event(
+        FSM,
+        { update_state,
+          fun(St) -> St#char_state{char = C} end
+        }
+      );
+
     _ ->
       ok
   end,
 
-  {noreply, Sessions};
+  {noreply, State};
 
 handle_cast(Cast, State) ->
   log:debug("Character server got cast.", [{cast, Cast}]),
