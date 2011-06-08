@@ -9,7 +9,9 @@
     delete_char/2,
     get_char/2,
     get_account_chars/2,
-    get_account_char/3]).
+    get_account_char/3,
+    get_char_id/2,
+    rename_char/4]).
 
 
 save_account(C, Account) ->
@@ -207,3 +209,15 @@ get_account_char(C, AccountID, Num) ->
     nil -> nil;
     _ -> db:get_char(C, erldis:numeric(ID))
   end.
+
+
+get_char_id(C, Name) ->
+  erldis:get(C, ["char:", Name]).
+
+
+rename_char(C, ID, OldName, NewName) ->
+  Hash = "char:" ++ integer_to_list(ID),
+  erldis:del(C, ["char:", OldName]),
+  erldis:set(C, ["char:", NewName], ID),
+  erldis:hset(C, Hash, "name", NewName),
+  erldis:hset(C, Hash, "renamed", 1).

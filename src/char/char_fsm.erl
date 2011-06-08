@@ -135,7 +135,7 @@ valid(
 valid(
     {create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
     State = #char_state{db = DB, account = Account}) ->
-  Exists = erldis:get(DB, ["char:", Name]),
+  Exists = db:get_char_id(Name),
 
   case Exists of
     nil ->
@@ -218,22 +218,20 @@ valid(
 
 valid(
     {check_name, AccountID, CharacterID, NewName},
-    State = #char_state{account = #account{id = AccountID}}) ->
-  Check = fun() ->
-    [] = qlc:e(qlc:q([C || C <- mnesia:table(char),
-      C#char.name =:= NewName])),
+    State = #char_state{db = DB, account = #account{id = AccountID}}) ->
+  Check = db:get_char_id(DB, NewName),
 
-    qlc:e(qlc:q([C || C <- mnesia:table(char),
-      C#char.id =:= CharacterID,
-      C#char.account_id =:= AccountID]))
-  end,
-
-  case mnesia:transaction(Check) of
-    {atomic, [Char]} ->
+  case Check of
+    nil ->
       State#char_state.tcp ! {name_check_result, 1},
-      {next_state, renaming, State#char_state{rename = {Char, NewName}}};
+      { next_state,
+        renaming,
+        State#char_state{
+          rename = {db:get_char(DB, CharacterID), NewName}
+        }
+      };
 
-    _Invalid ->
+    _Exists ->
       State#char_state.tcp ! {name_check_result, 0},
       {next_state, valid, State}
   end;
@@ -265,21 +263,28 @@ chosen(Event, From, State) ->
   ?MODULE:handle_sync_event(Event, From, chosen, State).
 
 
-renaming({rename, CharacterID},
-    State = #char_state{
-      rename = {Char = #char{id = CharacterID,
-      renamed = 0},
-      NewName}}) ->
-  Write = fun() ->
-    [] = qlc:e(qlc:q([C || C <- mnesia:table(char), C#char.name =:= NewName])),
-    mnesia:write(Char#char{name = NewName, renamed = 1})
-  end,
+renaming(
+    {rename, CharacterID},
+    State =
+      #char_state{
+        db = DB,
+        rename = {
+          #char{
+            name = OldName,
+            id = CharacterID,
+            renamed = 0
+          },
+          NewName
+        }
+      }) ->
+  Check = db:get_char_id(DB, NewName),
 
-  case mnesia:transaction(Write) of
-    {atomic, ok} ->
+  case Check of
+    nil ->
+      db:rename_char(DB, CharacterID, OldName, NewName),
       State#char_state.tcp ! {rename_result, 0};
 
-    _Error ->
+    _Exists ->
       State#char_state.tcp ! {rename_result, 3}
   end,
 
