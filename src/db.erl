@@ -117,7 +117,7 @@ save_char(C, Char) ->
 
 
 get_char(C, ID) ->
-  Hash = ["char:", ID],
+  Hash = "char:" ++ integer_to_list(ID),
   #char{
     id = erldis:numeric(ID),
     num = erldis:numeric(erldis:hget(C, Hash, "num")),
@@ -178,7 +178,7 @@ get_account_chars(C, AccountID) ->
       ["account:", integer_to_list(AccountID), ":chars"]
     ),
 
-  [db:get_char(C, ID) || {_, ID} <- Chars].
+  [db:get_char(C, erldis:numeric(ID)) || {_, ID} <- Chars].
 
 
 get_account_char(C, AccountID, Num) ->
@@ -191,5 +191,5 @@ get_account_char(C, AccountID, Num) ->
 
   case ID of
     nil -> nil;
-    _ -> db:get_char(C, ID)
+    _ -> db:get_char(C, erldis:numeric(ID))
   end.
