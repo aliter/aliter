@@ -47,7 +47,7 @@ execute(FSM, "warp", [Map | [XStr | [YStr | _]]], State) ->
     case {string:to_integer(XStr),
           string:to_integer(YStr)} of
         {{X,_}, {Y,_}} when is_integer(X), is_integer(Y) ->
-            warp_to(FSM, Map, X, Y, State);
+            warp_to(FSM, list_to_binary(Map), X, Y, State);
         _Invalid ->
             zone_fsm:say("Invalid coordinates.", State),
             {ok, State}
@@ -86,50 +86,51 @@ warp_to(
       account = #account{id = AccountID},
       char = C
     }) ->
-  case gen_server:call(zone_master,
-                         {who_serves, Map}) of
-        {zone, Port, ZoneServer} ->
-            {ip, IP} = config:get_env(zone, server.ip),
+  case gen_server:call(zone_master, {who_serves, Map}) of
+    {zone, Port, ZoneServer} ->
+      {ip, IP} = config:get_env(zone, server.ip),
 
-            zone_fsm:say(lists:concat(["Warped to ", Map, " (", X, ", ", Y, ")."]),
-                         State),
+      zone_fsm:say(
+        ["Warped to ", Map, " (", integer_to_list(X), ", ", integer_to_list(Y), ")."],
+        State
+      ),
 
-            % Send warp packets
-            gen_server:cast(MapServer,
-                            {send_to_other_players_in_sight,
-                             {C#char.x, C#char.y},
-                             C#char.id,
-                             vanish,
-                             {AccountID, 3}}),
+      % Send warp packets
+      gen_server:cast(MapServer,
+                      {send_to_other_players_in_sight,
+                       {C#char.x, C#char.y},
+                       C#char.id,
+                       vanish,
+                       {AccountID, 3}}),
 
-            % Move to new Map server
-            gen_server_tcp:cast(MapServer, {remove_player, AccountID}),
-            {ok, NewMap, NewMapServer}
-                = gen_server_tcp:call(ZoneServer,
-                                      {add_player,
-                                       Map,
-                                       {AccountID, FSM}}),
+      % Move to new Map server
+      gen_server_tcp:cast(MapServer, {remove_player, AccountID}),
+      {ok, NewMap, NewMapServer}
+          = gen_server_tcp:call(ZoneServer,
+                                {add_player,
+                                 Map,
+                                 {AccountID, FSM}}),
 
-            NewStateFun = fun(St) ->
-                              St#zone_state{server = ZoneServer,
-                                            map = NewMap,
-                                            map_server = NewMapServer,
-                                            char = C#char{map = Map,
-                                                          x = X,
-                                                          y = Y}}
-                          end,
+      NewStateFun = fun(St) ->
+                        St#zone_state{server = ZoneServer,
+                                      map = NewMap,
+                                      map_server = NewMapServer,
+                                      char = C#char{map = Map,
+                                                    x = X,
+                                                    y = Y}}
+                    end,
 
-            zone_fsm:show_actors(NewStateFun(State)),
+      zone_fsm:show_actors(NewStateFun(State)),
 
-            gen_fsm:send_all_state_event(FSM,
-                                         {update_state,
-                                          NewStateFun}),
+      gen_fsm:send_all_state_event(FSM,
+                                   {update_state,
+                                    NewStateFun}),
 
-            TCP ! {warp_zone, {Map, X, Y, IP, Port}};
-        none ->
-            zone_fsm:say("Invalid map provided.", State),
-            ok
-    end.
+      TCP ! {warp_zone, {Map, X, Y, IP, Port}};
+    none ->
+      zone_fsm:say("Invalid map provided.", State),
+      ok
+  end.
 
 
 add_zeny(FSM, Zeny, State) ->

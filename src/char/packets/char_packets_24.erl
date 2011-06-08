@@ -107,12 +107,7 @@ pack(
       ZonePort
     }) ->
   [ <<16#71:16/little, ID:32/little>>,
-    binary:part(
-      list_to_binary([Map, <<".gat">>]),
-      0,
-      min(byte_size(Map) + 4, 16)
-    ),
-    binary:copy(<<0>>, 16 - (byte_size(Map) + 4)),
+    pad_to([Map, <<".gat">>], 16),
     <<ZA, ZB, ZC, ZD, ZonePort:16/little>>
   ];
 
@@ -160,8 +155,7 @@ character(C) ->
       (C#char.hair_colour):16/little,
       (C#char.clothes_colour):16/little>>,
 
-    binary:part(C#char.name, 0, min(byte_size(C#char.name), 24)),
-    binary:copy(<<0>>, 24 - byte_size(C#char.name)),
+    pad_to(C#char.name, 24),
 
     <<(C#char.str):8,
       (C#char.agi):8,
@@ -171,4 +165,11 @@ character(C) ->
       (C#char.luk):8,
       (C#char.num):16/little,
       (C#char.renamed):16/little>>
+  ].
+
+
+pad_to(Bin, Size) ->
+  Binary = iolist_to_binary(Bin),
+  [ binary:part(Binary, 0, min(byte_size(Binary), Size)),
+    binary:copy(<<0>>, Size - byte_size(Binary))
   ].
