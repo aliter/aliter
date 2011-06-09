@@ -29,9 +29,6 @@ init(Port) ->
 
 
 handle_call({verify_session, AccountID, LoginIDa, LoginIDb}, _From, Sessions) ->
-  log:debug("Verifying session.",
-    [{account, AccountID}, {ids, {LoginIDa, LoginIDb}}, {session, Sessions}]),
-
   case proplists:lookup(AccountID, Sessions) of
     {AccountID, FSM, LoginIDa, LoginIDb} ->
       {reply, {ok, FSM}, Sessions};
@@ -58,6 +55,7 @@ handle_cast({remove_session, AccountID}, Sessions) ->
 handle_cast(Cast, Sessions) ->
   log:debug("Login server got cast.", [{cast, Cast}]),
   {noreply, Sessions}.
+
 
 handle_info({'EXIT', From, Reason}, Sessions) ->
   log:error("Login server got EXIT signal.", [{from, From}, {reason, Reason}]),

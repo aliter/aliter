@@ -286,7 +286,7 @@ valid({request_guild_info, 2}, State) ->
   {next_state, valid, State};
 
 valid(
-    {walk, {ToX, ToY, ToD}},
+    {walk, {ToX, ToY, _ToD}},
     State = #zone_state{
       map = Map,
       map_server = MapServer,
@@ -298,17 +298,7 @@ valid(
       }
     }) ->
 
-  log:debug("Received walk request.", [{coords, {ToX, ToY, ToD}}]),
-
-  {Time, PathFound} =
-    timer:tc(nif, pathfind, [Map#map.id, [X | Y], [ToX | ToY]]),
-
-  log:error(
-    "Path found.",
-    [ {path, PathFound},
-      {elapsed, Time}
-    ]
-  ),
+  PathFound = nif:pathfind(Map#map.id, [X | Y], [ToX | ToY]),
 
   case PathFound of
     [{SX, SY, SDir} | Path] ->
@@ -374,26 +364,11 @@ valid(Event, From, State) ->
 
 
 walking(
-    {walk, {ToX, ToY, ToD}},
+    {walk, {ToX, ToY, _ToD}},
     State = #zone_state{map = Map,
               char = #char{x = X,
                      y = Y}}) ->
-  log:error(
-    "Walk request while walking.",
-    [ {coords, {ToX, ToY, ToD}},
-      {current_position, {X, Y}}
-    ]
-  ),
-
-  {Time, Path} =
-    timer:tc(nif, pathfind, [Map#map.id, [X | Y], [ToX | ToY]]),
-
-  log:error(
-    "Path found.",
-    [ {path, Path},
-      {elapsed, Time}
-    ]
-  ),
+  Path = nif:pathfind(Map#map.id, [X | Y], [ToX | ToY]),
 
   {next_state, walking, State#zone_state{walk_path = Path,
                        walk_changed = {X, Y}}};
@@ -412,7 +387,7 @@ walking(
   case Path of
     [] ->
       timer:cancel(Timer),
-      log:error("Done walking."),
+      log:debug("Done walking."),
       { next_state,
         valid,
         State#zone_state{
@@ -449,14 +424,6 @@ walking(
 
         _ -> ok
       end,
-
-      log:warning(
-        "Stepping.",
-        [ {direction, CDir},
-          {elapsed, trunc(timer:now_diff(now(), Time) / 1000)},
-          {current_pos, {CX, CY}}
-        ]
-      ),
 
       { next_state,
         walking,
