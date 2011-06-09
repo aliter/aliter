@@ -314,6 +314,12 @@ handle_event({set_server, Server}, StateName, StateData) ->
 handle_event({update_state, Fun}, StateName, StateData) ->
   {next_state, StateName, Fun(StateData)};
 
+handle_event(
+    {keepalive, AccountID},
+    StateName,
+    StateData = #char_state{account = #account{id = AccountID}}) ->
+  {next_state, StateName, StateData};
+
 handle_event(Event, StateName, StateData) ->
   log:warning(
     "Character FSM got unhandled event.",
