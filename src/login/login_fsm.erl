@@ -53,7 +53,7 @@ locked(
       successful_login(A, Versioned);
 
     _ ->
-    GetID = erldis:get(DB, ["account:", Login]),
+    GetID = db:get_account_id(DB, Login),
     case GetID of
       % Bad login
       nil ->
@@ -61,19 +61,19 @@ locked(
         {next_state, locked, State};
 
       ID ->
-        GetPassword = erldis:hget(DB, ["account:", ID], "password"),
+        Account = db:get_account(DB, ID),
 
         Hashed = erlang:md5(Password),
 
         if
           % Bad password
-          GetPassword /= Hashed ->
+          Account#account.password /= Hashed ->
             TCP ! {refuse, {1, ""}},
             {next_state, locked, State};
 
           % Successful auth
           true ->
-            successful_login(db:get_account(DB, ID), Versioned)
+            successful_login(Account, Versioned)
         end
     end
   end.
@@ -148,7 +148,7 @@ register_account(_, Login, _Password, _) ->
 create_new_account(C, RawLogin, Password, Gender) ->
   Login = string:sub_string(RawLogin, 1, length(RawLogin)-2),
 
-  Check = erldis:get(C, ["account:", Login]),
+  Check = db:get_account_id(Login),
 
   log:info("Check.", [{check, Check}]),
 

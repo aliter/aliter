@@ -2,7 +2,10 @@
 
 -include("include/records.hrl").
 
--export([save_account/2, get_account/2]).
+-export([
+    save_account/2,
+    get_account/2,
+    get_account_id/2]).
 
 -export([
     save_char/2,
@@ -37,9 +40,9 @@ save_account(C, Account) ->
 
 
 get_account(C, ID) ->
-  Hash = ["account:", ID],
+  Hash = ["account:", integer_to_list(ID)],
   #account{
-    id = erldis:numeric(ID),
+    id = ID,
     login = erldis:hget(C, Hash, "login"),
     password = erldis:hget(C, Hash, "password"),
     email = erldis:hget(C, Hash, "email"),
@@ -49,6 +52,13 @@ get_account(C, ID) ->
     last_ip = erldis:hget(C, Hash, "last_ip"),
     gm_level = erldis:numeric(erldis:hget(C, Hash, "gm_level"))
   }.
+
+
+get_account_id(C, Name) ->
+  case erldis:get(C, ["account:", Name]) of
+    nil -> nil;
+    X -> erldis:numeric(X)
+  end.
 
 
 save_char(C, Char) ->
@@ -135,7 +145,7 @@ delete_char(C, Char) ->
 get_char(C, ID) ->
   Hash = "char:" ++ integer_to_list(ID),
   #char{
-    id = erldis:numeric(ID),
+    id = ID,
     num = erldis:numeric(erldis:hget(C, Hash, "num")),
     name = erldis:hget(C, Hash, "name"),
     job = erldis:numeric(erldis:hget(C, Hash, "job")),
@@ -212,7 +222,10 @@ get_account_char(C, AccountID, Num) ->
 
 
 get_char_id(C, Name) ->
-  erldis:get(C, ["char:", Name]).
+  case erldis:get(C, ["char:", Name]) of
+    nil -> nil;
+    X -> erldis:numeric(X)
+  end.
 
 
 rename_char(C, ID, OldName, NewName) ->
