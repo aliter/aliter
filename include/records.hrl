@@ -64,6 +64,16 @@
          npcs = [],
          mobs = []}).
 
+-record(
+  nb_state,
+  { port,
+    packet_handler,
+    fsm_module,
+    fsm_args,
+    server
+  }
+).
+
 
 %%% Login tables
 -record(account,

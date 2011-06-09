@@ -124,7 +124,7 @@ player_count([]) ->
   0;
 
 player_count([{_Name, _Map, MapServer} | Maps]) ->
-  gen_server_tcp:call(MapServer, player_count) +
+  gen_server:call(MapServer, player_count) +
     player_count(Maps).
 
 

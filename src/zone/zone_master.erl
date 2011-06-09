@@ -123,7 +123,7 @@ handle_call(Request, _From, State) ->
 handle_cast({send_to_all, Msg}, State) ->
   lists:foreach(
     fun({_ID, Server, _Type, _Modules}) ->
-      gen_server_tcp:cast(Server, Msg)
+      gen_server:cast(Server, Msg)
     end,
     supervisor:which_children(zone_master_sup)
   ),
@@ -135,7 +135,7 @@ handle_cast(
     State = #state{npc_id = Id}) ->
   lists:foreach(
     fun({_ID, Server, _Type, _Modules}) ->
-      gen_server_tcp:cast(
+      gen_server:cast(
         Server,
         { register_npc,
           #npc{
@@ -181,7 +181,7 @@ who_serves(_Map, []) ->
   none;
 
 who_serves(Map, [{_Id, Server, _Type, _Modules} | Servers]) ->
-  case gen_server_tcp:call(Server, {provides, Map}) of
+  case gen_server:call(Server, {provides, Map}) of
     {yes, Port} ->
       {zone, Port, Server};
 
@@ -194,7 +194,7 @@ player_count([]) ->
   0;
 
 player_count([{_Id, Server, _Type, _Modules} | Servers]) ->
-  gen_server_tcp:call(Server, player_count) +
+  gen_server:call(Server, player_count) +
     player_count(Servers).
 
 
@@ -202,7 +202,7 @@ get_player(_ActorID, []) ->
   none;
 
 get_player(ActorID, [{_Id, Server, _Type, _Modules} | Servers]) ->
-  case gen_server_tcp:call(Server, {get_player, ActorID}) of
+  case gen_server:call(Server, {get_player, ActorID}) of
     {ok, FSM} ->
       {ok, FSM};
 
@@ -220,7 +220,7 @@ get_player_by(Pred, [{_Id, Server, _Type, _Modules} | Servers]) ->
     [{server, Server}, {pred, Pred}]
   ),
 
-  case gen_server_tcp:call(Server, {get_player_by, Pred}) of
+  case gen_server:call(Server, {get_player_by, Pred}) of
     {ok, State} ->
       {ok, State};
 

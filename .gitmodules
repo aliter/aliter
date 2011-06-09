@@ -4,3 +4,6 @@
 [submodule "lib/erldis"]
 	path = lib/erldis
 	url = git://github.com/cstar/erldis.git
+[submodule "lib/gen_nb_server"]
+	path = lib/gen_nb_server
+	url = git://github.com/kevsmith/gen_nb_server.git

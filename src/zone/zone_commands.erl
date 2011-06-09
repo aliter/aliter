@@ -104,9 +104,9 @@ warp_to(
                        {AccountID, 3}}),
 
       % Move to new Map server
-      gen_server_tcp:cast(MapServer, {remove_player, AccountID}),
+      gen_server:cast(MapServer, {remove_player, AccountID}),
       {ok, NewMap, NewMapServer}
-          = gen_server_tcp:call(ZoneServer,
+          = gen_server:call(ZoneServer,
                                 {add_player,
                                  Map,
                                  {AccountID, FSM}}),

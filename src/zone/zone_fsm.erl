@@ -46,7 +46,7 @@ locked(
     State) ->
   {char, CharNode} = config:get_env(zone, server.char),
   Session =
-    gen_server_tcp:call(
+    gen_server:call(
       {server, CharNode},
       {verify_session, AccountID, CharacterID, SessionIDa}
     ),
@@ -60,7 +60,7 @@ locked(
                 [{char_state, C}]),
 
       {ok, Map, MapServer} =
-        gen_server_tcp:call(
+        gen_server:call(
           State#zone_state.server,
           { add_player,
             Char#char.map,
@@ -261,7 +261,7 @@ valid(
   {char, CharNode} = config:get_env(zone, server.char),
 
   GetMembers =
-    gen_server_tcp:call(
+    gen_server:call(
       {server, CharNode},
       { get_chars,
         fun() ->
@@ -682,12 +682,12 @@ terminate(_Reason, _StateName, #zone_state{map_server = MapServer,
 
   {char, CharNode} = config:get_env(zone, server.char),
 
-  gen_server_tcp:cast(
+  gen_server:cast(
     {server, CharNode},
     {save_char, Character}
   ),
 
-  gen_server_tcp:cast(MapServer, {remove_player, AccountID});
+  gen_server:cast(MapServer, {remove_player, AccountID});
 
 terminate(_Reason, _StateName, _State) ->
   log:debug("Zone FSM terminating."),

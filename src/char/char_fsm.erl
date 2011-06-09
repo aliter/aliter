@@ -45,7 +45,7 @@ locked(
   {node, LoginNode} = config:get_env(char, login.node),
 
   Verify =
-    gen_server_tcp:call(
+    gen_server:call(
       {server, LoginNode},
       {verify_session, AccountID, LoginIDa, LoginIDb}
     ),
@@ -61,7 +61,7 @@ locked(
 
       log:debug("Switched to Character server.", [{login_state, L}]),
 
-      gen_server_tcp:cast(
+      gen_server:cast(
         server,
         { add_session,
           { AccountID,
@@ -346,10 +346,10 @@ terminate(
     _StateName,
     #char_state{account = #account{id = AccountID}}) ->
   log:debug("Character FSM terminating.", [{account, AccountID}]),
-  gen_server_tcp:cast(server, {remove_session, AccountID}),
+  gen_server:cast(server, {remove_session, AccountID}),
 
   {node, LoginNode} = config:get_env(char, login.node),
-  gen_server_tcp:cast({server, LoginNode}, {remove_session, AccountID});
+  gen_server:cast({server, LoginNode}, {remove_session, AccountID});
 
 terminate(_Reason, _StateName, _StateData) ->
   log:debug("Character FSM terminating."),
