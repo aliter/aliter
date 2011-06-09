@@ -24,7 +24,8 @@ start_link(Conf) ->
 
 
 init(Port) ->
-  {ok, {Port, login_fsm, login_packets}, []}.
+  {ok, DB} = erldis:connect(), % TODO: config
+  {ok, {Port, login_fsm, login_packets}, {[], [DB]}}.
 
 
 handle_call({verify_session, AccountID, LoginIDa, LoginIDb}, _From, Sessions) ->
