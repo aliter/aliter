@@ -608,6 +608,9 @@ handle_event({get_state, From}, StateName, State) ->
 handle_event({update_state, Fun}, StateName, State) ->
   {next_state, StateName, Fun(State)};
 
+handle_event(crash, _, _) ->
+  exit('crash induced');
+
 handle_event(Event, StateName, State) ->
   log:warning(
     "Zone FSM received unknown event.",

@@ -38,6 +38,9 @@ execute(_FSM, "caps", Args,
 
   {ok, State};
 
+execute(FSM, "crash", _Args, _State) ->
+  gen_fsm:send_all_state_event(FSM, crash);
+
 execute(FSM, "load", _Args, State = #zone_state{char = C}) ->
     log:error("Got load command."),
     warp_to(FSM, C#char.save_map, C#char.save_x, C#char.save_y, State);
