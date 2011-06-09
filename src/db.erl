@@ -16,6 +16,12 @@
     get_char_id/2,
     rename_char/4]).
 
+-export([
+    save_guild/2,
+    delete_guild/2,
+    get_guild/2,
+    get_guild_id/2]).
+
 
 save_account(C, Account) ->
   ID =
@@ -234,3 +240,67 @@ rename_char(C, ID, OldName, NewName) ->
   erldis:set(C, ["char:", NewName], ID),
   erldis:hset(C, Hash, "name", NewName),
   erldis:hset(C, Hash, "renamed", 1).
+
+
+save_guild(C, Guild) ->
+  ID =
+    case Guild#guild.id of
+      undefined -> erldis:incr(C, "guilds:id");
+      X -> X
+    end,
+
+  Hash = "guild:" ++ integer_to_list(ID),
+  erldis:hset(C, Hash, "name", Guild#guild.name),
+  erldis:hset(C, Hash, "master", Guild#guild.master),
+  erldis:hset(C, Hash, "level", Guild#guild.level),
+  erldis:hset(C, Hash, "connected_count", Guild#guild.connected_count),
+  erldis:hset(C, Hash, "max_members", Guild#guild.max_members),
+  erldis:hset(C, Hash, "average_level", Guild#guild.average_level),
+  erldis:hset(C, Hash, "exp", Guild#guild.exp),
+  erldis:hset(C, Hash, "next_exp", Guild#guild.next_exp),
+  erldis:hset(C, Hash, "skill_points", Guild#guild.skill_points),
+  erldis:hset(C, Hash, "message1", Guild#guild.message1),
+  erldis:hset(C, Hash, "message2", Guild#guild.message2),
+  erldis:hset(C, Hash, "emblem_len", Guild#guild.emblem_len),
+  erldis:hset(C, Hash, "emblem_id", Guild#guild.emblem_id),
+  erldis:hset(C, Hash, "emblem_data", Guild#guild.emblem_data)
+
+  erldis:set(C, ["guild:", Guild#guild.name], ID),
+
+  Guild#guild{id = ID}.
+
+
+delete_guild(C, Guild) ->
+  Hash = "guild:" ++ integer_to_list(Guild#guild.id),
+  erldis:del(C, Hash),
+  erldis:del(C, ["guild:", Char#char.name]),
+  ok.
+
+
+get_guild(C, ID) ->
+  Hash = "guild:" ++ integer_to_list(ID),
+  #guild{
+    id = ID,
+    name = erldis:hget(C, Hash, "name"),
+    master = erldis:numeric(erldis:hget(C, Hash, "master")),
+    level = erldis:numeric(erldis:hget(C, Hash, "level")),
+    connected_count = erldis:numeric(erldis:hget(C, Hash, "connected_count")),
+    max_members = erldis:numeric(erldis:hget(C, Hash, "max_members")),
+    average_level = erldis:numeric(erldis:hget(C, Hash, "average_level")),
+    exp = erldis:numeric(erldis:hget(C, Hash, "exp")),
+    next_exp = erldis:numeric(erldis:hget(C, Hash, "next_exp")),
+    skill_points = erldis:numeric(erldis:hget(C, Hash, "skill_points")),
+    message1 = erldis:hget(C, Hash, "message1"),
+    message2 = erldis:hget(C, Hash, "message2"),
+    emblem_len = erldis:numeric(erldis:hget(C, Hash, "emblem_len")),
+    emblem_id = erldis:numeric(erldis:hget(C, Hash, "emblem_id")),
+    emblem_data = erldis:hget(C, Hash, "emblem_data")
+  }.
+
+
+get_guild_id(C, Name) ->
+  case erldis:get(C, ["guild:", Name]) of
+    nil -> nil;
+    X -> erldis:numeric(X)
+  end.
+
