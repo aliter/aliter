@@ -111,63 +111,6 @@ locked(Event, From, State) ->
   ?MODULE:handle_sync_event(Event, From, locked, State).
 
 
-valid(quit, State = #zone_state{account = #account{id = AccountID}}) ->
-  log:info("Player quitting.", [{account, AccountID}]),
-
-  send(State, {quit_response, 0}),
-
-  {next_state, valid, State};
-
-valid(
-    {request_name, ActorID},
-    State = #zone_state{
-      account = #account{id = AccountID},
-      char = #char{name = CharacterName},
-      map_server = MapServer
-    }) ->
-  log:debug("Sending actor name.", [{actor, ActorID}]),
-
-  Name =
-    if
-      ActorID == AccountID ->
-        { actor_name_full,
-          {ActorID,
-            CharacterName,
-            "Party Name",
-            "Guild Name",
-            "Tester"}
-        };
-
-      true ->
-        case gen_server:call(MapServer, {get_actor, ActorID}) of
-          {player, FSM} ->
-            {ok, Z} = gen_fsm:sync_send_all_state_event(FSM, get_state),
-            { actor_name_full,
-              { ActorID,
-                (Z#zone_state.char)#char.name,
-                "Other Party Name",
-                "Other Guild Name",
-                "Other Tester"
-              }
-            };
-
-          {npc, NPC} ->
-            {actor_name, {ActorID, NPC#npc.name}};
-
-          none ->
-            "Unknown"
-        end
-    end,
-
-  send(State, Name),
-
-  {next_state, valid, State};
-
-valid({char_select, Type}, State) ->
-  log:debug("User requesting to go back to char screen.", [{type, Type}]),
-  send(State, {confirm_back_to_char, {1}}),
-  {next_state, valid, State};
-
 valid({npc_activate, ActorID}, State = #zone_state{map_server = MapServer}) ->
   log:warning("Activating NPC.", [{id, ActorID}]),
 
@@ -206,84 +149,6 @@ valid({npc_close, _ActorID}, State = #zone_state{npc = {Pid, _NPC}}) ->
   {next_state, valid, State};
 
 valid(map_loaded, State) -> show_actors(State), {next_state, valid, State};
-
-valid(
-    request_guild_status,
-    State = #zone_state{
-      char = #char{
-        id = CharacterID,
-        guild_id = GuildID
-      }
-    }) ->
-  log:debug("Requested guild status."),
-
-  if
-    GuildID /= 0 ->
-      GetGuild = fun() -> mnesia:read(guild, GuildID) end,
-
-      case mnesia:transaction(GetGuild) of
-        {atomic, [#guild{master_id = CharacterID}]} ->
-          send(State, {guild_status, master});
-
-        _Error ->
-          send(State, {guild_status, member})
-      end;
-
-    true ->
-        send(State, {guild_status, none})
-  end,
-
-  {next_state, valid, State};
-
-valid(
-    {request_guild_info, 0},
-    State = #zone_state{char = #char{guild_id = GuildID}}) when GuildID /= 0 ->
-  log:debug("Requested first page of guild info."),
-
-  GetGuild = fun() -> mnesia:read(guild, GuildID) end,
-
-  case mnesia:transaction(GetGuild) of
-    {atomic, [G]} ->
-      send(State, {guild_info, G}),
-      send(State, {guild_relationships, G#guild.relationships});
-
-    _Other ->
-      ok
-  end,
-
-  {next_state, valid, State};
-
-valid(
-    {request_guild_info, 1},
-    State = #zone_state{char = #char{guild_id = GuildID}}) when GuildID /= 0 ->
-  log:debug("Requested second page of guild info."),
-
-  {char, CharNode} = config:get_env(zone, server.char),
-
-  GetMembers =
-    gen_server:call(
-      {server, CharNode},
-      { get_chars,
-        fun() ->
-            qle:e(qlc:q([C || C <- mnesia:table(char),
-                              C#char.guild_id == GuildID]))
-        end
-      }
-    ),
-
-  case GetMembers of
-    {atomic, Members} ->
-      send(State, {guild_members, Members});
-
-    _Error ->
-      ok
-  end,
-
-  {next_state, valid, State};
-
-valid({request_guild_info, 2}, State) ->
-  log:debug("Requested third page of guild info."),
-  {next_state, valid, State};
 
 valid(
     {walk, {ToX, ToY, _ToD}},
@@ -445,6 +310,67 @@ walking(Event, State) ->
 walking(Event, From, State) ->
   ?MODULE:handle_sync_event(Event, From, walking, State).
 
+
+handle_event(
+    quit,
+    StateName,
+    State = #zone_state{account = #account{id = AccountID}}) ->
+  log:info("Player quitting.", [{account, AccountID}]),
+
+  send(State, {quit_response, 0}),
+
+  {next_state, StateName, State};
+
+handle_event({char_select, Type}, StateName, State) ->
+  log:debug("User requesting to go back to char screen.", [{type, Type}]),
+  send(State, {confirm_back_to_char, {1}}),
+  {next_state, StateName, State};
+
+handle_event(
+    {request_name, ActorID},
+    StateName,
+    State = #zone_state{
+      account = #account{id = AccountID},
+      char = #char{name = CharacterName},
+      map_server = MapServer
+    }) ->
+  log:debug("Sending actor name.", [{actor, ActorID}]),
+
+  Name =
+    if
+      ActorID == AccountID ->
+        { actor_name_full,
+          {ActorID,
+            CharacterName,
+            "Party Name",
+            "Guild Name",
+            "Tester"}
+        };
+
+      true ->
+        case gen_server:call(MapServer, {get_actor, ActorID}) of
+          {player, FSM} ->
+            {ok, Z} = gen_fsm:sync_send_all_state_event(FSM, get_state),
+            { actor_name_full,
+              { ActorID,
+                (Z#zone_state.char)#char.name,
+                "Other Party Name",
+                "Other Guild Name",
+                "Other Tester"
+              }
+            };
+
+          {npc, NPC} ->
+            {actor_name, {ActorID, NPC#npc.name}};
+
+          none ->
+            "Unknown"
+        end
+    end,
+
+  send(State, Name),
+
+  {next_state, StateName, State};
 
 handle_event(player_count, StateName, State) ->
   Num = gen_server:call(zone_master, player_count),
@@ -610,6 +536,92 @@ handle_event({update_state, Fun}, StateName, State) ->
 
 handle_event(crash, _, _) ->
   exit('crash induced');
+
+handle_event(
+    request_guild_status,
+    StateName,
+    State = #zone_state{
+      char = #char{
+        id = CharacterID,
+        guild_id = GuildID
+      }
+    }) ->
+  log:debug("Requested guild status."),
+
+  if
+    GuildID /= 0 ->
+      GetGuild = fun() -> mnesia:read(guild, GuildID) end,
+
+      case mnesia:transaction(GetGuild) of
+        {atomic, [#guild{master_id = CharacterID}]} ->
+          send(State, {guild_status, master});
+
+        _Error ->
+          send(State, {guild_status, member})
+      end;
+
+    true ->
+        send(State, {guild_status, none})
+  end,
+
+  {next_state, StateName, State};
+
+handle_event(
+    {request_guild_info, 0},
+    StateName,
+    State = #zone_state{
+      char = #char{guild_id = GuildID}
+    }) when GuildID /= 0 ->
+  log:debug("Requested first page of guild info."),
+
+  GetGuild = fun() -> mnesia:read(guild, GuildID) end,
+
+  case mnesia:transaction(GetGuild) of
+    {atomic, [G]} ->
+      send(State, {guild_info, G}),
+      send(State, {guild_relationships, G#guild.relationships});
+
+    _Other ->
+      ok
+  end,
+
+  {next_state, StateName, State};
+
+handle_event(
+    {request_guild_info, 1},
+    StateName,
+    State = #zone_state{
+      char = #char{guild_id = GuildID}
+    }) when GuildID /= 0 ->
+  log:debug("Requested second page of guild info."),
+
+  {char, CharNode} = config:get_env(zone, server.char),
+
+  GetMembers =
+    gen_server:call(
+      {server, CharNode},
+      { get_chars,
+        fun() ->
+            qle:e(qlc:q([C || C <- mnesia:table(char),
+                              C#char.guild_id == GuildID]))
+        end
+      }
+    ),
+
+  case GetMembers of
+    {atomic, Members} ->
+      send(State, {guild_members, Members});
+
+    _Error ->
+      ok
+  end,
+
+  {next_state, StateName, State};
+
+handle_event({request_guild_info, 2}, StateName, State) ->
+  log:debug("Requested third page of guild info."),
+  {next_state, StateName, State};
+
 
 handle_event(Event, StateName, State) ->
   log:warning(
