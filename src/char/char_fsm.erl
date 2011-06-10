@@ -29,22 +29,24 @@
 -define(PREMIUM_SLOTS, 9).
 
 
-start_link(Tcp) ->
-  gen_fsm:start_link(?MODULE, Tcp, []).
+start_link(TCP) ->
+  gen_fsm:start_link(?MODULE, TCP, []).
 
 
-init(Tcp) ->
-  {ok, locked, #char_state{tcp=Tcp}}.
+init({TCP, [DB]}) ->
+  {ok, locked, #char_state{tcp = TCP, db = DB}}.
 
 
-locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
-  State#char_state.tcp ! <<AccountID:32/little>>,
+locked(
+    {connect, AccountID, LoginIDa, LoginIDb, _Gender},
+    State = #char_state{tcp = TCP, db = DB}) ->
+  TCP ! <<AccountID:32/little>>,
 
   {node, LoginNode} = config:get_env(char, login.node),
 
   Verify =
-    gen_server_tcp:call(
-      {server, LoginNode},
+    gen_server:call(
+      {login_server, LoginNode},
       {verify_session, AccountID, LoginIDa, LoginIDb}
     ),
 
@@ -59,25 +61,23 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
 
       log:debug("Switched to Character server.", [{login_state, L}]),
 
-      gen_server_tcp:cast(
-        server,
-        { add_session, {AccountID,
-          self(),
-          L#login_state.id_a,
-          L#login_state.id_b}
+      gen_server:cast(
+        char_server,
+        { add_session,
+          { AccountID,
+            self(),
+            L#login_state.id_a,
+            L#login_state.id_b
+          }
         }
       ),
 
-      GetChars = fun() ->
-        qlc:e(qlc:q([X || X <- mnesia:table(char), X#char.account_id =:= AccountID]))
-      end,
+      Chars = db:get_account_chars(DB, AccountID),
 
-      {atomic, Chars} = mnesia:transaction(GetChars),
-
-      State#char_state.tcp !
+      TCP !
         {parse, char_packets:new(L#login_state.packet_ver)},
 
-      State#char_state.tcp !
+      TCP !
         {characters, {Chars, ?MAX_SLOTS, ?AVAILABLE_SLOTS, ?PREMIUM_SLOTS}},
 
       { next_state, valid,
@@ -90,7 +90,7 @@ locked({connect, AccountID, LoginIDa, LoginIDb, _Gender}, State) ->
       };
 
     invalid ->
-      State#char_state.tcp ! {refuse, 0},
+      TCP ! {refuse, 0},
       {next_state, locked, State}
   end;
 
@@ -103,15 +103,16 @@ locked(Event, From, State) ->
 
 valid(
     {choose, Num},
-    State = #char_state{account = #account{id = AccountID}}) ->
-  GetChar = fun() ->
-    qlc:e(qlc:q([X || X <- mnesia:table(char),
-      X#char.num =:= Num,
-      X#char.account_id =:= AccountID]))
-  end,
+    State = #char_state{db = DB, account = #account{id = AccountID}}) ->
+  GetChar = db:get_account_char(DB, AccountID, Num),
 
-  case mnesia:transaction(GetChar) of
-    {atomic, [C]} ->
+  case GetChar of
+    nil ->
+      log:warning("Selected invalid character.", [{account, AccountID}]),
+      State#char_state.tcp ! {refuse, 1},
+      {next_state, valid, State};
+
+    C ->
       log:debug(
         "Player selected character.",
         [{account, AccountID}, {character, C#char.id}]
@@ -120,33 +121,27 @@ valid(
       {ip, ZoneIP} = config:get_env(char, zone.server.ip),
       {zone, ZoneNode} = config:get_env(char, server.zone),
 
-      {zone, ZonePort, _ZoneServer}
-        = gen_server:call({zone_master, ZoneNode},
-         {who_serves, C#char.map}),
+      {zone, ZonePort, _ZoneServer} =
+        gen_server:call(
+          {zone_master, ZoneNode},
+          {who_serves, C#char.map}
+        ),
 
       State#char_state.tcp ! {zone_connect, {C, ZoneIP, ZonePort}},
 
-      {next_state, chosen, State#char_state{char = C}};
-
-    {atomic, []} ->
-      log:warning("Selected invalid character.", [{account, AccountID}]),
-      State#char_state.tcp ! {refuse, 1},
-      {next_state, valid, State};
-
-    Error ->
-      log:warning("Error grabbing selected character.", [{result, Error}]),
-      State#char_state.tcp ! {refuse, 1},
-      {next_state, valid, State}
+      {next_state, chosen, State#char_state{char = C}}
   end;
 
 valid(
     {create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
-    State = #char_state{account = Account}) ->
-  Create = fun() ->
-    case qlc:e(qlc:q([C || C <- mnesia:table(char),
-      C#char.name =:= Name])) of
-      [] ->
-        Char = #char{id = mnesia:dirty_update_counter(ids, char, 0),
+    State = #char_state{db = DB, account = Account}) ->
+  Exists = db:get_char_id(Name),
+
+  case Exists of
+    nil ->
+      Char = db:save_char(
+        DB,
+        #char{
           num = Num,
           name = Name,
           zeny = 500, % TODO: Config flag
@@ -158,31 +153,20 @@ valid(
           luk = Luk,
           hair_colour = HairColour,
           hair_style = HairStyle,
-          account_id = Account#account.id},
-        mnesia:dirty_update_counter(ids, char, 1),
-        mnesia:write(Char),
-        Char;
-      _Exists ->
-        exists
-    end
-  end,
+          account_id = Account#account.id
+        }
+      ),
 
-  case mnesia:transaction(Create) of
-    {atomic, Char} when is_record(Char, char)->
       log:info("Created character.", [{account, Account}, {char, Char}]),
       State#char_state.tcp ! {character_created, Char};
 
-    {atomic, exists} ->
+    _ ->
       log:info(
         "Character creation denied (name already in use).",
         [{account, Account}]
       ),
 
-      State#char_state.tcp ! {creation_failed, 0};
-
-    Error ->
-      log:info("Character creation failed.", [{account, Account}, {result, Error}]),
-      State#char_state.tcp ! {creation_failed, 16#FF}
+      State#char_state.tcp ! {creation_failed, 0}
   end,
 
   {next_state, valid, State};
@@ -190,34 +174,33 @@ valid(
 valid(
     {delete, CharacterID, EMail},
     State = #char_state{
+      db = DB,
       account = #account{id = AccountID, email = AccountEMail}
     }) ->
-  case EMail of
+  Address =
+    case EMail of
+      "" -> nil;
+      _ -> EMail
+    end,
+
+  case Address of
     AccountEMail ->
-      Delete = fun() ->
-        [Char] = qlc:e(qlc:q([C || C <- mnesia:table(char),
-          C#char.id =:= CharacterID,
-          C#char.account_id =:= AccountID])),
-        mnesia:delete_object(Char),
-        Char
-      end,
-
-      case mnesia:transaction(Delete) of
-        {atomic, Char} ->
-          log:info("Character deleted.", [{char, Char}]),
-          State#char_state.tcp ! {character_deleted, ok};
-
-        Error ->
+      case db:get_char(DB, CharacterID) of
+        nil ->
           log:warning(
             "Character deletion failed.",
             [ {char_id, CharacterID},
               {account_id, AccountID},
-              {email, EMail},
-              {result, Error}
+              {email, EMail}
             ]
           ),
 
-          State#char_state.tcp ! {deletion_failed, 0}
+          State#char_state.tcp ! {deletion_failed, 0};
+
+        Char ->
+          db:delete_char(DB, Char),
+          log:info("Character deleted.", [{char, Char}]),
+          State#char_state.tcp ! {character_deleted, ok}
       end;
 
     _Invalid ->
@@ -235,22 +218,20 @@ valid(
 
 valid(
     {check_name, AccountID, CharacterID, NewName},
-    State = #char_state{account = #account{id = AccountID}}) ->
-  Check = fun() ->
-    [] = qlc:e(qlc:q([C || C <- mnesia:table(char),
-      C#char.name =:= NewName])),
+    State = #char_state{db = DB, account = #account{id = AccountID}}) ->
+  Check = db:get_char_id(DB, NewName),
 
-    qlc:e(qlc:q([C || C <- mnesia:table(char),
-      C#char.id =:= CharacterID,
-      C#char.account_id =:= AccountID]))
-  end,
-
-  case mnesia:transaction(Check) of
-    {atomic, [Char]} ->
+  case Check of
+    nil ->
       State#char_state.tcp ! {name_check_result, 1},
-      {next_state, renaming, State#char_state{rename = {Char, NewName}}};
+      { next_state,
+        renaming,
+        State#char_state{
+          rename = {db:get_char(DB, CharacterID), NewName}
+        }
+      };
 
-    _Invalid ->
+    _Exists ->
       State#char_state.tcp ! {name_check_result, 0},
       {next_state, valid, State}
   end;
@@ -282,21 +263,28 @@ chosen(Event, From, State) ->
   ?MODULE:handle_sync_event(Event, From, chosen, State).
 
 
-renaming({rename, CharacterID},
-    State = #char_state{
-      rename = {Char = #char{id = CharacterID,
-      renamed = 0},
-      NewName}}) ->
-  Write = fun() ->
-    [] = qlc:e(qlc:q([C || C <- mnesia:table(char), C#char.name =:= NewName])),
-    mnesia:write(Char#char{name = NewName, renamed = 1})
-  end,
+renaming(
+    {rename, CharacterID},
+    State =
+      #char_state{
+        db = DB,
+        rename = {
+          #char{
+            name = OldName,
+            id = CharacterID,
+            renamed = 0
+          },
+          NewName
+        }
+      }) ->
+  Check = db:get_char_id(DB, NewName),
 
-  case mnesia:transaction(Write) of
-    {atomic, ok} ->
+  case Check of
+    nil ->
+      db:rename_char(DB, CharacterID, OldName, NewName),
       State#char_state.tcp ! {rename_result, 0};
 
-    _Error ->
+    _Exists ->
       State#char_state.tcp ! {rename_result, 3}
   end,
 
@@ -326,6 +314,12 @@ handle_event({set_server, Server}, StateName, StateData) ->
 handle_event({update_state, Fun}, StateName, StateData) ->
   {next_state, StateName, Fun(StateData)};
 
+handle_event(
+    {keepalive, AccountID},
+    StateName,
+    StateData = #char_state{account = #account{id = AccountID}}) ->
+  {next_state, StateName, StateData};
+
 handle_event(Event, StateName, StateData) ->
   log:warning(
     "Character FSM got unhandled event.",
@@ -335,9 +329,9 @@ handle_event(Event, StateName, StateData) ->
   {next_state, StateName, StateData}.
 
 
-handle_sync_event(switch_zone, _From, StateName, StateData) ->
+handle_sync_event(switch_zone, _From, _StateName, StateData) ->
   gen_fsm:cancel_timer(StateData#char_state.die),
-  {reply, {ok, StateData}, StateName, StateData};
+  {reply, {ok, StateData}, chosen, StateData};
 
 handle_sync_event(_Event, _From, StateName, StateData) ->
   log:debug("Character FSM got unhandled sync event."),
@@ -358,10 +352,10 @@ terminate(
     _StateName,
     #char_state{account = #account{id = AccountID}}) ->
   log:debug("Character FSM terminating.", [{account, AccountID}]),
-  gen_server_tcp:cast(server, {remove_session, AccountID}),
+  gen_server:cast(char_server, {remove_session, AccountID}),
 
   {node, LoginNode} = config:get_env(char, login.node),
-  gen_server_tcp:cast({server, LoginNode}, {remove_session, AccountID});
+  gen_server:cast({login_server, LoginNode}, {remove_session, AccountID});
 
 terminate(_Reason, _StateName, _StateData) ->
   log:debug("Character FSM terminating."),

@@ -57,8 +57,6 @@ load() ->
     {list_to_atom(Node), load_path("config/zone/" ++ Node)}
   end, Zone),
 
-  {ok, API} = file:consult(home("config/api.erl")),
-
   CharsFinal = lists:map(fun({Node, Conf}) ->
     {zone, ZoneNode} = find(server.zone, Conf),
     {ZoneNode, ZoneConf} = proplists:lookup(ZoneNode, Zones),
@@ -73,20 +71,24 @@ load() ->
 
   LoginFinal = Login ++ [{chars, CharsFinal}, {zones, ZonesFinal}],
 
-  {LoginFinal, CharsFinal, ZonesFinal, API}.
+  {LoginFinal, CharsFinal, ZonesFinal}.
 
 
 load_path(Base) ->
   {ok, Files} = file:list_dir(home(Base)),
 
-  lists:map(fun(Filename) ->
-    {ok, Config} = file:consult(home(Base ++ "/" ++ Filename)),
-    {list_to_atom(filename:basename(Filename, ".erl")), Config}
-  end,
-  lists:filter(fun(Filename) ->
-    filename:extension(Filename) == ".erl"
-  end,
-  Files)).
+  lists:map(
+    fun(Filename) ->
+      {ok, Config} = file:consult(home(Base ++ "/" ++ Filename)),
+      {list_to_atom(filename:basename(Filename, ".erl")), Config}
+    end,
+    lists:filter(
+      fun(Filename) ->
+        filename:extension(Filename) == ".erl"
+      end,
+      Files
+    )
+  ).
 
 
 get_env(App, Setting) ->
@@ -105,9 +107,12 @@ find(Setting, From) ->
 
 
 set_env(App, Config) ->
-  lists:foreach(fun({Key, Val}) ->
-            application:set_env(App, Key, Val)
-          end, Config).
+  lists:foreach(
+    fun({Key, Val}) ->
+      application:set_env(App, Key, Val)
+    end,
+    Config
+  ).
 
 
 setup() ->
@@ -118,45 +123,41 @@ setup() ->
   file:make_dir(home("config")),
   file:make_dir(home("config/login")),
   file:make_dir(home("config/char")),
-  file:make_dir(home("config/char/char@" ++ Host)),
+  file:make_dir(home("config/char/aliter@" ++ Host)),
   file:make_dir(home("config/zone")),
-  file:make_dir(home("config/zone/zone@" ++ Host)),
-
-  {ok, Api} = file:open(home("config/api.erl"), write),
-  io:format(Api, "~w.~n~w.~n", [{port, 8000}, {key, "change-me-you-fool"}]),
-  file:close(Api),
+  file:make_dir(home("config/zone/aliter@" ++ Host)),
 
   {ok, Login} = file:open(home("config/login/server.erl"), write),
 
-  io:format(Login, "~w.~n~w.~n~w.~n~w.~n",
-    [ {host, {list_to_atom(Host), login}},
+  io:format(Login, "~p.~n~p.~n~p.~n~p.~n",
+    [ {host, {list_to_atom(Host), aliter}},
       {ip, {127,0,0,1}},
       {port, 6900},
       {aliter, Here}]),
 
   file:close(Login),
 
-  {ok, Char} = file:open(home("config/char/char@" ++ Host ++ "/server.erl"), write),
+  {ok, Char} = file:open(home("config/char/aliter@" ++ Host ++ "/server.erl"), write),
 
-  io:format(Char, "~w.~n~w.~n~w.~n~w.~n~w.~n~w.~n~w.~n~w.~n",
+  io:format(Char, "~p.~n~p.~n~p.~n~p.~n~p.~n~p.~n~p.~n~p.~n",
     [ {name, "Aliter"},
-      {host, {list_to_atom(Host), char}},
+      {host, {list_to_atom(Host), aliter}},
       {ip, {127,0,0,1}},
       {port, 5121},
       {aliter, Here},
-      {zone, list_to_atom("zone@" ++ Host)},
+      {zone, list_to_atom("aliter@" ++ Host)},
       {maintenance, 0},
       {new, 0}]),
 
   file:close(Char),
 
-  {ok, Zone} = file:open(home("config/zone/zone@" ++ Host ++ "/server.erl"), write),
+  {ok, Zone} = file:open(home("config/zone/aliter@" ++ Host ++ "/server.erl"), write),
 
-  io:format(Zone, "~w.~n~w.~n~w.~n~w.~n~w.~n",
-    [ {host, {list_to_atom(Host), zone}},
+  io:format(Zone, "~p.~n~p.~n~p.~n~p.~n~p.~n",
+    [ {host, {list_to_atom(Host), aliter}},
       {ip, {127,0,0,1}},
       {aliter, Here},
-      {char, list_to_atom("char@" ++ Host)},
+      {char, list_to_atom("aliter@" ++ Host)},
       {zones,
       [ {6121,
         [ "prontera",

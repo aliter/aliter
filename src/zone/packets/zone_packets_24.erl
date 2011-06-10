@@ -143,21 +143,22 @@ pack(actor_message, {ActorID, Message}) ->
   ];
 
 pack(message, Message) ->
-  [ <<16#8e:16/little, (length(Message) + 5):16/little>>,
-    list_to_binary(Message),
+  X = iolist_to_binary(Message),
+  [ <<16#8e:16/little, (byte_size(X) + 5):16/little>>,
+    X,
     <<0>>
   ];
 
 pack(warp_map, {Map, X, Y}) ->
   [ <<16#91:16/little>>,
-    list_to_binary(string:left(Map ++ ".gat", 16, 0)),
+    pad_to([Map, <<".gat">>], 16),
     <<X:16/little,
       Y:16/little>>
   ];
 
 pack(warp_zone, {Map, X, Y, {ZA, ZB, ZC, ZD}, Port}) ->
   [ <<16#92:16/little>>,
-    list_to_binary(string:left(Map ++ ".gat", 16, 0)),
+    pad_to([Map, <<".gat">>], 16),
     <<X:16/little,
       Y:16/little,
       ZA:8,
@@ -169,7 +170,7 @@ pack(warp_zone, {Map, X, Y, {ZA, ZB, ZC, ZD}, Port}) ->
 
 pack(actor_name, {ActorID, Name}) ->
   [ <<16#95:16/little, ActorID:32/little>>,
-    list_to_binary(string:left(Name, 24, 0))
+    pad_to(Name, 24)
   ];
 
 pack(broadcast, Message) ->
@@ -259,7 +260,7 @@ pack(skill_list, Skills) ->
           Level:16/little,
           Range:16/little,
           SP:16/little>>,
-        list_to_binary(string:left(Name, 24, 0)),
+        pad_to(Name, 24),
         <<Up>>
       ] || {ID, Type, Level, SP, Range, Name, Up} <- Skills
     ]
@@ -279,7 +280,7 @@ pack(guild_relationships, Relationships) ->
           (R#guild_relationship.b_id):32/little>>,
 
         % TODO
-        list_to_binary(string:left("Guild name here!", 24, 0))
+        pad_to("Guild name here!", 24)
       ] || R <- Relationships
     ]
   ];
@@ -303,10 +304,10 @@ pack(quit_response, QuitResponse) ->
 
 pack(actor_name_full, {AccountID, Name, Party, Guild, Position}) ->
   [ <<16#195:16/little, AccountID:32/little>>,
-    list_to_binary(string:left(Name, 24, 0)),
-    list_to_binary(string:left(Party, 24, 0)),
-    list_to_binary(string:left(Guild, 24, 0)),
-    list_to_binary(string:left(Position, 24, 0))
+    pad_to(Name, 24),
+    pad_to(Party, 24),
+    pad_to(Guild, 24),
+    pad_to(Position, 24)
   ];
 
 pack(guild_info, Guild) ->
@@ -323,13 +324,13 @@ pack(guild_info, Guild) ->
       0:32/little, % TODO: Tendency Down/Up
       0:32/little>>, % TODO: Emblem ID
 
-    list_to_binary(string:left(Guild#guild.name, 24, 0)),
+    pad_to(Guild#guild.name, 24),
 
     % TODO: Master name
-    list_to_binary(string:left("Master goes here!", 24, 0)),
+    pad_to("Master goes here!", 24),
 
     % TODO: Territory
-    list_to_binary(string:left("Everywhere, bitches.", 20, 0))
+    pad_to("Everywhere, bitches.", 24)
   ];
 
 pack(change_look, Character) ->
@@ -469,3 +470,10 @@ encode_move(X, Y, ToX, ToY) ->
   E = ToY band 16#ff,
   F = ((8 bsl 4) bor (8 band 16#0f)) band 16#ff,
   <<A, B, C, D, E, F>>.
+
+
+pad_to(Bin, Size) ->
+  Binary = iolist_to_binary(Bin),
+  [ binary:part(Binary, 0, min(byte_size(Binary), Size)),
+    binary:copy(<<0>>, Size - byte_size(Binary))
+  ].

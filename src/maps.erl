@@ -20,11 +20,19 @@ read_maps(
     _:Length/binary,
     Rest/binary>>,
     N) ->
-    [ #map{
+  MapName =
+    case binary:split(Name, <<0>>) of
+      [X, _] -> X;
+      [X] -> X
+    end,
+
+  [ #map{
       id = N,
-      name = string:strip(binary_to_list(Name), right, 0),
+      name = MapName,
       width = Width,
-      height = Height} | read_maps(Rest, N + 1)].
+      height = Height
+    } | read_maps(Rest, N + 1)
+  ].
 
 
 read_cache(Filename) ->

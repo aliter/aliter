@@ -1,6 +1,9 @@
-[submodule "lib/protobuffs"]
-	path = lib/protobuffs
-	url = git://github.com/ngerakines/erlang_protobuffs.git
 [submodule "lib/elixir"]
 	path = lib/elixir
 	url = git://github.com/josevalim/elixir.git
+[submodule "lib/erldis"]
+	path = lib/erldis
+	url = git://github.com/cstar/erldis.git
+[submodule "lib/gen_nb_server"]
+	path = lib/gen_nb_server
+	url = git://github.com/kevsmith/gen_nb_server.git

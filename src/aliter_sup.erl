@@ -1,4 +1,5 @@
 -module(aliter_sup).
+
 -behaviour(supervisor).
 
 -export([
@@ -11,11 +12,14 @@ start_link(StartArgs) ->
 
 
 init([]) ->
-  {Login, Char, Zone, API} = config:load(),
+  {Login, Char, Zone} = config:load(),
 
-  { ok, {{one_for_one, 2, 60},
-    [ {login, {login, start_link, [Login]}, permanent, 1000, worker, []},
-      {char, {char, start_link, [Char]}, permanent, 1000, worker, []},
-      {zone, {zone, start_link, [Zone]}, permanent, 1000, worker, []},
-      {api, {api, start_link, [API]}, permanent, 1000, worker, []}]}}.
+  { ok,
+    { {one_for_one, 2, 60},
+      [ {login, {login, start_link, [Login]}, permanent, 1000, worker, []},
+        {char, {char, start_link, [Char]}, permanent, infinity, supervisor, []},
+        {zone, {zone, start_link, [Zone]}, permanent, infinity, supervisor, []}
+      ]
+    }
+  }.
 

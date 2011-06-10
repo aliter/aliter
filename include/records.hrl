@@ -21,6 +21,7 @@
 -record(login_state,
         {server,
          tcp,
+         db,
          die,
          account,
          id_a,
@@ -30,6 +31,7 @@
 -record(char_state,
         {server,
          tcp,
+         db,
          die,
          char,
          account,
@@ -44,6 +46,7 @@
          map_server,
          states = [],
          tcp,
+         db,
          char,
          account,
          id_a,
@@ -61,19 +64,29 @@
          npcs = [],
          mobs = []}).
 
+-record(
+  nb_state,
+  { port,
+    packet_handler,
+    fsm_module,
+    fsm_args,
+    server
+  }
+).
+
 
 %%% Login tables
 -record(account,
         {id,
          login,
          password,
-         email,
+         email = "",
          gender = 0,
          login_count = 0,
-         last_login,
-         last_ip,
-         gm_level = 0,
-         ban_until}).
+         last_login = 0,
+         last_ip = "",
+         gm_level = 0}).
+
 
 %%% Character tables
 -record(char,

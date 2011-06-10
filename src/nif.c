@@ -93,12 +93,17 @@ void read_map(struct map_data *data, FILE *fp) {
     unsigned char *zipped, *cells;
 
     debug("Reading info.\n");
-    fread(&info, sizeof(struct map_cache_info), 1, fp);
+
+    if (!fread(&info, sizeof(struct map_cache_info), 1, fp)) {
+        return;
+    }
 
     debug("Reading zipped cells.\n");
 
     zipped = (unsigned char *)malloc(info.data_length);
-    fread(zipped, info.data_length, 1, fp);
+    if (!fread(zipped, info.data_length, 1, fp)) {
+        return;
+    }
 
     debug("Decompressing cells.\n");
 
@@ -127,7 +132,9 @@ void read_all_maps(const char *file) {
     }
 
     fseek(fp, 0, SEEK_SET);
-    fread(&header, sizeof(struct map_cache_header), 1, fp);
+    if (!fread(&header, sizeof(struct map_cache_header), 1, fp)) {
+        return;
+    }
 
     for (i = 0; i < header.map_count; i++) {
         debug("Reading map %d\n", i);

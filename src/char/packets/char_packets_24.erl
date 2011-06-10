@@ -82,7 +82,7 @@ pack(
       MaxSlots:8/little,
       AvailableSlots:8/little,
       PremiumSlots:8/little>>,
-    list_to_binary(lists:duplicate(20, 0))
+    binary:copy(<<0>>, 20)
   ] ++ [character(C) || C <- Characters];
 
 pack(refuse, Reason) ->
@@ -92,13 +92,13 @@ pack(character_created, Character) ->
   [<<16#6d:16/little>>, character(Character)];
 
 pack(creation_failed, Reason) ->
-  <<16#6e:16/little, Reason:16/little>>;
+  <<16#6e:16/little, Reason:8/little>>;
 
 pack(character_deleted, ok) ->
   <<16#6f:16/little>>;
 
 pack(deletion_failed, Reason) ->
-  <<16#70:16/little, Reason:16/little>>;
+  <<16#70:16/little, Reason:8/little>>;
 
 pack(
     zone_connect,
@@ -107,7 +107,7 @@ pack(
       ZonePort
     }) ->
   [ <<16#71:16/little, ID:32/little>>,
-    list_to_binary(string:left(Map ++ ".gat", 16, 0)),
+    pad_to([Map, <<".gat">>], 16),
     <<ZA, ZB, ZC, ZD, ZonePort:16/little>>
   ];
 
@@ -155,7 +155,7 @@ character(C) ->
       (C#char.hair_colour):16/little,
       (C#char.clothes_colour):16/little>>,
 
-    list_to_binary(string:left(C#char.name, 24, 0)),
+    pad_to(C#char.name, 24),
 
     <<(C#char.str):8,
       (C#char.agi):8,
@@ -165,4 +165,11 @@ character(C) ->
       (C#char.luk):8,
       (C#char.num):16/little,
       (C#char.renamed):16/little>>
+  ].
+
+
+pad_to(Bin, Size) ->
+  Binary = iolist_to_binary(Bin),
+  [ binary:part(Binary, 0, min(byte_size(Binary), Size)),
+    binary:copy(<<0>>, Size - byte_size(Binary))
   ].
