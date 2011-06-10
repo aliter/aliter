@@ -28,7 +28,7 @@
     get_guild_relationships/2]).
 
 -export([
-    save_guild_relationship/3,
+    save_guild_relationship/4,
     delete_guild_relationship/3,
     get_guild_relationship/3]).
 
@@ -317,7 +317,7 @@ get_guild_master(C, Guild) ->
   Hash = "guild:" ++ integer_to_list(ID),
   case erldis:hget(C, Hash, "master_id") of
     nil -> nil;
-    X -> erldis:numeric(X)
+    Master -> erldis:numeric(Master)
   end.
 
 
@@ -343,42 +343,47 @@ delete_char_from_guild(C, GuildID, CharacterID) ->
 
 
 get_guild_relationships(C, GuildID) ->
-  Relationship =
-    erldis:lrange(
-      C,
-      ["guild:", integer_to_list(GuildID), ":relationships"],
-      0,
-      -1
-    ),
-
-    [db:get_guild_relationship(
-      C,
-      erldis:numeric(ID)) || {_, ID} <- Relationship
-    ].
-
-
-save_guild_relationship(C, GuildID, TargetID) ->
-  Hash = "guild:" ++ integer_to_list(GuildID) ++ ":relationships:" ++ integer_to_list(TargetID),
-  erldis:hset(C, Hash, "b_id", Relationship#relationship.b_id),
-  erldis:hset(C, Hash, "type", Relationship#relationship.type).
-
-
-delete_guild_relationship(C, GuildID, TargetID) ->
-  erldis:lrem(
+  erldis:hgetall(
     C,
     [ "guild:",
       integer_to_list(GuildID),
-      ":relationships:",
-      integer_to_list(TargetID)
+      ":relationships"
     ]
+  ).
+
+
+save_guild_relationship(C, GuildID, TargetID, Type) ->
+  erldis:hset(
+    C,
+    [ "guild:",
+      integer_to_list(GuildID),
+      ":relationships"
+    ],
+    integer_to_list(TargetID),
+    integer_to_list(Type)
+  ).
+
+
+delete_guild_relationship(C, GuildID, TargetID) ->
+  erldis:hdel(
+    C,
+    [ "guild:",
+      integer_to_list(GuildID),
+      ":relationships"
+    ],
+    integer_to_list(TargetID)
   ),
   ok.
 
 
 get_guild_relationship(C, GuildID, TargetID) ->
-  Hash = "guild:" ++ integer_to_list(GuildID) ++ ":relationships:" ++ integer_to_list(TargetID),
-  #relationship{
-    b_id = erldis:numeric(erldis:hget(C, Hash, "b_id")),
-    type = erldis:numeric(erldis:hget(C, Hash, "type"))
-  }.
-
+  erldis:numeric(
+    erldis:hget(
+      C,
+      [ "guild:",
+        integer_to_list(GuildID),
+        ":relationships"
+      ],
+      integer_to_list(TargetID)
+    )
+  ).

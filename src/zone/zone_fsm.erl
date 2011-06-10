@@ -579,12 +579,12 @@ handle_event(
   GetGuild = db:get_guild(DB, GuildID),
 
   case GetGuild of
+    % TODO?
+    nil -> ok;
+
     G ->
       send(State, {guild_info, G}),
-      send(State, {guild_relationships, G#guild.relationships});
-
-    _Other ->
-      ok
+      send(State, {guild_relationships, G#guild.relationships})
   end,
 
   {next_state, StateName, State};

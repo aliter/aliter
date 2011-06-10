@@ -329,7 +329,7 @@ handle_event(Event, StateName, StateData) ->
   {next_state, StateName, StateData}.
 
 
-handle_sync_event(switch_zone, _From, StateName, StateData) ->
+handle_sync_event(switch_zone, _From, _StateName, StateData) ->
   gen_fsm:cancel_timer(StateData#char_state.die),
   {reply, {ok, StateData}, chosen, StateData};
 
