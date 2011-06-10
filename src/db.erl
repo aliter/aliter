@@ -23,7 +23,8 @@
     get_guild_id/2,
     get_guild_master/2,
     get_guild_members/2,
-    add_char_to_guild/3]).
+    add_char_to_guild/3,
+    delete_char_from_guild/3]).
 
 
 save_account(C, Account) ->
@@ -329,4 +330,9 @@ get_guild_members(C, GuildID) ->
 
 add_char_to_guild(C, GuildID, CharacterID) ->
   erldis:rpush(C, ["guild:", GuildID, ":members"], CharacterID).
+
+
+delete_char_from_guild(C, GuildID, CharacterID) ->
+  erldis:lrem(C, ["guild:", GuildID, ":members"], 0, CharacterID)
+  ok.
 
