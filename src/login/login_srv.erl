@@ -20,7 +20,7 @@ start_link(Conf) ->
 
   log:info("Starting login server.", [{port, Port}]),
 
-  gen_server_tcp:start_link({local, server}, ?MODULE, Port, []).
+  gen_server_tcp:start_link({local, login_server}, ?MODULE, Port, []).
 
 
 init(Port) ->

@@ -3,7 +3,7 @@
 
 -include("include/records.hrl").
 
--export([start_link/1]).
+-export([start_link/1, server_for/1]).
 
 -export([init/1,
          handle_call/3,
@@ -14,8 +14,10 @@
 
 
 start_link(Map) ->
+  log:debug("Starting map server.", [{map, Map#map.name}]),
+
   gen_server:start_link(
-    {local, list_to_atom("zone_map_" ++ binary_to_list(Map#map.name))},
+    {local, server_for(Map)},
     ?MODULE,
     #map_state{map = Map},
     []
@@ -175,3 +177,7 @@ get_player_by(Pred, [{_ID, FSM} | Players]) ->
         _Fail ->
             get_player_by(Pred, Players)
     end.
+
+
+server_for(Map) ->
+  list_to_atom("zone_map_" ++ binary_to_list(Map#map.name)).

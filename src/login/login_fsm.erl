@@ -88,7 +88,7 @@ successful_login(A, State) ->
     {random:uniform(16#FFFFFFFF), random:uniform(16#FFFFFFFF)},
 
   gen_server:cast(
-    server,
+    login_server,
     {add_session, {A#account.id, self(), LoginIDa, LoginIDb}}
   ),
 
@@ -217,7 +217,7 @@ handle_info(Info, StateName, StateData) ->
 
 terminate(_Reason, _StateName, #login_state{account = #account{id = AccountID}}) ->
   log:debug("Login FSM terminating.", [{account, AccountID}]),
-  gen_server:cast(server, {remove_session, AccountID});
+  gen_server:cast(login_server, {remove_session, AccountID});
 
 terminate(_Reason, _StateName, _StateData) ->
   ok.

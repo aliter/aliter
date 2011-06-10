@@ -46,7 +46,7 @@ locked(
 
   Verify =
     gen_server:call(
-      {server, LoginNode},
+      {login_server, LoginNode},
       {verify_session, AccountID, LoginIDa, LoginIDb}
     ),
 
@@ -62,7 +62,7 @@ locked(
       log:debug("Switched to Character server.", [{login_state, L}]),
 
       gen_server:cast(
-        server,
+        char_server,
         { add_session,
           { AccountID,
             self(),
@@ -331,7 +331,7 @@ handle_event(Event, StateName, StateData) ->
 
 handle_sync_event(switch_zone, _From, StateName, StateData) ->
   gen_fsm:cancel_timer(StateData#char_state.die),
-  {reply, {ok, StateData}, StateName, StateData};
+  {reply, {ok, StateData}, chosen, StateData};
 
 handle_sync_event(_Event, _From, StateName, StateData) ->
   log:debug("Character FSM got unhandled sync event."),
@@ -352,10 +352,10 @@ terminate(
     _StateName,
     #char_state{account = #account{id = AccountID}}) ->
   log:debug("Character FSM terminating.", [{account, AccountID}]),
-  gen_server:cast(server, {remove_session, AccountID}),
+  gen_server:cast(char_server, {remove_session, AccountID}),
 
   {node, LoginNode} = config:get_env(char, login.node),
-  gen_server:cast({server, LoginNode}, {remove_session, AccountID});
+  gen_server:cast({login_server, LoginNode}, {remove_session, AccountID});
 
 terminate(_Reason, _StateName, _StateData) ->
   log:debug("Character FSM terminating."),

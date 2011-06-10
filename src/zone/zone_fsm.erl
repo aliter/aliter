@@ -47,7 +47,7 @@ locked(
   {char, CharNode} = config:get_env(zone, server.char),
   Session =
     gen_server:call(
-      {server, CharNode},
+      {char_server, CharNode},
       {verify_session, AccountID, CharacterID, SessionIDa}
     ),
 
@@ -602,7 +602,7 @@ handle_event(
 
   GetMembers =
     gen_server:call(
-      {server, CharNode},
+      {char_server, CharNode},
       {get_chars, db:get_guild_members(DB, GuildID)}
     ),
 
@@ -663,7 +663,7 @@ terminate(_Reason, _StateName, #zone_state{map_server = MapServer,
   {char, CharNode} = config:get_env(zone, server.char),
 
   gen_server:cast(
-    {server, CharNode},
+    {char_server, CharNode},
     {save_char, Character}
   ),
 

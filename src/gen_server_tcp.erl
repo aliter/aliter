@@ -30,7 +30,7 @@
     client_sup/1]).
 
 % State for the outer manager, wrapping the callback.
--record(state, {module, module_state}).
+-record(state, {module, module_state, supervisor}).
 
 
 behaviour_info(callbacks) ->
@@ -111,9 +111,15 @@ init({gen_server_tcp, Module, InitArgs}) ->
         server = self()
       },
 
-      supervisor:start_link(?MODULE, {all, St}),
+      {ok, Sup} = supervisor:start_link(?MODULE, {all, St}),
 
-      {ok, #state{module = Module, module_state = MState}};
+      { ok,
+        #state{
+          module = Module,
+          module_state = MState,
+          supervisor = Sup
+        }
+      };
 
     ignore ->
       log:error("TCP server got ignore init result.", [{module, Module}]),
@@ -138,7 +144,7 @@ init({gen_server_tcp, Module, InitArgs}) ->
 init({all, #nb_state{port = Port, fsm_module = FSMModule} = St}) ->
   { ok,
     { {one_for_one, 2, 60},
-      [ { listener,
+      [ { listener(Port),
           { gen_nb_server,
             start_link,
             [ {local, listener(Port)},
@@ -151,7 +157,7 @@ init({all, #nb_state{port = Port, fsm_module = FSMModule} = St}) ->
           worker,
           []
         },
-        { client_sup,
+        { client_sup(Port),
           { supervisor,
             start_link,
             [ {local, client_sup(Port)},
@@ -232,10 +238,13 @@ handle_info(Info, #state{module = Module, module_state = ModState}=St) ->
   end.
 
 
-terminate(Reason, #state{module = Module, module_state = ModState}) ->
+terminate(Reason, #state{module = Module, module_state = ModState, supervisor = Supervisor}) ->
   log:debug("Generic TCP server terminating.",
         [{module, Module},
          {reason, Reason}]),
+
+  %exit(Supervisor, Reason),
+
   Module:terminate(Reason, ModState).
 
 

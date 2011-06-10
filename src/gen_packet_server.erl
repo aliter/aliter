@@ -43,7 +43,7 @@ handle_info(Msg, State) ->
 
 
 terminate(Reason, _State) ->
-  log:warning("Got unhandled terminate.", [{reason, Reason}]),
+  log:warning("Packet server terminating.", [{reason, Reason}]),
   ok.
 
 
