@@ -24,7 +24,13 @@
     get_guild_master/2,
     get_guild_members/2,
     add_char_to_guild/3,
-    delete_char_from_guild/3]).
+    delete_char_from_guild/3,
+    get_guild_alliances/3]).
+
+-export([
+    save_guild_alliance/3,
+    delete_guild_alliance/3,
+    get_guild_alliance/3]).
 
 
 save_account(C, Account) ->
@@ -333,6 +339,36 @@ add_char_to_guild(C, GuildID, CharacterID) ->
 
 
 delete_char_from_guild(C, GuildID, CharacterID) ->
-  erldis:lrem(C, ["guild:", GuildID, ":members"], 0, CharacterID)
+  erldis:lrem(C, ["guild:", GuildID, ":members"], 0, CharacterID),
   ok.
+
+
+get_guild_alliances(C, GuildID) ->
+  Allies =
+    erldis:lrange(
+      C,
+      ["guild:", integer_to_list(GuildID), ":alliances"],
+      0,
+      -1
+    ),
+
+    [db:get_guild_alliance(C, erldis:numeric(ID)) || {_, ID} <- Allies].
+
+
+save_guild_alliance(C, GuildID, AllyID) ->
+  Hash = ["guild:", GuildID, ":alliances:", AllyID]
+  erldis:hset(C, Hash, "opposition", Alliance#alliance.opposition),
+  erldis:hset(C, Hash, "ally_id", Alliance#alliance.ally_id).
+
+
+delete_guild_alliance(C, GuildID, AllyID) ->
+  erldis:lrem(C, ["guild:", GuildID, ":alliances:", AllyID]),
+  ok.
+
+
+get_guild_alliance(C, GuildID, AllyID) ->
+  #guild{
+    opposition = erldis:numeric(erldis:hget(C, Hash, "opposition")),
+    ally_id = erldis:numeric(erldis:hget(C, Hash, "ally_id"))
+  }.
 
