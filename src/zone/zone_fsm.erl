@@ -603,12 +603,7 @@ handle_event(
   GetMembers =
     gen_server:call(
       {server, CharNode},
-      { get_chars,
-        fun() ->
-            qle:e(qlc:q([C || C <- mnesia:table(char),
-                              C#char.guild_id == GuildID]))
-        end
-      }
+      {get_chars, db:get_guild_members(DB, GuildID)}
     ),
 
   case GetMembers of
