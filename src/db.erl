@@ -261,19 +261,15 @@ save_guild(C, Guild) ->
 
   Hash = "guild:" ++ integer_to_list(ID),
   erldis:hset(C, Hash, "name", Guild#guild.name),
-  erldis:hset(C, Hash, "master_id", Guild#guild.master_id),
   erldis:hset(C, Hash, "level", Guild#guild.level),
-  erldis:hset(C, Hash, "connected_count", Guild#guild.connected_count),
-  erldis:hset(C, Hash, "max_members", Guild#guild.max_members),
-  erldis:hset(C, Hash, "average_level", Guild#guild.average_level),
+  erldis:hset(C, Hash, "capacity", Guild#guild.max_members),
   erldis:hset(C, Hash, "exp", Guild#guild.exp),
   erldis:hset(C, Hash, "next_exp", Guild#guild.next_exp),
   erldis:hset(C, Hash, "skill_points", Guild#guild.skill_points),
-  erldis:hset(C, Hash, "message1", Guild#guild.message1),
-  erldis:hset(C, Hash, "message2", Guild#guild.message2),
-  erldis:hset(C, Hash, "emblem_len", Guild#guild.emblem_len),
-  erldis:hset(C, Hash, "emblem_id", Guild#guild.emblem_id),
-  erldis:hset(C, Hash, "emblem_data", Guild#guild.emblem_data)
+  erldis:hset(C, Hash, "message_title", Guild#guild.message1),
+  erldis:hset(C, Hash, "message_body", Guild#guild.message2),
+  erldis:hset(C, Hash, "emblem", Guild#guild.emblem_len),
+  erldis:hset(C, Hash, "master_id", Guild#guild.master_id),
 
   erldis:set(C, ["guild:", Guild#guild.name], ID),
 
@@ -292,19 +288,15 @@ get_guild(C, ID) ->
   #guild{
     id = ID,
     name = erldis:hget(C, Hash, "name"),
-    master_id = erldis:numeric(erldis:hget(C, Hash, "master_id")),
     level = erldis:numeric(erldis:hget(C, Hash, "level")),
-    connected_count = erldis:numeric(erldis:hget(C, Hash, "connected_count")),
-    max_members = erldis:numeric(erldis:hget(C, Hash, "max_members")),
-    average_level = erldis:numeric(erldis:hget(C, Hash, "average_level")),
+    capacity = erldis:numeric(erldis:hget(C, Hash, "capacity")),
     exp = erldis:numeric(erldis:hget(C, Hash, "exp")),
     next_exp = erldis:numeric(erldis:hget(C, Hash, "next_exp")),
     skill_points = erldis:numeric(erldis:hget(C, Hash, "skill_points")),
-    message1 = erldis:hget(C, Hash, "message1"),
-    message2 = erldis:hget(C, Hash, "message2"),
-    emblem_len = erldis:numeric(erldis:hget(C, Hash, "emblem_len")),
-    emblem_id = erldis:numeric(erldis:hget(C, Hash, "emblem_id")),
-    emblem_data = erldis:hget(C, Hash, "emblem_data")
+    message_title = erldis:hget(C, Hash, "message_title"),
+    message_body = erldis:hget(C, Hash, "message_body"),
+    emblem = erldis:hget(C, Hash, "emblem"),
+    master_id = erldis:numeric(erldis:hget(C, Hash, "master_id")),
   }.
 
 
