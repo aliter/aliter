@@ -541,6 +541,7 @@ handle_event(
     request_guild_status,
     StateName,
     State = #zone_state{
+      db = DB,
       char = #char{
         id = CharacterID,
         guild_id = GuildID
@@ -570,6 +571,7 @@ handle_event(
     {request_guild_info, 0},
     StateName,
     State = #zone_state{
+      db = DB,
       char = #char{guild_id = GuildID}
     }) when GuildID /= 0 ->
   log:debug("Requested first page of guild info."),
@@ -591,6 +593,7 @@ handle_event(
     {request_guild_info, 1},
     StateName,
     State = #zone_state{
+      db = DB,
       char = #char{guild_id = GuildID}
     }) when GuildID /= 0 ->
   log:debug("Requested second page of guild info."),
