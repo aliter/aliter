@@ -20,7 +20,8 @@
     save_guild/2,
     delete_guild/2,
     get_guild/2,
-    get_guild_id/2]).
+    get_guild_id/2,
+    get_guild_master/2]).
 
 
 save_account(C, Account) ->
@@ -251,7 +252,7 @@ save_guild(C, Guild) ->
 
   Hash = "guild:" ++ integer_to_list(ID),
   erldis:hset(C, Hash, "name", Guild#guild.name),
-  erldis:hset(C, Hash, "master", Guild#guild.master),
+  erldis:hset(C, Hash, "master_id", Guild#guild.master_id),
   erldis:hset(C, Hash, "level", Guild#guild.level),
   erldis:hset(C, Hash, "connected_count", Guild#guild.connected_count),
   erldis:hset(C, Hash, "max_members", Guild#guild.max_members),
@@ -282,7 +283,7 @@ get_guild(C, ID) ->
   #guild{
     id = ID,
     name = erldis:hget(C, Hash, "name"),
-    master = erldis:numeric(erldis:hget(C, Hash, "master")),
+    master_id = erldis:numeric(erldis:hget(C, Hash, "master_id")),
     level = erldis:numeric(erldis:hget(C, Hash, "level")),
     connected_count = erldis:numeric(erldis:hget(C, Hash, "connected_count")),
     max_members = erldis:numeric(erldis:hget(C, Hash, "max_members")),
@@ -300,6 +301,13 @@ get_guild(C, ID) ->
 
 get_guild_id(C, Name) ->
   case erldis:get(C, ["guild:", Name]) of
+    nil -> nil;
+    X -> erldis:numeric(X)
+  end.
+
+
+get_guild_master(C, Guild) ->
+  case erldis:hget(C, Hash, "master_id") of
     nil -> nil;
     X -> erldis:numeric(X)
   end.

@@ -550,13 +550,13 @@ handle_event(
 
   if
     GuildID /= 0 ->
-      GetGuild = fun() -> mnesia:read(guild, GuildID) end,
+      GetGuildMaster = db:get_guild_master(DB, GuildID),
 
-      case mnesia:transaction(GetGuild) of
-        {atomic, [#guild{master_id = CharacterID}]} ->
+      case GetGuildMaster of
+        CharacterID ->
           send(State, {guild_status, master});
 
-        _Error ->
+        _ ->
           send(State, {guild_status, member})
       end;
 
@@ -574,10 +574,10 @@ handle_event(
     }) when GuildID /= 0 ->
   log:debug("Requested first page of guild info."),
 
-  GetGuild = fun() -> mnesia:read(guild, GuildID) end,
+  GetGuild = db:get_guild(DB, GuildID),
 
-  case mnesia:transaction(GetGuild) of
-    {atomic, [G]} ->
+  case GetGuild of
+    G ->
       send(State, {guild_info, G}),
       send(State, {guild_relationships, G#guild.relationships});
 
