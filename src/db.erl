@@ -21,7 +21,9 @@
     delete_guild/2,
     get_guild/2,
     get_guild_id/2,
-    get_guild_master/2]).
+    get_guild_master/2,
+    get_guild_members/2,
+    add_char_to_guild/3]).
 
 
 save_account(C, Account) ->
@@ -311,4 +313,18 @@ get_guild_master(C, Guild) ->
     nil -> nil;
     X -> erldis:numeric(X)
   end.
+
+
+get_guild_members(C, GuildID) ->
+  Chars =
+    erldis:hgetall(
+      C,
+      ["guild:", integer_to_list(GuildID), ":members"]
+    ),
+
+  [db:get_char(C, erldis:numeric(ID)) || {_, ID} <- Chars].
+
+
+add_char_to_guild(C, GuildID, CharacterID) ->
+  erldis:rpush(C, ["guild:", GuildID, ":members"], CharacterID).
 
