@@ -94,7 +94,7 @@ void read_map(struct map_data *data, FILE *fp) {
 
     debug("Reading info.\n");
 
-    if (!fread(&info, sizeof(struct map_cache_info), 1, fp) {
+    if (!fread(&info, sizeof(struct map_cache_info), 1, fp)) {
         return;
     }
 

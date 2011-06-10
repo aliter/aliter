@@ -25,7 +25,6 @@
     get_guild_members/2,
     add_char_to_guild/3,
     delete_char_from_guild/3,
-    get_guild_alliances/3,
     get_guild_relationships/2]).
 
 -export([
@@ -263,13 +262,13 @@ save_guild(C, Guild) ->
   Hash = "guild:" ++ integer_to_list(ID),
   erldis:hset(C, Hash, "name", Guild#guild.name),
   erldis:hset(C, Hash, "level", Guild#guild.level),
-  erldis:hset(C, Hash, "capacity", Guild#guild.max_members),
+  erldis:hset(C, Hash, "capacity", Guild#guild.capacity),
   erldis:hset(C, Hash, "exp", Guild#guild.exp),
   erldis:hset(C, Hash, "next_exp", Guild#guild.next_exp),
   erldis:hset(C, Hash, "skill_points", Guild#guild.skill_points),
-  erldis:hset(C, Hash, "message_title", Guild#guild.message1),
-  erldis:hset(C, Hash, "message_body", Guild#guild.message2),
-  erldis:hset(C, Hash, "emblem", Guild#guild.emblem_len),
+  erldis:hset(C, Hash, "message_title", Guild#guild.message_title),
+  erldis:hset(C, Hash, "message_body", Guild#guild.message_body),
+  erldis:hset(C, Hash, "emblem", Guild#guild.emblem),
   erldis:hset(C, Hash, "master_id", Guild#guild.master_id),
 
   erldis:set(C, ["guild:", Guild#guild.name], ID),
@@ -280,7 +279,7 @@ save_guild(C, Guild) ->
 delete_guild(C, Guild) ->
   Hash = "guild:" ++ integer_to_list(Guild#guild.id),
   erldis:del(C, Hash),
-  erldis:del(C, ["guild:", Char#char.name]),
+  erldis:del(C, ["guild:", Guild#char.name]),
   ok.
 
 
@@ -297,7 +296,7 @@ get_guild(C, ID) ->
     message_title = erldis:hget(C, Hash, "message_title"),
     message_body = erldis:hget(C, Hash, "message_body"),
     emblem = erldis:hget(C, Hash, "emblem"),
-    master_id = erldis:numeric(erldis:hget(C, Hash, "master_id")),
+    master_id = erldis:numeric(erldis:hget(C, Hash, "master_id"))
   }.
 
 
@@ -309,6 +308,13 @@ get_guild_id(C, Name) ->
 
 
 get_guild_master(C, Guild) ->
+  ID =
+    case Guild#guild.id of
+      undefined -> erldis:incr(C, "guilds:id");
+      X -> X
+    end,
+
+  Hash = "guild:" ++ integer_to_list(ID),
   case erldis:hget(C, Hash, "master_id") of
     nil -> nil;
     X -> erldis:numeric(X)
@@ -352,18 +358,26 @@ get_guild_relationships(C, GuildID) ->
 
 
 save_guild_relationship(C, GuildID, TargetID) ->
-  Hash = ["guild:", GuildID, ":relationships:", TargetID]
-  erldis:hset(C, Hash, "b_id", Alliance#alliance.b_id).
-  erldis:hset(C, Hash, "type", Alliance#alliance.type),
+  Hash = "guild:" ++ integer_to_list(GuildID) ++ ":relationships:" ++ integer_to_list(TargetID),
+  erldis:hset(C, Hash, "b_id", Relationship#relationship.b_id),
+  erldis:hset(C, Hash, "type", Relationship#relationship.type).
 
 
 delete_guild_relationship(C, GuildID, TargetID) ->
-  erldis:lrem(C, ["guild:", GuildID, ":relationships:", TargetID]),
+  erldis:lrem(
+    C,
+    [ "guild:",
+      integer_to_list(GuildID),
+      ":relationships:",
+      integer_to_list(TargetID)
+    ]
+  ),
   ok.
 
 
 get_guild_relationship(C, GuildID, TargetID) ->
-  #guild{
+  Hash = "guild:" ++ integer_to_list(GuildID) ++ ":relationships:" ++ integer_to_list(TargetID),
+  #relationship{
     b_id = erldis:numeric(erldis:hget(C, Hash, "b_id")),
     type = erldis:numeric(erldis:hget(C, Hash, "type"))
   }.
