@@ -317,9 +317,11 @@ get_guild_master(C, Guild) ->
 
 get_guild_members(C, GuildID) ->
   Chars =
-    erldis:hgetall(
+    erldis:lrange(
       C,
-      ["guild:", integer_to_list(GuildID), ":members"]
+      ["guild:", integer_to_list(GuildID), ":members"],
+      0,
+      -1
     ),
 
   [db:get_char(C, erldis:numeric(ID)) || {_, ID} <- Chars].
