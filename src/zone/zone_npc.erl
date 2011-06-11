@@ -15,7 +15,6 @@
 load_all() ->
   log:debug("Loading scripts.", [{directory, config:scripts()}]),
   {ok, Scripts} = file:list_dir(config:scripts()),
-  elixir:file("lib/npc.ex"),
   load_scripts(Scripts).
 
 

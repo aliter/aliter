@@ -11,6 +11,7 @@ all: compile
 compile:
 	${CC} ${CFLAGS} ${ARCHFLAGS} -I${ERLANG}/usr/include/
 	erl -pa ebin -make
+	./lib/elixir/bin/elixirc -pa ebin lib/npc.ex -o ebin
 
 clean:
 	rm priv/nif.so
