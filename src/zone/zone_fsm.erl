@@ -93,7 +93,8 @@ locked(
           char = C#char_state.char,
           id_a = C#char_state.id_a,
           id_b = C#char_state.id_b,
-          packet_ver = C#char_state.packet_ver
+          packet_ver = C#char_state.packet_ver,
+          char_fsm = FSM
         }
       };
     invalid ->
@@ -470,8 +471,12 @@ handle_event({broadcast, Message}, StateName, State) ->
 
   {next_state, StateName, State};
 
-handle_event(stop, _StateName, State) ->
+handle_event(
+    stop,
+    _StateName,
+    State = #zone_state{char_fsm = Char}) ->
   log:info("Zone FSM stopping."),
+  gen_fsm:send_event(Char, exit),
   {stop, normal, State};
 
 handle_event({tick, Tick}, StateName, State) when StateName /= locked ->
@@ -700,7 +705,7 @@ walk_interval(N) ->
 
 
 show_actors(
-    #zone_state{
+  #zone_state{
       map_server = MapServer,
       char = C,
       account = A

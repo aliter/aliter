@@ -179,6 +179,7 @@ valid(stop, State) ->
    State#login_state{die = gen_fsm:send_event_after(5 * 60 * 1000, exit)}};
 
 valid(exit, State) ->
+  log:debug("Login FSM exiting."),
   {stop, normal, State};
 
 valid(Event, State) ->

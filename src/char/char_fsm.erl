@@ -86,7 +86,8 @@ locked(
           account = L#login_state.account,
           id_a = L#login_state.id_a,
           id_b = L#login_state.id_b,
-          packet_ver = L#login_state.packet_ver
+          packet_ver = L#login_state.packet_ver,
+          login_fsm = FSM
         }
       };
 
@@ -252,7 +253,11 @@ chosen(stop, State) ->
     State#char_state{die = gen_fsm:send_event_after(5 * 60 * 1000, exit)}
   };
 
-chosen(exit, State) ->
+chosen(
+    exit,
+    State = #char_state{login_fsm = Login}) ->
+  log:debug("Character FSM exiting."),
+  gen_fsm:send_event(Login, exit),
   {stop, normal, State};
 
 

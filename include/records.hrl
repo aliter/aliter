@@ -38,7 +38,8 @@
          id_a,
          id_b,
          packet_ver,
-         rename}).
+         rename,
+         login_fsm}).
 
 -record(zone_state,
         {server,
@@ -56,7 +57,8 @@
          walk_prev,
          walk_path,
          walk_changed,
-         npc}).
+         npc,
+         char_fsm}).
 
 -record(map_state,
         {map,
