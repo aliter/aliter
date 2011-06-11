@@ -32,6 +32,8 @@
     delete_guild_relationship/3,
     get_guild_relationship/3]).
 
+-export([publish_message/3]).
+
 
 save_account(C, Account) ->
   ID =
@@ -387,3 +389,8 @@ get_guild_relationship(C, GuildID, TargetID) ->
       integer_to_list(TargetID)
     )
   ).
+
+
+publish_message(C, Channel, Message) ->
+  erldis:publish(C, Channel, Message).
+
