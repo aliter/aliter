@@ -24,6 +24,7 @@ start_link(Map) ->
   ).
 
 init(State) ->
+  process_flag(trap_exit, true),
   {ok, State}.
 
 handle_call({get_actor, ActorID},
@@ -145,9 +146,13 @@ handle_info(Info, State) ->
     log:debug("Zone map server got info.", [{info, Info}]),
     {noreply, State}.
 
-terminate(_Reason, _State) ->
-    log:info("Zone map server terminating."),
-    ok.
+terminate(_Reason, State) ->
+  log:info(
+    "Zone map server terminating.",
+    [{map, (State#map_state.map)#map.name}]
+  ),
+
+  ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.

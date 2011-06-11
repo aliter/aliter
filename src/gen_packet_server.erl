@@ -2,7 +2,7 @@
 
 -author('i.am@toogeneric.com').
 
--behavior(gen_nb_server).
+-behaviour(gen_nb_server).
 
 -include("include/records.hrl").
 

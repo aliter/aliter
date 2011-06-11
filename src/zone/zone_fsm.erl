@@ -38,6 +38,7 @@ start_link(TCP) ->
 
 
 init(TCP) ->
+  process_flag(trap_exit, true),
   {ok, locked, #zone_state{tcp = TCP}}.
 
 

@@ -25,6 +25,8 @@ start_link(Conf) ->
 
 
 init(Conf) ->
+  process_flag(trap_exit, true),
+
   application:set_env(zone, started, now()),
 
   config:set_env(zone, Conf),

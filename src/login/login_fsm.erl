@@ -25,6 +25,7 @@ start_link(TCP) ->
 
 
 init({TCP, [DB]}) ->
+  process_flag(trap_exit, true),
   {ok, locked, #login_state{tcp = TCP, db = DB}}.
 
 
