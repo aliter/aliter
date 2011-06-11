@@ -411,6 +411,7 @@ handle_event(
     {speak, Message},
      StateName,
      State = #zone_state{
+       db = DB,
        map_server = MapServer,
        account = #account{id = AccountID},
        char = #char{
@@ -449,7 +450,8 @@ handle_event(
         }
       ),
 
-      send(State, {message, Message})
+      send(State, {message, Message}),
+      db:publish_message(DB, "all", Message) % This shouldn't be kept here.
   end,
 
   {next_state, StateName, State};
