@@ -35,7 +35,7 @@ init(Conf) ->
 
   nif:init(),
 
-  %zone_npc:load_all(),
+  zone_npc:load_all(),
 
   {zones, Zones} = config:find(server.zones, Conf),
 
