@@ -106,4 +106,9 @@ module NPC
       Erlang.exit 'normal
     end
   end
+
+  def load(script)
+    {'ok, path} = Erlang.application.get_env('aliter, 'npc_path)
+    Erlang.elixir.file(path + "/" + script)
+  end
 end

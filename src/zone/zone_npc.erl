@@ -24,6 +24,7 @@ load_scripts([]) ->
 
 load_scripts([Script | Scripts]) ->
   Dir = config:scripts(Script),
+  application:set_env(aliter, npc_path, Dir),
   log:debug("Loading script.", [{script, Dir ++ "/main.ex"}]),
   elixir:file(Dir ++ "/main.ex"),
   load_scripts(Scripts).
