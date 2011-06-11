@@ -16,9 +16,30 @@ init([]) ->
 
   { ok,
     { {one_for_one, 2, 60},
-      [ {login, {login, start_link, [Login]}, permanent, 1000, worker, []},
-        {char, {char, start_link, [Char]}, permanent, infinity, supervisor, []},
-        {zone, {zone, start_link, [Zone]}, permanent, infinity, supervisor, []}
+
+      [ { login,
+          {login, start_link, [Login]},
+          permanent,
+          infinity,
+          supervisor,
+          [login]
+        },
+
+        { char,
+          {char, start_link, [Char]},
+          permanent,
+          infinity,
+          supervisor,
+          [char]
+        },
+
+        { zone,
+          {zone, start_link, [Zone]},
+          permanent,
+          infinity,
+          supervisor,
+          [zone]
+        }
       ]
     }
   }.

@@ -33,7 +33,7 @@ init({Port, Maps}) ->
           permanent,
           1000,
           worker,
-          []
+          [zone_srv]
         }
       ]
     }

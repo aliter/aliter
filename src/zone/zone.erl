@@ -1,5 +1,7 @@
 -module(zone).
 
+-behaviour(supervisor).
+
 -include("include/records.hrl").
 
 -export([start_link/1, init/1, install/0, uninstall/0, stop/0]).
@@ -34,7 +36,7 @@ init([]) ->
           permanent,
           infinity,
           supervisor,
-          []
+          [zone_master_sup]
         }
       ]
     }

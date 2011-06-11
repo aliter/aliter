@@ -1,5 +1,7 @@
 -module(char).
 
+-behaviour(supervisor).
+
 -include("include/records.hrl").
 
 -export([
@@ -35,7 +37,7 @@ init([]) ->
           permanent,
           1000,
           worker,
-          []
+          [char_srv]
         }
       ]
     }
