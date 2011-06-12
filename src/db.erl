@@ -33,7 +33,8 @@
     get_guild_relationship/3]).
 
 
-save_account(C, Account) ->
+save_account(C, X) -> erldis:exec(C, fun(D) -> save_account_(D, X) end).
+save_account_(C, Account) ->
   ID =
     case Account#account.id of
       undefined -> erldis:incr(C, "accounts:id");
@@ -77,7 +78,8 @@ get_account_id(C, Name) ->
   end.
 
 
-save_char(C, Char) ->
+save_char(C, X) -> erldis:exec(C, fun(D) -> save_char_(D, X) end).
+save_char_(C, Char) ->
   ID =
     case Char#char.id of
       undefined -> erldis:incr(C, "chars:id");
@@ -146,7 +148,8 @@ save_char(C, Char) ->
   Char#char{id = ID}.
 
 
-delete_char(C, Char) ->
+delete_char(C, X) -> erldis:exec(C, fun(D) -> delete_char_(D, X) end).
+delete_char_(C, Char) ->
   Hash = "char:" ++ integer_to_list(Char#char.id),
   erldis:del(C, Hash),
   erldis:del(C, ["char:", Char#char.name]),
@@ -244,7 +247,9 @@ get_char_id(C, Name) ->
   end.
 
 
-rename_char(C, ID, OldName, NewName) ->
+rename_char(C, X, Y, Z) ->
+  erldis:exec(C, fun(D) -> rename_char_(D, X, Y, Z) end).
+rename_char_(C, ID, OldName, NewName) ->
   Hash = "char:" ++ integer_to_list(ID),
   erldis:del(C, ["char:", OldName]),
   erldis:set(C, ["char:", NewName], ID),
@@ -252,7 +257,8 @@ rename_char(C, ID, OldName, NewName) ->
   erldis:hset(C, Hash, "renamed", 1).
 
 
-save_guild(C, Guild) ->
+save_guild(C, X) -> erldis:exec(C, fun(D) -> save_guild_(D, X) end).
+save_guild_(C, Guild) ->
   ID =
     case Guild#guild.id of
       undefined -> erldis:incr(C, "guilds:id");
@@ -276,7 +282,8 @@ save_guild(C, Guild) ->
   Guild#guild{id = ID}.
 
 
-delete_guild(C, Guild) ->
+delete_guild(C, X) -> erldis:exec(C, fun(D) -> delete_guild_(D, X) end).
+delete_guild_(C, Guild) ->
   Hash = "guild:" ++ integer_to_list(Guild#guild.id),
   erldis:del(C, Hash),
   erldis:del(C, ["guild:", Guild#char.name]),
