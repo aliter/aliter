@@ -137,7 +137,7 @@ valid(
 valid(
     {create, Name, Str, Agi, Vit, Int, Dex, Luk, Num, HairColour, HairStyle},
     State = #char_state{db = DB, account = Account}) ->
-  Exists = db:get_char_id(Name),
+  Exists = db:get_char_id(DB, Name),
 
   case Exists of
     nil ->
