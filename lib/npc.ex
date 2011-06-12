@@ -1,15 +1,15 @@
 module NPC
   module Meta
     def new(player, id)
-      #self(player, id)
+      #self(@name, player, id)
     end
 
     def name(name)
       set_ivar('name, name)
     end
 
-    def display_name
-      "[" + @name + "]"
+    def map(map)
+      set_ivar('map, map)
     end
 
     def sprite(sprite)
@@ -19,9 +19,9 @@ module NPC
     def register(info)
       Erlang.gen_server.cast 'zone_master,
         {'register_npc,
-          (info['name] || @name).to_list,
+          (info['name] || @name).to_char_list,
           info['sprite] || @sprite,
-          info['map],
+          info['map] || @map,
           info['coordinates],
           info['direction],
           self}
@@ -37,8 +37,9 @@ module NPC
       end
     end
 
-    def __bound__(player, id)
-      @('player: player,
+    def __bound__(name, player, id)
+      @('name: name,
+        'player: player,
         'id: id,
         'builder: Process.spawn -> buildup(player, id))
     end
@@ -46,6 +47,10 @@ module NPC
 
   def __mixed_in__(base)
     base.mixin NPC::Meta
+  end
+
+  def display_name
+    "[" + @name + "]"
   end
 
   def red(text)
@@ -66,7 +71,7 @@ module NPC
 
   def say(message)
     Erlang.log.debug "Saying message.", [{ 'message, message }, {'player, @player}, {'id, @id}]
-    @builder <- { 'dialog, { @id, message.to_list } }
+    @builder <- { 'dialog, { @id, message.to_char_list } }
   end
 
   def next
@@ -80,8 +85,8 @@ module NPC
   end
 
   def menu(dict)
-    items = dict.to_list
-    choices = items.map -> ({k, _}) k.to_list
+    items = dict.to_char_list
+    choices = items.map -> ({k, _}) k.to_char_list
     @builder <- { 'dialog_menu, { @id, choices } }
     @builder <- 'finish
 
@@ -108,7 +113,7 @@ module NPC
   end
 
   def load(script)
-    {'ok, path} = Erlang.application.get_env('aliter, 'npc_path)
-    Erlang.elixir.file(path + "/" + script)
+    path = Erlang.os.getenv("NPC_PATH".to_char_list)
+    Erlang.elixir.file(path + "/".to_char_list + script.to_char_list)
   end
 end

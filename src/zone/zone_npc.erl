@@ -14,7 +14,7 @@
 
 load_all() ->
   log:debug("Loading scripts.", [{directory, config:scripts()}]),
-  {ok, Scripts} = file:list_dir(config:scripts()),
+  Scripts = filelib:wildcard(config:scripts("*/init.ex")),
   load_scripts(Scripts).
 
 
@@ -22,10 +22,12 @@ load_scripts([]) ->
   ok;
 
 load_scripts([Script | Scripts]) ->
-  Dir = config:scripts(Script),
+  log:debug("Loading script.", [{script, Script}]),
+
+  Dir = filename:dirname(Script),
   application:set_env(aliter, npc_path, Dir),
-  log:debug("Loading script.", [{script, Dir ++ "/main.ex"}]),
-  elixir:file(Dir ++ "/main.ex"),
+  elixir:file(Script),
+
   load_scripts(Scripts).
 
 

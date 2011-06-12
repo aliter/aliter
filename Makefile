@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -fPIC -O2 -Wall -shared -o priv/nif.so src/nif.c -lz
 CONFIG_DIR = ~/.aliter
-ERL = erl -pa ebin -pa lib/erldis/ebin -pa lib/erldis/deps/gen_server2/ebin -pa lib/elixir/ebin -pa lib/elixir/exbin
+ERL = erl -pa ebin -pa -pa scbin lib/erldis/ebin -pa lib/erldis/deps/gen_server2/ebin -pa lib/elixir/ebin -pa lib/elixir/exbin
 ERLANG = /usr/local/lib/erlang
 OS = ${shell uname -s}
 SHA = ${shell git log -1 --pretty=format:%h}
@@ -13,7 +13,7 @@ all: update_submodules compile
 compile:
 	${CC} ${CFLAGS} ${ARCHFLAGS} -I${ERLANG}/usr/include/
 	erl -pa ebin -make
-	./lib/elixir/bin/elixirc -pa ebin lib/npc.ex -o ebin
+	./lib/elixir/bin/elixirc lib/npc.ex -o ebin
 
 install: compile
 	${ERL} -noshell -sname aliter -eval "aliter:install(), halt()."

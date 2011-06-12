@@ -100,7 +100,7 @@ handle_cast(
     {register_npc, Name, Sprite, Map, {X, Y}, Direction, Object},
     State = #state{npc_id = Id}) ->
   lists:foreach(
-    fun({_ID, Server, _Type, _Modules}) ->
+    fun(Server) ->
       gen_server:cast(
         Server,
         { register_npc,
