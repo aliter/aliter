@@ -106,16 +106,19 @@ pack(show_npc, N) -> % TODO: This isn't actually specific to NPCs
     end,
 
   <<16#78:16/little,
-    0:8, % Nothing
+    0:8, % Object type
     (N#npc.id):32/little,
     ?WALKSPEED:16/little,
-    0:6/unit:8, % Nothing
-    (N#npc.sprite):16/little,
-    0:30/unit:8, % Nothing
+    0:3/unit:16, % Body, Health, Effect state
+    (N#npc.sprite):16/little, % Job/NPC sprite
+    0:9/unit:16, % Head, Weapon, Accessory, Shield, Accessory2, Accessory3, Head Palette, Body Palette, Head Dir
+    0:32, % GUID
+    0:3/unit:16, % GEmblemVer, Honor, Virtue
+    0:8, % Is PK mode on?
+    0:8, % Sex
     (encode_position(X, Y, D)):3/binary,
-    0:3/unit:8, % Nothing
-    1:8,
-    0:8>>; % Static
+    0:3/unit:8, % X size, Y size, State
+    1:16/little>>; % Level (e.g. for aura)
 
 pack(tick, Tick) ->
   <<16#7f:16/little, Tick:32/little>>;
