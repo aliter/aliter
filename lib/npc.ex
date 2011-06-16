@@ -85,7 +85,7 @@ module NPC
   end
 
   def menu(dict)
-    items = dict.to_char_list
+    items = dict.to_list
     choices = items.map -> ({k, _}) k.to_char_list
     @builder <- { 'dialog_menu, { @id, choices } }
     @builder <- 'finish
