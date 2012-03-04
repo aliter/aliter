@@ -31,7 +31,7 @@ init(Maps) ->
       Maps
     ),
 
-  {ok, {{one_for_one, 2, 60}, Specs}}.
+  {ok, {{one_for_one, 0, 60}, Specs}}.
 
 
 server_for(Port) ->

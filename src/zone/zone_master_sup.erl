@@ -16,7 +16,7 @@ start_link(Conf) ->
 
 init(Conf) ->
   { ok,
-    { {one_for_all, 2, 60},
+    { {one_for_all, 0, 60},
       [ { zone_zones_sup,
           {zone_zones_sup, start_link, [Conf]},
           permanent,

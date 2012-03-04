@@ -19,7 +19,7 @@ init({Port, Maps}) ->
   MapPairs = [{M#map.name, M} || M <- Maps],
 
   { ok,
-    { {one_for_one, 2, 60},
+    { {one_for_one, 0, 60},
       [ { zone_maps_sup:server_for(Port),
           {zone_maps_sup, start_link, [Port, Maps]},
           permanent,
