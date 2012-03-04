@@ -28,7 +28,10 @@ start_link(Conf) ->
 
 
 init(Port) ->
-  {ok, DB} = erldis:connect(), % TODO: config
+  {ok, DB} = redis:connect(), % TODO: config
+
+  {ok, _Keepalive} =
+    timer:apply_interval(timer:seconds(30), redis, ping, [DB]),
 
   { ok,
     {Port, char_fsm, char_packets:new(24)},

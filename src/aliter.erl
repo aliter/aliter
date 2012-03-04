@@ -27,8 +27,7 @@ stop(_State) ->
 
 path(A) ->
   "-pa " ++ A ++ "/ebin -pa " ++ A ++ "/scbin" ++
-    " -pa " ++ A ++ "/lib/erldis/ebin" ++
-    " -pa " ++ A ++ "/lib/erldis/deps/gen_server2/ebin" ++
+    " -pa " ++ A ++ "/lib/erlang-redis/ebin" ++
     " -pa " ++ A ++ "/lib/elixir/ebin -pa " ++ A ++ "/lib/elixir/exbin".
 
 

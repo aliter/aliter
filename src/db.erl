@@ -33,25 +33,31 @@
     get_guild_relationship/3]).
 
 
-save_account(C, X) -> erldis:exec(C, fun(D) -> save_account_(D, X) end).
-save_account_(C, Account) ->
+save_account(C, Account) ->
   ID =
     case Account#account.id of
-      undefined -> erldis:incr(C, "accounts:id");
+      undefined -> redis:incr(C, "accounts:id");
       X -> X
     end,
 
-  Hash = "account:" ++ integer_to_list(ID),
-  erldis:hset(C, Hash, "login", Account#account.login),
-  erldis:hset(C, Hash, "password", Account#account.password),
-  erldis:hset(C, Hash, "email", Account#account.email),
-  erldis:hset(C, Hash, "gender", Account#account.gender),
-  erldis:hset(C, Hash, "login_count", Account#account.login_count),
-  erldis:hset(C, Hash, "last_login", Account#account.last_login),
-  erldis:hset(C, Hash, "last_ip", Account#account.last_ip),
-  erldis:hset(C, Hash, "gm_level", Account#account.gm_level),
+  %redis:multi(C),
 
-  erldis:set(C, ["account:", Account#account.login], ID),
+  log:debug("Creating account.",
+    [{id, ID}, {account_id, Account#account.id}]),
+
+  Hash = "account:" ++ integer_to_list(ID),
+  redis:hset(C, Hash, "login", Account#account.login),
+  redis:hset(C, Hash, "password", Account#account.password),
+  redis:hset(C, Hash, "email", Account#account.email),
+  redis:hset(C, Hash, "gender", Account#account.gender),
+  redis:hset(C, Hash, "login_count", Account#account.login_count),
+  redis:hset(C, Hash, "last_login", Account#account.last_login),
+  redis:hset(C, Hash, "last_ip", Account#account.last_ip),
+  redis:hset(C, Hash, "gm_level", Account#account.gm_level),
+
+  redis:set(C, ["account:", Account#account.login], ID),
+
+  %redis:exec(C),
 
   Account#account{id = ID}.
 
@@ -60,104 +66,111 @@ get_account(C, ID) ->
   Hash = ["account:", integer_to_list(ID)],
   #account{
     id = ID,
-    login = erldis:hget(C, Hash, "login"),
-    password = erldis:hget(C, Hash, "password"),
-    email = erldis:hget(C, Hash, "email"),
-    gender = erldis:numeric(erldis:hget(C, Hash, "gender")),
-    login_count = erldis:numeric(erldis:hget(C, Hash, "login_count")),
-    last_login = erldis:numeric(erldis:hget(C, Hash, "last_login")),
-    last_ip = erldis:hget(C, Hash, "last_ip"),
-    gm_level = erldis:numeric(erldis:hget(C, Hash, "gm_level"))
+    login = gethash(C, Hash, "login"),
+    password = gethash(C, Hash, "password"),
+    email = gethash(C, Hash, "email"),
+    gender = numeric(gethash(C, Hash, "gender")),
+    login_count = numeric(gethash(C, Hash, "login_count")),
+    last_login = numeric(gethash(C, Hash, "last_login")),
+    last_ip = gethash(C, Hash, "last_ip"),
+    gm_level = numeric(gethash(C, Hash, "gm_level"))
   }.
 
 
 get_account_id(C, Name) ->
-  case erldis:get(C, ["account:", Name]) of
-    nil -> nil;
-    X -> erldis:numeric(X)
+  case redis:get(C, ["account:", Name]) of
+    undefined -> nil;
+    {ok, X} -> numeric(X)
   end.
 
 
-save_char(C, X) -> erldis:exec(C, fun(D) -> save_char_(D, X) end).
-save_char_(C, Char) ->
+save_char(C, Char) ->
   ID =
     case Char#char.id of
-      undefined -> erldis:incr(C, "chars:id");
+      undefined -> redis:incr(C, "chars:id");
       X -> X
     end,
 
+  %redis:multi(C),
+
   Hash = "char:" ++ integer_to_list(ID),
-  erldis:hset(C, Hash, "num", Char#char.num),
-  erldis:hset(C, Hash, "name", Char#char.name),
-  erldis:hset(C, Hash, "job", Char#char.job),
-  erldis:hset(C, Hash, "base_level", Char#char.base_level),
-  erldis:hset(C, Hash, "base_exp", Char#char.base_exp),
-  erldis:hset(C, Hash, "job_level", Char#char.job_level),
-  erldis:hset(C, Hash, "job_exp", Char#char.job_exp),
-  erldis:hset(C, Hash, "zeny", Char#char.zeny),
-  erldis:hset(C, Hash, "str", Char#char.str),
-  erldis:hset(C, Hash, "agi", Char#char.agi),
-  erldis:hset(C, Hash, "vit", Char#char.vit),
-  erldis:hset(C, Hash, "int", Char#char.int),
-  erldis:hset(C, Hash, "dex", Char#char.dex),
-  erldis:hset(C, Hash, "luk", Char#char.luk),
-  erldis:hset(C, Hash, "max_hp", Char#char.max_hp),
-  erldis:hset(C, Hash, "hp", Char#char.hp),
-  erldis:hset(C, Hash, "max_sp", Char#char.max_sp),
-  erldis:hset(C, Hash, "sp", Char#char.sp),
-  erldis:hset(C, Hash, "status_points", Char#char.status_points),
-  erldis:hset(C, Hash, "skill_points", Char#char.skill_points),
-  erldis:hset(C, Hash, "hair_style", Char#char.hair_style),
-  erldis:hset(C, Hash, "hair_colour", Char#char.hair_colour),
-  erldis:hset(C, Hash, "clothes_colour", Char#char.clothes_colour),
-  erldis:hset(C, Hash, "view_weapon", Char#char.view_weapon),
-  erldis:hset(C, Hash, "view_shield", Char#char.view_shield),
-  erldis:hset(C, Hash, "view_head_top", Char#char.view_head_top),
-  erldis:hset(C, Hash, "view_head_middle", Char#char.view_head_middle),
-  erldis:hset(C, Hash, "view_head_bottom", Char#char.view_head_bottom),
-  erldis:hset(C, Hash, "map", Char#char.map),
-  erldis:hset(C, Hash, "x", Char#char.x),
-  erldis:hset(C, Hash, "y", Char#char.y),
-  erldis:hset(C, Hash, "save_map", Char#char.save_map),
-  erldis:hset(C, Hash, "save_x", Char#char.save_x),
-  erldis:hset(C, Hash, "save_y", Char#char.save_y),
-  erldis:hset(C, Hash, "online", Char#char.online),
-  erldis:hset(C, Hash, "effects", Char#char.effects),
-  erldis:hset(C, Hash, "karma", Char#char.karma),
-  erldis:hset(C, Hash, "manner", Char#char.manner),
-  erldis:hset(C, Hash, "fame", Char#char.fame),
-  erldis:hset(C, Hash, "guild_position", Char#char.guild_position),
-  erldis:hset(C, Hash, "guild_taxed", Char#char.guild_taxed),
-  erldis:hset(C, Hash, "renamed", Char#char.renamed),
-  erldis:hset(C, Hash, "account_id", Char#char.account_id),
-  erldis:hset(C, Hash, "party_id", Char#char.party_id),
-  erldis:hset(C, Hash, "guild_id", Char#char.guild_id),
-  erldis:hset(C, Hash, "pet_id", Char#char.pet_id),
-  erldis:hset(C, Hash, "homunculus_id", Char#char.homunculus_id),
-  erldis:hset(C, Hash, "mercenary_id", Char#char.mercenary_id),
+  redis:hset(C, Hash, "num", Char#char.num),
+  redis:hset(C, Hash, "name", Char#char.name),
+  redis:hset(C, Hash, "job", Char#char.job),
+  redis:hset(C, Hash, "base_level", Char#char.base_level),
+  redis:hset(C, Hash, "base_exp", Char#char.base_exp),
+  redis:hset(C, Hash, "job_level", Char#char.job_level),
+  redis:hset(C, Hash, "job_exp", Char#char.job_exp),
+  redis:hset(C, Hash, "zeny", Char#char.zeny),
+  redis:hset(C, Hash, "str", Char#char.str),
+  redis:hset(C, Hash, "agi", Char#char.agi),
+  redis:hset(C, Hash, "vit", Char#char.vit),
+  redis:hset(C, Hash, "int", Char#char.int),
+  redis:hset(C, Hash, "dex", Char#char.dex),
+  redis:hset(C, Hash, "luk", Char#char.luk),
+  redis:hset(C, Hash, "max_hp", Char#char.max_hp),
+  redis:hset(C, Hash, "hp", Char#char.hp),
+  redis:hset(C, Hash, "max_sp", Char#char.max_sp),
+  redis:hset(C, Hash, "sp", Char#char.sp),
+  redis:hset(C, Hash, "status_points", Char#char.status_points),
+  redis:hset(C, Hash, "skill_points", Char#char.skill_points),
+  redis:hset(C, Hash, "hair_style", Char#char.hair_style),
+  redis:hset(C, Hash, "hair_colour", Char#char.hair_colour),
+  redis:hset(C, Hash, "clothes_colour", Char#char.clothes_colour),
+  redis:hset(C, Hash, "view_weapon", Char#char.view_weapon),
+  redis:hset(C, Hash, "view_shield", Char#char.view_shield),
+  redis:hset(C, Hash, "view_head_top", Char#char.view_head_top),
+  redis:hset(C, Hash, "view_head_middle", Char#char.view_head_middle),
+  redis:hset(C, Hash, "view_head_bottom", Char#char.view_head_bottom),
+  redis:hset(C, Hash, "map", Char#char.map),
+  redis:hset(C, Hash, "x", Char#char.x),
+  redis:hset(C, Hash, "y", Char#char.y),
+  redis:hset(C, Hash, "save_map", Char#char.save_map),
+  redis:hset(C, Hash, "save_x", Char#char.save_x),
+  redis:hset(C, Hash, "save_y", Char#char.save_y),
+  redis:hset(C, Hash, "online", Char#char.online),
+  redis:hset(C, Hash, "effects", Char#char.effects),
+  redis:hset(C, Hash, "karma", Char#char.karma),
+  redis:hset(C, Hash, "manner", Char#char.manner),
+  redis:hset(C, Hash, "fame", Char#char.fame),
+  redis:hset(C, Hash, "guild_position", Char#char.guild_position),
+  redis:hset(C, Hash, "guild_taxed", Char#char.guild_taxed),
+  redis:hset(C, Hash, "renamed", Char#char.renamed),
+  redis:hset(C, Hash, "account_id", Char#char.account_id),
+  redis:hset(C, Hash, "party_id", Char#char.party_id),
+  redis:hset(C, Hash, "guild_id", Char#char.guild_id),
+  redis:hset(C, Hash, "pet_id", Char#char.pet_id),
+  redis:hset(C, Hash, "homunculus_id", Char#char.homunculus_id),
+  redis:hset(C, Hash, "mercenary_id", Char#char.mercenary_id),
 
-  erldis:set(C, ["char:", Char#char.name], ID),
+  redis:set(C, ["char:", Char#char.name], ID),
 
-  erldis:hset(
+  redis:hset(
     C,
     ["account:", integer_to_list(Char#char.account_id), ":chars"],
     Char#char.num,
     ID
   ),
 
+  %redis:exec(C),
+
   Char#char{id = ID}.
 
 
-delete_char(C, X) -> erldis:exec(C, fun(D) -> delete_char_(D, X) end).
-delete_char_(C, Char) ->
+delete_char(C, Char) ->
+  %redis:multi(C),
+
   Hash = "char:" ++ integer_to_list(Char#char.id),
-  erldis:del(C, Hash),
-  erldis:del(C, ["char:", Char#char.name]),
-  erldis:hdel(
+  redis:del(C, Hash),
+  redis:del(C, ["char:", Char#char.name]),
+  redis:hdel(
     C,
     ["account:", integer_to_list(Char#char.account_id), ":chars"],
     Char#char.num
   ),
+
+  %redis:exec(C),
+
   ok.
 
 
@@ -165,128 +178,139 @@ get_char(C, ID) ->
   Hash = "char:" ++ integer_to_list(ID),
   #char{
     id = ID,
-    num = erldis:numeric(erldis:hget(C, Hash, "num")),
-    name = erldis:hget(C, Hash, "name"),
-    job = erldis:numeric(erldis:hget(C, Hash, "job")),
-    base_level = erldis:numeric(erldis:hget(C, Hash, "base_level")),
-    base_exp = erldis:numeric(erldis:hget(C, Hash, "base_exp")),
-    job_level = erldis:numeric(erldis:hget(C, Hash, "job_level")),
-    job_exp = erldis:numeric(erldis:hget(C, Hash, "job_exp")),
-    zeny = erldis:numeric(erldis:hget(C, Hash, "zeny")),
-    str = erldis:numeric(erldis:hget(C, Hash, "str")),
-    agi = erldis:numeric(erldis:hget(C, Hash, "agi")),
-    vit = erldis:numeric(erldis:hget(C, Hash, "vit")),
-    int = erldis:numeric(erldis:hget(C, Hash, "int")),
-    dex = erldis:numeric(erldis:hget(C, Hash, "dex")),
-    luk = erldis:numeric(erldis:hget(C, Hash, "luk")),
-    max_hp = erldis:numeric(erldis:hget(C, Hash, "max_hp")),
-    hp = erldis:numeric(erldis:hget(C, Hash, "hp")),
-    max_sp = erldis:numeric(erldis:hget(C, Hash, "max_sp")),
-    sp = erldis:numeric(erldis:hget(C, Hash, "sp")),
-    status_points = erldis:numeric(erldis:hget(C, Hash, "status_points")),
-    skill_points = erldis:numeric(erldis:hget(C, Hash, "skill_points")),
-    hair_style = erldis:numeric(erldis:hget(C, Hash, "hair_style")),
-    hair_colour = erldis:numeric(erldis:hget(C, Hash, "hair_colour")),
-    clothes_colour = erldis:numeric(erldis:hget(C, Hash, "clothes_colour")),
-    view_weapon = erldis:numeric(erldis:hget(C, Hash, "view_weapon")),
-    view_shield = erldis:numeric(erldis:hget(C, Hash, "view_shield")),
-    view_head_top = erldis:numeric(erldis:hget(C, Hash, "view_head_top")),
-    view_head_middle = erldis:numeric(erldis:hget(C, Hash, "view_head_middle")),
-    view_head_bottom = erldis:numeric(erldis:hget(C, Hash, "view_head_bottom")),
-    map = erldis:hget(C, Hash, "map"),
-    x = erldis:numeric(erldis:hget(C, Hash, "x")),
-    y = erldis:numeric(erldis:hget(C, Hash, "y")),
-    save_map = erldis:hget(C, Hash, "save_map"),
-    save_x = erldis:numeric(erldis:hget(C, Hash, "save_x")),
-    save_y = erldis:numeric(erldis:hget(C, Hash, "save_y")),
-    online = erldis:numeric(erldis:hget(C, Hash, "online")),
-    effects = erldis:numeric(erldis:hget(C, Hash, "effects")),
-    karma = erldis:numeric(erldis:hget(C, Hash, "karma")),
-    manner = erldis:numeric(erldis:hget(C, Hash, "manner")),
-    fame = erldis:numeric(erldis:hget(C, Hash, "fame")),
-    guild_position = erldis:numeric(erldis:hget(C, Hash, "guild_position")),
-    guild_taxed = erldis:numeric(erldis:hget(C, Hash, "guild_taxed")),
-    renamed = erldis:numeric(erldis:hget(C, Hash, "renamed")),
-    account_id = erldis:numeric(erldis:hget(C, Hash, "account_id")),
-    party_id = erldis:numeric(erldis:hget(C, Hash, "party_id")),
-    guild_id = erldis:numeric(erldis:hget(C, Hash, "guild_id")),
-    pet_id = erldis:numeric(erldis:hget(C, Hash, "pet_id")),
-    homunculus_id = erldis:numeric(erldis:hget(C, Hash, "homunculus_id")),
-    mercenary_id = erldis:numeric(erldis:hget(C, Hash, "mercenary_id"))
+    num = numeric(gethash(C, Hash, "num")),
+    name = gethash(C, Hash, "name"),
+    job = numeric(gethash(C, Hash, "job")),
+    base_level = numeric(gethash(C, Hash, "base_level")),
+    base_exp = numeric(gethash(C, Hash, "base_exp")),
+    job_level = numeric(gethash(C, Hash, "job_level")),
+    job_exp = numeric(gethash(C, Hash, "job_exp")),
+    zeny = numeric(gethash(C, Hash, "zeny")),
+    str = numeric(gethash(C, Hash, "str")),
+    agi = numeric(gethash(C, Hash, "agi")),
+    vit = numeric(gethash(C, Hash, "vit")),
+    int = numeric(gethash(C, Hash, "int")),
+    dex = numeric(gethash(C, Hash, "dex")),
+    luk = numeric(gethash(C, Hash, "luk")),
+    max_hp = numeric(gethash(C, Hash, "max_hp")),
+    hp = numeric(gethash(C, Hash, "hp")),
+    max_sp = numeric(gethash(C, Hash, "max_sp")),
+    sp = numeric(gethash(C, Hash, "sp")),
+    status_points = numeric(gethash(C, Hash, "status_points")),
+    skill_points = numeric(gethash(C, Hash, "skill_points")),
+    hair_style = numeric(gethash(C, Hash, "hair_style")),
+    hair_colour = numeric(gethash(C, Hash, "hair_colour")),
+    clothes_colour = numeric(gethash(C, Hash, "clothes_colour")),
+    view_weapon = numeric(gethash(C, Hash, "view_weapon")),
+    view_shield = numeric(gethash(C, Hash, "view_shield")),
+    view_head_top = numeric(gethash(C, Hash, "view_head_top")),
+    view_head_middle = numeric(gethash(C, Hash, "view_head_middle")),
+    view_head_bottom = numeric(gethash(C, Hash, "view_head_bottom")),
+    map = gethash(C, Hash, "map"),
+    x = numeric(gethash(C, Hash, "x")),
+    y = numeric(gethash(C, Hash, "y")),
+    save_map = gethash(C, Hash, "save_map"),
+    save_x = numeric(gethash(C, Hash, "save_x")),
+    save_y = numeric(gethash(C, Hash, "save_y")),
+    online = numeric(gethash(C, Hash, "online")),
+    effects = numeric(gethash(C, Hash, "effects")),
+    karma = numeric(gethash(C, Hash, "karma")),
+    manner = numeric(gethash(C, Hash, "manner")),
+    fame = numeric(gethash(C, Hash, "fame")),
+    guild_position = numeric(gethash(C, Hash, "guild_position")),
+    guild_taxed = numeric(gethash(C, Hash, "guild_taxed")),
+    renamed = numeric(gethash(C, Hash, "renamed")),
+    account_id = numeric(gethash(C, Hash, "account_id")),
+    party_id = numeric(gethash(C, Hash, "party_id")),
+    guild_id = numeric(gethash(C, Hash, "guild_id")),
+    pet_id = numeric(gethash(C, Hash, "pet_id")),
+    homunculus_id = numeric(gethash(C, Hash, "homunculus_id")),
+    mercenary_id = numeric(gethash(C, Hash, "mercenary_id"))
   }.
 
 
 get_account_chars(C, AccountID) ->
   Chars =
-    erldis:hgetall(
+    redis:hgetall(
       C,
       ["account:", integer_to_list(AccountID), ":chars"]
     ),
 
-  [db:get_char(C, erldis:numeric(ID)) || {_, ID} <- Chars].
+  [db:get_char(C, numeric(ID)) || {_, ID} <- Chars].
 
 
 get_account_char(C, AccountID, Num) ->
   ID =
-    erldis:hget(
+    redis:hget(
       C,
       ["account:", integer_to_list(AccountID), ":chars"],
       integer_to_list(Num)
     ),
 
   case ID of
-    nil -> nil;
-    _ -> db:get_char(C, erldis:numeric(ID))
+    undefined -> nil;
+    {ok, X} -> db:get_char(C, numeric(X))
   end.
 
 
 get_char_id(C, Name) ->
-  case erldis:get(C, ["char:", Name]) of
-    nil -> nil;
-    X -> erldis:numeric(X)
+  case redis:get(C, ["char:", Name]) of
+    undefined -> nil;
+    {ok, X} -> numeric(X)
   end.
 
 
-rename_char(C, X, Y, Z) ->
-  erldis:exec(C, fun(D) -> rename_char_(D, X, Y, Z) end).
-rename_char_(C, ID, OldName, NewName) ->
+rename_char(C, ID, OldName, NewName) ->
+  %redis:multi(C),
+
   Hash = "char:" ++ integer_to_list(ID),
-  erldis:del(C, ["char:", OldName]),
-  erldis:set(C, ["char:", NewName], ID),
-  erldis:hset(C, Hash, "name", NewName),
-  erldis:hset(C, Hash, "renamed", 1).
+  redis:del(C, ["char:", OldName]),
+  redis:set(C, ["char:", NewName], ID),
+  redis:hset(C, Hash, "name", NewName),
+  redis:hset(C, Hash, "renamed", 1),
+  
+  %redis:exec(C),
+
+  ok.
 
 
-save_guild(C, X) -> erldis:exec(C, fun(D) -> save_guild_(D, X) end).
-save_guild_(C, Guild) ->
+save_guild(C, Guild) ->
   ID =
     case Guild#guild.id of
-      undefined -> erldis:incr(C, "guilds:id");
+      undefined -> redis:incr(C, "guilds:id");
       X -> X
     end,
 
-  Hash = "guild:" ++ integer_to_list(ID),
-  erldis:hset(C, Hash, "name", Guild#guild.name),
-  erldis:hset(C, Hash, "level", Guild#guild.level),
-  erldis:hset(C, Hash, "capacity", Guild#guild.capacity),
-  erldis:hset(C, Hash, "exp", Guild#guild.exp),
-  erldis:hset(C, Hash, "next_exp", Guild#guild.next_exp),
-  erldis:hset(C, Hash, "skill_points", Guild#guild.skill_points),
-  erldis:hset(C, Hash, "message_title", Guild#guild.message_title),
-  erldis:hset(C, Hash, "message_body", Guild#guild.message_body),
-  erldis:hset(C, Hash, "emblem", Guild#guild.emblem),
-  erldis:hset(C, Hash, "master_id", Guild#guild.master_id),
+  %redis:multi(C),
 
-  erldis:set(C, ["guild:", Guild#guild.name], ID),
+  Hash = "guild:" ++ integer_to_list(ID),
+  redis:hset(C, Hash, "name", Guild#guild.name),
+  redis:hset(C, Hash, "level", Guild#guild.level),
+  redis:hset(C, Hash, "capacity", Guild#guild.capacity),
+  redis:hset(C, Hash, "exp", Guild#guild.exp),
+  redis:hset(C, Hash, "next_exp", Guild#guild.next_exp),
+  redis:hset(C, Hash, "skill_points", Guild#guild.skill_points),
+  redis:hset(C, Hash, "message_title", Guild#guild.message_title),
+  redis:hset(C, Hash, "message_body", Guild#guild.message_body),
+  redis:hset(C, Hash, "emblem", Guild#guild.emblem),
+  redis:hset(C, Hash, "master_id", Guild#guild.master_id),
+
+  redis:set(C, ["guild:", Guild#guild.name], ID),
+
+  %redis:exec(C),
 
   Guild#guild{id = ID}.
 
 
-delete_guild(C, X) -> erldis:exec(C, fun(D) -> delete_guild_(D, X) end).
-delete_guild_(C, Guild) ->
+delete_guild(C, Guild) ->
+  %redis:multi(C),
+
   Hash = "guild:" ++ integer_to_list(Guild#guild.id),
-  erldis:del(C, Hash),
-  erldis:del(C, ["guild:", Guild#char.name]),
+  redis:del(C, Hash),
+  redis:del(C, ["guild:", Guild#char.name]),
+
+  %redis:exec(C),
+
   ok.
 
 
@@ -294,63 +318,63 @@ get_guild(C, ID) ->
   Hash = "guild:" ++ integer_to_list(ID),
   #guild{
     id = ID,
-    name = erldis:hget(C, Hash, "name"),
-    level = erldis:numeric(erldis:hget(C, Hash, "level")),
-    capacity = erldis:numeric(erldis:hget(C, Hash, "capacity")),
-    exp = erldis:numeric(erldis:hget(C, Hash, "exp")),
-    next_exp = erldis:numeric(erldis:hget(C, Hash, "next_exp")),
-    skill_points = erldis:numeric(erldis:hget(C, Hash, "skill_points")),
-    message_title = erldis:hget(C, Hash, "message_title"),
-    message_body = erldis:hget(C, Hash, "message_body"),
-    emblem = erldis:hget(C, Hash, "emblem"),
-    master_id = erldis:numeric(erldis:hget(C, Hash, "master_id"))
+    name = gethash(C, Hash, "name"),
+    level = numeric(gethash(C, Hash, "level")),
+    capacity = numeric(gethash(C, Hash, "capacity")),
+    exp = numeric(gethash(C, Hash, "exp")),
+    next_exp = numeric(gethash(C, Hash, "next_exp")),
+    skill_points = numeric(gethash(C, Hash, "skill_points")),
+    message_title = gethash(C, Hash, "message_title"),
+    message_body = gethash(C, Hash, "message_body"),
+    emblem = gethash(C, Hash, "emblem"),
+    master_id = numeric(gethash(C, Hash, "master_id"))
   }.
 
 
 get_guild_id(C, Name) ->
-  case erldis:get(C, ["guild:", Name]) of
-    nil -> nil;
-    X -> erldis:numeric(X)
+  case redis:get(C, ["guild:", Name]) of
+    undefined -> nil;
+    {ok, X} -> numeric(X)
   end.
 
 
 get_guild_master(C, Guild) ->
   ID =
     case Guild#guild.id of
-      undefined -> erldis:incr(C, "guilds:id");
+      undefined -> redis:incr(C, "guilds:id");
       X -> X
     end,
 
   Hash = "guild:" ++ integer_to_list(ID),
-  case erldis:hget(C, Hash, "master_id") of
-    nil -> nil;
-    Master -> erldis:numeric(Master)
+  case redis:hget(C, Hash, "master_id") of
+    undefined -> nil;
+    {ok, Master} -> numeric(Master)
   end.
 
 
 get_guild_members(C, GuildID) ->
   Chars =
-    erldis:lrange(
+    redis:lrange(
       C,
       ["guild:", integer_to_list(GuildID), ":members"],
       0,
       -1
     ),
 
-  [db:get_char(C, erldis:numeric(ID)) || {_, ID} <- Chars].
+  [db:get_char(C, numeric(ID)) || {_, ID} <- Chars].
 
 
 add_char_to_guild(C, GuildID, CharacterID) ->
-  erldis:rpush(C, ["guild:", GuildID, ":members"], CharacterID).
+  redis:rpush(C, ["guild:", GuildID, ":members"], CharacterID).
 
 
 delete_char_from_guild(C, GuildID, CharacterID) ->
-  erldis:lrem(C, ["guild:", GuildID, ":members"], 0, CharacterID),
+  redis:lrem(C, ["guild:", GuildID, ":members"], 0, CharacterID),
   ok.
 
 
 get_guild_relationships(C, GuildID) ->
-  erldis:hgetall(
+  redis:hgetall(
     C,
     [ "guild:",
       integer_to_list(GuildID),
@@ -360,7 +384,7 @@ get_guild_relationships(C, GuildID) ->
 
 
 save_guild_relationship(C, GuildID, TargetID, Type) ->
-  erldis:hset(
+  redis:hset(
     C,
     [ "guild:",
       integer_to_list(GuildID),
@@ -372,7 +396,7 @@ save_guild_relationship(C, GuildID, TargetID, Type) ->
 
 
 delete_guild_relationship(C, GuildID, TargetID) ->
-  erldis:hdel(
+  redis:hdel(
     C,
     [ "guild:",
       integer_to_list(GuildID),
@@ -384,8 +408,8 @@ delete_guild_relationship(C, GuildID, TargetID) ->
 
 
 get_guild_relationship(C, GuildID, TargetID) ->
-  erldis:numeric(
-    erldis:hget(
+  numeric(
+    gethash(
       C,
       [ "guild:",
         integer_to_list(GuildID),
@@ -394,3 +418,31 @@ get_guild_relationship(C, GuildID, TargetID) ->
       integer_to_list(TargetID)
     )
   ).
+
+
+gethash(C, Key, Field) ->
+  case redis:hget(C, Key, Field) of
+    undefined -> error(["undefined", Key, Field]);
+    {ok, V} -> V
+  end.
+
+% TODO: this is probably only called with one form
+numeric(I) when is_binary(I) ->
+	II = binary_to_list(I),
+	try
+		list_to_integer(II)
+	catch
+		error:badarg ->
+			try list_to_float(II)
+			catch error:badarg -> I
+			end
+	end;
+numeric(I) when is_list(I) ->
+	try
+		list_to_integer(I)
+	catch
+		error:badarg ->
+			try list_to_float(I)
+			catch error:badarg -> I
+			end
+	end.

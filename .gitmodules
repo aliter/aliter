@@ -7,3 +7,6 @@
 [submodule "lib/gen_nb_server"]
 	path = lib/gen_nb_server
 	url = git://github.com/kevsmith/gen_nb_server.git
+[submodule "lib/erlang-redis"]
+	path = lib/erlang-redis
+	url = git://github.com/gar1t/erlang-redis.git
