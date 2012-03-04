@@ -499,6 +499,10 @@ handle_event({broadcast, Message}, StateName, State) ->
 
   {next_state, StateName, State};
 
+handle_event({switch_zones, Update}, _StateName, State) ->
+  log:info("Changing zones; stopping FSM."),
+  {stop, normal, Update(State)};
+
 handle_event(
     stop,
     _StateName,

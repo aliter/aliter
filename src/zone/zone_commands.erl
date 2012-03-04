@@ -98,6 +98,8 @@ warp_to(
         State
       ),
 
+      % TODO: simpler warp if warping on same map
+
       % Send warp packets
       gen_server:cast(MapServer,
                       {send_to_other_players_in_sight,
@@ -125,9 +127,7 @@ warp_to(
 
       zone_fsm:show_actors(NewStateFun(State)),
 
-      gen_fsm:send_all_state_event(FSM,
-                                   {update_state,
-                                    NewStateFun}),
+      gen_fsm:send_all_state_event(FSM, {switch_zones, NewStateFun}),
 
       TCP ! {warp_zone, {Map, X, Y, IP, Port}};
     none ->

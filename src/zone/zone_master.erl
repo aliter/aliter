@@ -88,7 +88,7 @@ handle_call(Request, _From, State) ->
 
 handle_cast({send_to_all, Msg}, State) ->
   lists:foreach(
-    fun({_ID, Server, _Type, _Modules}) ->
+    fun(Server) ->
       gen_server:cast(Server, Msg)
     end,
     State#state.servers
