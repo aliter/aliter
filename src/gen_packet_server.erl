@@ -53,7 +53,7 @@ sock_opts() ->
 
 new_connection(_ClientIP, _ClientPort, Sock, State) ->
   #nb_state{
-    port = Port, 
+    port = Port,
     packet_handler = PacketHandler,
     fsm_args = FArgs,
     server = Server
