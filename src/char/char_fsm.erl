@@ -81,6 +81,9 @@ locked(
       TCP !
         {characters, {Chars, ?MAX_SLOTS, ?AVAILABLE_SLOTS, ?PREMIUM_SLOTS}},
 
+      % TODO
+      TCP ! {pin_code, AccountID},
+
       { next_state, valid,
         State#char_state{
           account = L#login_state.account,

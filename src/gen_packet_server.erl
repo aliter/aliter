@@ -98,21 +98,21 @@ client_worker(Socket, FSM, PacketHandler) ->
       log:info("Client disconnected."),
       gen_fsm:send_event(FSM, stop);
 
-    {parse, PacketHandler} ->
+    {parse, NewHandler} ->
       log:debug("Changing to parse mode with packet handler.",
-            [{handler, PacketHandler}]),
+            [{handler, NewHandler}]),
 
       Loop = self(),
       Parser =
         spawn(
           ?MODULE,
           parse_loop,
-          [Socket, PacketHandler, Loop]
+          [Socket, NewHandler, Loop]
         ),
 
       gen_tcp:controlling_process(Socket, Parser),
 
-      ?MODULE:client_worker(Socket, FSM, PacketHandler);
+      ?MODULE:client_worker(Socket, FSM, NewHandler);
 
     {send_packets, Packets} ->
       log:warning("Sending multiple packets.", [{packets, Packets}]),
@@ -192,18 +192,41 @@ parse_loop(Socket, PacketHandler, Loop) ->
 
             % Variable-length packet
             0 ->
-              {ok, <<Length:16/little>>} = gen_tcp:recv(Socket, 2),
-              {ok, Rest} = gen_tcp:recv(Socket, Length - 4),
+              case gen_tcp:recv(Socket, 2) of
+                {ok, <<Length:16/little>>} ->
+                  case gen_tcp:recv(Socket, Length - 4) of
+                    {ok, Rest} ->
+                      Loop !
+                        { tcp,
+                          Socket,
+                          <<Header:16/little,
+                            Length:16/little,
+                            Rest/binary>>
+                        },
 
-              Loop !
-                { tcp,
-                  Socket,
-                  <<Header:16/little,
-                    Length:16/little,
-                    Rest/binary>>
-                },
+                      ?MODULE:parse_loop(Socket, PacketHandler, Loop);
 
-              ?MODULE:parse_loop(Socket, PacketHandler, Loop);
+                    {error, Reason} ->
+                      failed_remainder(Header, {variable, Length - 4}, Reason),
+
+                      case Reason of
+                        closed ->
+                          Loop ! {tcp_closed, Socket};
+                          _ ->
+                            ?MODULE:parse_loop(Socket, PacketHandler, Loop)
+                      end
+                  end;
+
+                {error, Reason} ->
+                  failed_remainder(Header, {length, 2}, Reason),
+
+                  case Reason of
+                    closed ->
+                      Loop ! {tcp_closed, Socket};
+                      _ ->
+                        ?MODULE:parse_loop(Socket, PacketHandler, Loop)
+                  end
+              end;
 
             % Already read all of it!
             2 ->
@@ -211,9 +234,21 @@ parse_loop(Socket, PacketHandler, Loop) ->
               ?MODULE:parse_loop(Socket, PacketHandler, Loop);
 
             Size ->
-              {ok, Rest} = gen_tcp:recv(Socket, Size - 2),
-              Loop ! {tcp, Socket, <<Header:16/little, Rest/binary>>},
-              ?MODULE:parse_loop(Socket, PacketHandler, Loop)
+              case gen_tcp:recv(Socket, Size - 2) of
+                {ok, Rest} ->
+                  Loop ! {tcp, Socket, <<Header:16/little, Rest/binary>>},
+                  ?MODULE:parse_loop(Socket, PacketHandler, Loop);
+
+                {error, Reason} ->
+                  failed_remainder(Header, {packet_size, Size - 2}, Reason),
+
+                  case Reason of
+                    closed ->
+                      Loop ! {tcp_closed, Socket};
+                      _ ->
+                        ?MODULE:parse_loop(Socket, PacketHandler, Loop)
+                  end
+              end
           end;
 
         {error, timeout} ->
@@ -227,3 +262,11 @@ parse_loop(Socket, PacketHandler, Loop) ->
     {error, closed} ->
       Loop ! {tcp_closed, Socket}
   end.
+
+
+failed_remainder(Header, Size, Reason) ->
+  log:warning("Failed to receive the remainder.",
+    [ {header, Header},
+      {needed, Size},
+      {reason, Reason}
+    ]).

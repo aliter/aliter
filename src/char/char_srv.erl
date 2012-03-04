@@ -47,7 +47,7 @@ handle_call(
     [ {account, AccountID},
       {character, CharacterID},
       {id, SessionIDa},
-      {session, Sessions}]),
+      {sessions, Sessions}]),
 
   case proplists:lookup(AccountID, Sessions) of
     {AccountID, FSM, SessionIDa, _SessionIDb} ->

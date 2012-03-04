@@ -995,4 +995,5 @@ packet_size(16#07E3) -> 6;
 packet_size(16#07E4) -> 0;
 packet_size(16#07E6) -> 28;
 packet_size(16#07E7) -> 5;
+packet_size(16#08B9) -> 12;
 packet_size(_Other) -> undefined.

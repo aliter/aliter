@@ -5,7 +5,7 @@
 -export([unpack/1, pack/2]).
 
 -define(WALKSPEED, 150).
--define(CHAR_BLOCK_SIZE, 112).
+-define(CHAR_BLOCK_SIZE, 136).
 
 
 unpack(<<16#65:16/little,
@@ -85,6 +85,13 @@ pack(
     binary:copy(<<0>>, 20)
   ] ++ [character(C) || C <- Characters];
 
+pack(pin_code, AccountID) ->
+  <<16#8B9:16/little,
+    0:16/little,
+    0:16/little,
+    AccountID:32/little,
+    0:16/little>>;
+
 pack(refuse, Reason) ->
   <<16#6c:16/little, Reason:8/little>>;
 
@@ -126,6 +133,7 @@ pack(Header, Data) ->
   <<>>.
 
 
+% NOTE: update CHAR_BLOCK_SIZE after changing this
 character(C) ->
   [ <<(C#char.id):32/little,
       (C#char.base_exp):32/little,
@@ -164,9 +172,16 @@ character(C) ->
       (C#char.dex):8,
       (C#char.luk):8,
       (C#char.num):16/little,
-      (C#char.renamed):16/little>>
-  ].
+      % TODO: I think this is 0 for renamed
+      1:16/little>>,
 
+    pad_to([C#char.map, <<".gat">>], 16),
+
+    <<0:32/little,  % delete date
+      0:32/little>>  % robe
+      % 0:32/little,  % change slot (0 = disabled)
+      % 0:32/little>> % unknown (0 = disabled)
+  ].
 
 pad_to(Bin, Size) ->
   Binary = iolist_to_binary(Bin),

@@ -60,8 +60,8 @@ unpack(<<16#14f:16/little, Page:32/little>>) ->
 unpack(<<16#18a:16/little, _:16>>) ->
   quit;
 
-unpack(<<16#21d:16/little, Effect:32/little>>) ->
-  {effect_state, Effect};
+unpack(<<16#21d:16/little, IsLess:32/little>>) ->
+  {less_effect, IsLess};
 
 unpack(<<16#399:16/little, _Unknown:8>>) ->
   unknown;
@@ -74,6 +74,9 @@ unpack(
       _:32,
       Gender:8>>) ->
   {connect, AccountID, CharacterID, LoginIDa, Gender};
+
+unpack(<<16#437:16/little, TargetID:32/little, Action:8>>) ->
+  {action_request, TargetID, Action};
 
 unpack(<<16#44a:16/little, _Unknown:32/little>>) ->
   unknown;
@@ -441,6 +444,19 @@ pack(equipment, Equipment) ->
 
 pack(view_equip_state, State) ->
   <<16#2da:16/little, State:8>>;
+
+pack(actor_effect,
+    {AID, BID, Tick, ASpeed, BSpeed, Damage, Div, Type, Damage2}) ->
+  <<16#8a:16/little,
+    AID:32/little,
+    BID:32/little,
+    Tick:32/little,
+    ASpeed:32/little,
+    BSpeed:32/little,
+    Damage:16/little,
+    Div:16/little,
+    Type:8,
+    Damage2:16/little>>;
 
 pack(Header, Data) ->
   log:error(

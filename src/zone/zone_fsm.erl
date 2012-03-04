@@ -19,6 +19,8 @@
     locked/3,
     valid/2,
     valid/3,
+    sitting/2,
+    sitting/3,
     walking/2,
     walking/3]).
 
@@ -199,28 +201,25 @@ valid(
   end;
 
 valid(
-    {change_direction, Head, Body},
+    {action_request, 0, 2},
     State = #zone_state{
       map_server = MapServer,
       account = #account{id = AccountID},
       char = #char{
-        id = CharacterID,
         x = X,
         y = Y
       }
     }) ->
+  log:debug("Sitting down.", []), 
   gen_server:cast(
     MapServer,
-    { send_to_other_players_in_sight,
+    { send_to_players_in_sight,
       {X, Y},
-      CharacterID,
-      change_direction,
-      {AccountID, Head, Body}
+      actor_effect,
+      {AccountID, 0, zone_master:tick(), 0, 0, 0, 0, 2, 0}
     }
   ),
-
-  {next_state, valid, State};
-
+  {next_state, sitting, State};
 
 valid(Event, State) ->
   ?MODULE:handle_event(Event, valid, State).
@@ -228,6 +227,35 @@ valid(Event, State) ->
 
 valid(Event, From, State) ->
   ?MODULE:handle_sync_event(Event, From, valid, State).
+
+
+sitting(
+    {action_request, 0, 3},
+    State = #zone_state{
+      map_server = MapServer,
+      account = #account{id = AccountID},
+      char = #char{
+        x = X,
+        y = Y
+      }
+    }) ->
+  log:debug("Standing up.", []),
+  gen_server:cast(
+    MapServer,
+    { send_to_players_in_sight,
+      {X, Y},
+      actor_effect,
+      {AccountID, 0, zone_master:tick(), 0, 0, 0, 0, 3, 0}
+    }
+  ),
+  {next_state, valid, State};
+
+sitting(Event, State) ->
+  ?MODULE:handle_event(Event, sitting, State).
+
+
+sitting(Event, From, State) ->
+  ?MODULE:handle_sync_event(Event, From, sitting, State).
 
 
 walking(
@@ -626,6 +654,33 @@ handle_event({request_guild_info, 2}, StateName, State) ->
   log:debug("Requested third page of guild info."),
   {next_state, StateName, State};
 
+handle_event({less_effect, IsLess}, StateName, State) ->
+  log:debug("Setting less effect state.", [{is_less, IsLess}]),
+  {next_state, StateName, State};
+
+handle_event(
+    {change_direction, Head, Body},
+    StateName,
+    State = #zone_state{
+      map_server = MapServer,
+      account = #account{id = AccountID},
+      char = #char{
+        id = CharacterID,
+        x = X,
+        y = Y
+      }
+    }) ->
+  gen_server:cast(
+    MapServer,
+    { send_to_other_players_in_sight,
+      {X, Y},
+      CharacterID,
+      change_direction,
+      {AccountID, Head, Body}
+    }
+  ),
+
+  {next_state, StateName, State};
 
 handle_event(Event, StateName, State) ->
   log:warning(
