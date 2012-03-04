@@ -149,7 +149,7 @@ register_account(_, Login, _Password, _) ->
 create_new_account(C, RawLogin, Password, Gender) ->
   Login = string:sub_string(RawLogin, 1, length(RawLogin)-2),
 
-  Check = db:get_account_id(Login),
+  Check = db:get_account_id(C, Login),
 
   log:info("Check.", [{check, Check}]),
 
