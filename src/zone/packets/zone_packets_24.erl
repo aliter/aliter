@@ -442,6 +442,62 @@ pack(equipment, Equipment) ->
     % TODO
     (26 * length(Equipment) + 4):16/little>>;
 
+
+pack(inventory, Inventory) ->
+  [ <<16#2e8:16/little,
+      (22 * length(Inventory) + 4):16/little>>,
+
+    [ <<(I#world_item.slot):16/little,
+        (I#world_item.item):16/little,
+        0:8, % TODO: type
+        1:8, % TODO: identified
+        (I#world_item.amount):16/little,
+        0:16/little, % TODO: WearState(?)
+        0:16/little, % TODO: card 1
+        0:16/little, % TODO: card 2
+        0:16/little, % TODO: card 3
+        0:16/little, % TODO: card 4
+        % TODO: expiration
+        0:32/little>> || I <- Inventory]
+  ];
+
+pack(
+    give_item,
+    { Index,
+      Amount,
+      ID,
+      Identified,
+      Damaged,
+      Refine,
+      Card1,
+      Card2,
+      Card3,
+      Card4,
+      EquipLocation,
+      Type, % (3 = etc, 4 = weapon)
+      Result,
+      ExpireTime,
+      BindOnEquipType
+    }) ->
+  <<16#2d4:16/little,
+    Index:16/little,
+    Amount:16/little,
+    ID:16/little, % item ID num?
+    Identified:8,
+    Damaged:8,
+    Refine:8,
+    Card1:16/little,
+    Card2:16/little,
+    Card3:16/little,
+    Card4:16/little,
+    EquipLocation:16/little,
+    Type:8,
+
+    % TODO: ?
+    Result:8,
+    ExpireTime:32/little,
+    BindOnEquipType:16/little>>;
+
 pack(view_equip_state, State) ->
   <<16#2da:16/little, State:8>>;
 
@@ -457,6 +513,26 @@ pack(actor_effect,
     Div:16/little,
     Type:8,
     Damage2:16/little>>;
+
+pack(drop_item, {Index, Amount}) ->
+  <<16#af:16/little,
+    Index:16/little,
+    Amount:16/little>>;
+
+pack(item_disappear, ObjectID) ->
+  <<16#a1:16/little,
+    ObjectID:32/little>>;
+
+pack(item_on_ground, {ObjectID, ItemID, Identified, X, Y, SubX, SubY, Amount}) ->
+  <<16#9e:16/little,
+    ObjectID:32/little,
+    ItemID:16/little,
+    Identified:8,
+    X:16/little,
+    Y:16/little,
+    SubX:8,
+    SubY:8,
+    Amount:16/little>>;
 
 pack(Header, Data) ->
   log:error(

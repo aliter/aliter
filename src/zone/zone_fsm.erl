@@ -39,9 +39,9 @@ start_link(TCP) ->
   gen_fsm:start_link(?MODULE, TCP, []).
 
 
-init(TCP) ->
+init({TCP, [DB]}) ->
   process_flag(trap_exit, true),
-  {ok, locked, #zone_state{tcp = TCP}}.
+  {ok, locked, #zone_state{db = DB, tcp = TCP}}.
 
 
 locked(
@@ -84,7 +84,33 @@ locked(
         }
       ),
 
-      ?MODULE:say("Welcome to Aliter.", State),
+      Items = db:get_player_items(State#zone_state.db, Char#char.id),
+      send(State, {inventory, Items}),
+
+      WorldItems = db:get_world_items(State#zone_state.db, Char#char.map),
+      lists:foreach(
+        fun(Item) ->
+          log:debug("Showing item.", [{item, Item}]),
+          send(
+            State,
+            { item_on_ground,
+              { Item#world_item.slot,
+                Item#world_item.item,
+                1, % TODO: identified
+
+                % TODO
+                Char#char.x + 1,
+                Char#char.y + 1,
+                1,
+                2,
+
+                Item#world_item.amount
+              }
+            })
+        end,
+        WorldItems),
+
+      say("Welcome to Aliter.", State),
 
       { next_state,
         valid,
@@ -99,6 +125,7 @@ locked(
           char_fsm = FSM
         }
       };
+
     invalid ->
       log:warning("Invalid zone login attempt caught.",
                   [{account_id, AccountID},
@@ -504,6 +531,16 @@ handle_event({switch_zones, Update}, _StateName, State) ->
   {stop, normal, Update(State)};
 
 handle_event(
+    {give_item, ID, Amount},
+    StateName,
+    State = #zone_state{
+      tcp = TCP,
+      db = DB,
+      char = #char{id = CharacterID}}) ->
+  give_item(TCP, DB, CharacterID, ID, Amount),
+  {next_state, StateName, State};
+
+handle_event(
     stop,
     _StateName,
     State = #zone_state{char_fsm = Char}) ->
@@ -662,6 +699,98 @@ handle_event({less_effect, IsLess}, StateName, State) ->
   log:debug("Setting less effect state.", [{is_less, IsLess}]),
   {next_state, StateName, State};
 
+handle_event({drop, Slot, Amount}, StateName,
+    State = #zone_state{
+      db = DB,
+      map_server = MapServer,
+      char = #char{
+        id = CharacterID,
+        map = Map,
+        x = X,
+        y = Y}}) ->
+  log:debug("Dropping item.", [{slot, Slot}, {amount, Amount}]),
+
+  send(State, {drop_item, {Slot, Amount}}),
+
+  case db:get_player_item(DB, CharacterID, Slot) of
+    nil ->
+      say("Invalid item.", State);
+
+    Item ->
+      if
+        Amount == Item#world_item.amount ->
+          db:remove_player_item(DB, CharacterID, Slot);
+
+        true ->
+          % TODO: update amount
+          ok
+      end,
+
+      % TODO
+      ObjectID = db:give_world_item(DB, Map, Item#world_item.item, Amount),
+      gen_server:cast(
+        MapServer,
+        { send_to_players_in_sight,
+          {X, Y},
+          item_on_ground,
+          % TODO: actual item ID
+          % TODO: randomize positions
+          {ObjectID, Item#world_item.item, 1, X + 1, Y + 1, 1, 2, Amount}
+        }
+      )
+  end,
+
+  {next_state, StateName, State};
+
+handle_event({pick_up, ObjectID}, StateName,
+    State = #zone_state{
+      tcp = TCP,
+      db = DB,
+      map_server = MapServer,
+      account = #account{id = AccountID},
+      char = #char{
+        id = CharacterID,
+        map = Map,
+        x = X,
+        y = Y
+      }
+    }) ->
+  log:debug("Picking up item.", [{object_id, ObjectID}]),
+
+  gen_server:cast(
+    MapServer,
+    {send_to_players, item_disappear, ObjectID}
+  ),
+
+  gen_server:cast(
+    MapServer,
+    { send_to_players_in_sight,
+      {X, Y},
+      actor_effect,
+      { AccountID,
+        ObjectID,
+        zone_master:tick(),
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      }
+    }
+  ),
+
+  case db:get_world_item(DB, ObjectID) of
+    nil ->
+      say("Item already picked up!", State);
+
+    Item ->
+      db:remove_world_item(DB, Map, ObjectID),
+      give_item(TCP, DB, CharacterID, Item#world_item.item, Item#world_item.amount)
+  end,
+
+  {next_state, StateName, State};
+
 handle_event(
     {change_direction, Head, Body},
     StateName,
@@ -797,4 +926,15 @@ show_actors(
 
 say(Message, State) ->
   send(State, {message, Message}).
+
+
+give_item(TCP, DB, CharacterID, ID, Amount) ->
+  log:info("Giving item.", [{id, ID}, {amount, Amount}]),
+
+  Slot = db:give_player_item(DB, CharacterID, ID, Amount),
+
+  TCP !
+    { give_item,
+      {Slot, Amount, ID, 1, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0}
+    }.
 

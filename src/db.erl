@@ -32,6 +32,17 @@
     delete_guild_relationship/3,
     get_guild_relationship/3]).
 
+-export([
+    give_world_item/4,
+    get_world_items/2,
+    get_world_item/2,
+    remove_world_item/3]).
+
+-export([
+    give_player_item/4,
+    get_player_items/2,
+    get_player_item/3,
+    remove_player_item/3]).
 
 save_account(C, Account) ->
   ID =
@@ -268,7 +279,7 @@ rename_char(C, ID, OldName, NewName) ->
   redis:set(C, ["char:", NewName], ID),
   redis:hset(C, Hash, "name", NewName),
   redis:hset(C, Hash, "renamed", 1),
-  
+
   %redis:exec(C),
 
   ok.
@@ -419,6 +430,89 @@ get_guild_relationship(C, GuildID, TargetID) ->
     )
   ).
 
+
+give_world_item(C, Map, ItemID, Amount) ->
+  ObjectID = redis:incr(C, "objects:next"),
+
+  redis:sadd(C, ["objects:", Map], ObjectID),
+
+  redis:hset(C, ["objects:", integer_to_list(ObjectID)], "item", ItemID),
+  redis:hset(C, ["objects:", integer_to_list(ObjectID)], "amount", Amount),
+
+  ObjectID.
+
+get_world_items(C, Map) ->
+  Items = redis:smembers(C, ["objects:", Map]),
+  [get_world_item(C, numeric(Slot)) || Slot <- Items].
+
+get_world_item(C, ObjectID) ->
+  Object = ["objects:", integer_to_list(ObjectID)],
+  case redis:hget(C, Object, "item") of
+    {ok, Item} ->
+      case redis:hget(C, Object, "amount") of
+        {ok, Amount} ->
+          #world_item{
+            slot = ObjectID,
+            item = numeric(Item),
+            amount = numeric(Amount)};
+
+        undefined -> nil
+      end;
+
+    undefined -> nil
+  end.
+
+remove_world_item(C, Map, ObjectID) ->
+  redis:srem(C, ["objects:", Map], integer_to_list(ObjectID)),
+  redis:del(C, ["objects:", integer_to_list(ObjectID)]).
+
+
+
+give_player_item(C, CharacterID, ItemID, Amount) ->
+  % TODO: check if they already have one
+  Slot = redis:incr(C, ["inventory:", integer_to_list(CharacterID), ":next"]),
+
+  redis:sadd(C, ["inventory:", integer_to_list(CharacterID)], Slot),
+
+  redis:hset(C, ["inventory:", integer_to_list(CharacterID), ":", integer_to_list(Slot)], "item", ItemID),
+  redis:hset(C, ["inventory:", integer_to_list(CharacterID), ":", integer_to_list(Slot)], "amount", Amount),
+
+  Slot.
+
+get_player_items(C, CharacterID) ->
+  Items = redis:smembers(C, ["inventory:", integer_to_list(CharacterID)]),
+  [get_player_item(C, CharacterID, numeric(Slot)) || Slot <- Items].
+
+get_player_item(C, CharacterID, Slot) ->
+  Object = [
+    "inventory:",
+    integer_to_list(CharacterID), ":",
+    integer_to_list(Slot)
+  ],
+
+  case redis:hget(C, Object, "item") of
+    {ok, Item} ->
+      case redis:hget(C, Object, "amount") of
+        {ok, Amount} ->
+          #world_item{
+            slot = Slot,
+            item = numeric(Item),
+            amount = numeric(Amount)};
+
+        undefined -> nil
+      end;
+
+    undefined -> nil
+  end.
+
+
+remove_player_item(C, CharacterID, Slot) ->
+  Inventory = ["inventory:", integer_to_list(CharacterID)],
+
+  redis:srem(C, Inventory, integer_to_list(Slot)),
+  redis:del(C, [Inventory, ":", integer_to_list(Slot)]),
+
+  ok.
 
 gethash(C, Key, Field) ->
   case redis:hget(C, Key, Field) of

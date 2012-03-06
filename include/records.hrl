@@ -253,6 +253,8 @@
          b_id,
          type}).
 
+-record(world_item, {slot, item, amount}).
+
 %%% API Data
 -record(apiresponse,
         {msg,

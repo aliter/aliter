@@ -75,6 +75,14 @@ execute(FSM, "zeny", [AddZeny], State) ->
       _Invalid -> zone_fsm:say("Enter a number.", State)
     end;
 
+execute(FSM, "item", [ID], State) ->
+  case string:to_integer(ID) of
+    {error, _} -> zone_fsm:say("Invalid item ID.", State);
+    {ItemID, _} ->
+      give_item(FSM, State, ItemID, 1)
+  end;
+
+
 execute(_FSM, Unknown, Args, State) ->
     log:warning("Unknown command.", [{command, Unknown}, {args, Args}]),
     zone_fsm:say("Unknown command `" ++ Unknown ++ "'.", State),
@@ -134,6 +142,11 @@ warp_to(
       zone_fsm:say("Invalid map provided.", State),
       ok
   end.
+
+give_item(FSM, _State, ID, Amount) ->
+  gen_fsm:send_all_state_event(
+    FSM,
+    {give_item, ID, Amount}).
 
 
 add_zeny(FSM, Zeny, State) ->

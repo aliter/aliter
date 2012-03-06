@@ -29,7 +29,13 @@ start_link(Port, MapPairs) ->
 
 
 init(State) ->
-  {ok, {State#state.port, zone_fsm, zone_packets:new(24)}, State}.
+  {ok, DB} = redis:connect(), % TODO: config
+
+  {ok, _Keepalive} =
+    timer:apply_interval(timer:seconds(30), redis, ping, [DB]),
+
+  % TODO: don't assume 24; guess from packet?
+  {ok, {State#state.port, zone_fsm, zone_packets:new(24)}, {State, [DB]}}.
 
 
 handle_call(

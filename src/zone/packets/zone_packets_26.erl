@@ -11,6 +11,18 @@ unpack(<<16#360:16/little, Tick:32/little>>) ->
 unpack(<<16#361:16/little, Head:16/little, Body:8>>) ->
   {change_direction, Head, Body};
 
+unpack(<<16#362:16/little, ObjectID:32/little>>) ->
+  {pick_up, ObjectID};
+
+unpack(<<16#363:16/little, Index:16/little, Amount:16/little>>) ->
+  {drop, Index, Amount};
+
+unpack(<<16#364:16/little, Index:16/little, Amount:32/little>>) ->
+  {move_to_storage, Index, Amount};
+
+unpack(<<16#365:16/little, Index:16/little, Amount:32/little>>) ->
+  {take_from_storage, Index, Amount};
+
 unpack(<<16#368:16/little, ActorID:32/little>>) ->
   {request_name, ActorID};
 
