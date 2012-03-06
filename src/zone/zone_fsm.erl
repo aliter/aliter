@@ -228,7 +228,7 @@ valid(
   end;
 
 valid(
-    {action_request, 0, 2},
+    {action_request, _Target, 2},
     State = #zone_state{
       map_server = MapServer,
       account = #account{id = AccountID},
@@ -257,7 +257,7 @@ valid(Event, From, State) ->
 
 
 sitting(
-    {action_request, 0, 3},
+    {action_request, _Target, 3},
     State = #zone_state{
       map_server = MapServer,
       account = #account{id = AccountID},
