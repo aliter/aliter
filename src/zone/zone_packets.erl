@@ -32,7 +32,14 @@ call(_Module, _Fun, 0, _Args) ->
 call(Module, Fun, Version, Args) ->
   case apply(mod_for(Module, Version), Fun, Args) of
     undefined ->
-      call(Module, Fun, Version - 1, Args);
+      if
+        Version == 24 ->
+          undefined;
+
+        true ->
+          call(Module, Fun, Version - 1, Args)
+      end;
+
     Event ->
       Event
   end.
