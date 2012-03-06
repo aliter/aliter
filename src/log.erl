@@ -49,7 +49,9 @@ log(Header, Msg, Args) ->
   end,
   Info),
 
-  io:format(lists:concat(["~s: ~s~n" | Format]),
+  io:format(
+    standard_error,
+    lists:concat(["~s: ~s~n" | Format]),
     lists:concat([[Header, Msg] | Vals])).
 
 
