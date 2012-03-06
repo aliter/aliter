@@ -187,7 +187,7 @@ parse_loop(Socket, PacketHandler, Loop) ->
 
           case PacketHandler:packet_size(Header) of
             undefined ->
-              log:debug("Received unknown packet.", [{header, Header}]),
+              log:warning("Received unknown packet.", [{header, Header}]),
               ?MODULE:parse_loop(Socket, PacketHandler, Loop);
 
             % Variable-length packet
@@ -252,7 +252,7 @@ parse_loop(Socket, PacketHandler, Loop) ->
           end;
 
         {error, timeout} ->
-          log:debug("Ignoring rest."),
+          log:error("Ignoring rest.", [{got, H1}]),
           ?MODULE:parse_loop(Socket, PacketHandler, Loop);
 
         {error, closed} ->

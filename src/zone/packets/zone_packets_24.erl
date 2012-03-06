@@ -7,6 +7,17 @@
 -define(WALKSPEED, 150).
 
 
+% NOTE: put all connection packets here as 24 gets tried first
+% might be fixable later
+unpack(
+    <<16#436:16/little,
+      AccountID:32/little,
+      CharacterID:32/little,
+      LoginIDa:32/little,
+      ClientTick:32,
+      Gender:8>>) ->
+  {connect, AccountID, CharacterID, LoginIDa, Gender};
+
 unpack(<<16#7d:16/little>>) ->
   map_loaded;
 
@@ -63,23 +74,9 @@ unpack(<<16#18a:16/little, _:16>>) ->
 unpack(<<16#21d:16/little, IsLess:32/little>>) ->
   {less_effect, IsLess};
 
-unpack(<<16#399:16/little, _Unknown:8>>) ->
-  unknown;
-
-unpack(
-    <<16#436:16/little,
-      AccountID:32/little,
-      CharacterID:32/little,
-      LoginIDa:32/little,
-      _:32,
-      Gender:8>>) ->
-  {connect, AccountID, CharacterID, LoginIDa, Gender};
-
-unpack(<<16#437:16/little, TargetID:32/little, Action:8>>) ->
-  {action_request, TargetID, Action};
-
-unpack(<<16#44a:16/little, _Unknown:32/little>>) ->
-  unknown;
+%unpack(<<16#399:16/little, _Unknown:8>>) ->
+  % TODO
+  %unknown;
 
 unpack(Unknown) ->
   log:warning("Got unknown data.", [{data, Unknown}]),

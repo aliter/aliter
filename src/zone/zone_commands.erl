@@ -3,17 +3,18 @@
 -include("include/records.hrl").
 
 -export([
-    parse/1,
-    execute/4]).
+  parse/1,
+  execute/4]).
 
 -define(SP_ZENY, 20).
 
 
 parse(String) ->
-    string:tokens(String, " ").
+  string:tokens(String, " ").
 
 
-execute(_FSM, "caps", Args,
+execute(
+    _FSM, "caps", Args,
     State = #zone_state{
       tcp = TCP,
       map_server = MapServer,
@@ -42,38 +43,44 @@ execute(FSM, "crash", _Args, _State) ->
   gen_fsm:send_all_state_event(FSM, crash);
 
 execute(FSM, "load", _Args, State = #zone_state{char = C}) ->
-    log:error("Got load command."),
-    warp_to(FSM, C#char.save_map, C#char.save_x, C#char.save_y, State);
+  log:error("Got load command."),
+  warp_to(FSM, C#char.save_map, C#char.save_x, C#char.save_y, State);
 
 execute(FSM, "warp", [Map | [XStr | [YStr | _]]], State) ->
-    log:error("Got warp command."),
-    case {string:to_integer(XStr),
-          string:to_integer(YStr)} of
-        {{X,_}, {Y,_}} when is_integer(X), is_integer(Y) ->
-            warp_to(FSM, list_to_binary(Map), X, Y, State);
-        _Invalid ->
-            zone_fsm:say("Invalid coordinates.", State),
-            {ok, State}
-    end;
+  log:error("Got warp command."),
+  case
+    { string:to_integer(XStr),
+      string:to_integer(YStr)
+    } of
+    {{X,_}, {Y,_}} when is_integer(X), is_integer(Y) ->
+      warp_to(FSM, list_to_binary(Map), X, Y, State);
+
+    _Invalid ->
+      zone_fsm:say("Invalid coordinates.", State),
+      {ok, State}
+  end;
 
 execute(FSM, "jumpto", [PlayerName | _], State) ->
-    case gen_server:call(zone_master,
-                         {get_player_by,
-                          fun(#zone_state{char = C}) ->
-                              C#char.name == PlayerName
-                          end}) of
-        {ok, #zone_state{char = C}} ->
-            warp_to(FSM, C#char.map, C#char.x, C#char.y, State);
-        none ->
-            zone_fsm:say("Player not found.", State)
-    end;
+  case
+    gen_server:call(
+      zone_master,
+      { get_player_by,
+        fun(#zone_state{char = C}) ->
+            C#char.name == PlayerName
+        end
+      }) of
+    {ok, #zone_state{char = C}} ->
+      warp_to(FSM, C#char.map, C#char.x, C#char.y, State);
+    none ->
+      zone_fsm:say("Player not found.", State)
+  end;
 
 execute(FSM, "zeny", [AddZeny], State) ->
-    log:debug("Got zeny command."),
-    case string:to_integer(AddZeny) of
-      {Zeny, _} when is_integer(Zeny) -> add_zeny(FSM, Zeny, State);
-      _Invalid -> zone_fsm:say("Enter a number.", State)
-    end;
+  log:debug("Got zeny command."),
+  case string:to_integer(AddZeny) of
+    {Zeny, _} when is_integer(Zeny) -> add_zeny(FSM, State, Zeny);
+    _Invalid -> zone_fsm:say("Enter a number.", State)
+  end;
 
 execute(FSM, "item", [ID], State) ->
   case string:to_integer(ID) of
@@ -84,9 +91,9 @@ execute(FSM, "item", [ID], State) ->
 
 
 execute(_FSM, Unknown, Args, State) ->
-    log:warning("Unknown command.", [{command, Unknown}, {args, Args}]),
-    zone_fsm:say("Unknown command `" ++ Unknown ++ "'.", State),
-    ok.
+  log:warning("Unknown command.", [{command, Unknown}, {args, Args}]),
+  zone_fsm:say("Unknown command `" ++ Unknown ++ "'.", State),
+  ok.
 
 
 warp_to(
@@ -149,7 +156,7 @@ give_item(FSM, _State, ID, Amount) ->
     {give_item, ID, Amount}).
 
 
-add_zeny(FSM, Zeny, State) ->
+add_zeny(FSM, State, Zeny) ->
   C = State#zone_state.char,
   OldZeny = C#char.zeny,
   TempNewZeny = OldZeny + Zeny,
