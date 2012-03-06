@@ -23,8 +23,28 @@ unpack(<<16#364:16/little, Index:16/little, Amount:32/little>>) ->
 unpack(<<16#365:16/little, Index:16/little, Amount:32/little>>) ->
   {take_from_storage, Index, Amount};
 
+unpack(
+    <<16#366:16/little,
+      SkillLevel:16/little,
+      SkillID:16/little,
+      X:16/little,
+      Y:16/little>>) ->
+  {use_ground_skill, SkillLevel, SkillID, X, Y};
+
+unpack(
+    <<16#367:16/little,
+      SkillLevel:16/little,
+      SkillID:16/little,
+      X:16/little,
+      Y:16/little,
+      Text:80/little-binary-unit:8>>) ->
+  {use_ground_skill_with_text, SkillLevel, SkillID, X, Y, Text};
+
 unpack(<<16#368:16/little, ActorID:32/little>>) ->
   {request_name, ActorID};
+
+unpack(<<16#369:16/little, CharacterID:32/little>>) ->
+  {request_character_name, CharacterID};
 
 unpack(X) -> zone_packets_25:unpack(X).
 
