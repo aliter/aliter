@@ -27,13 +27,18 @@ uninstall:
 start: compile
 	${ERL} -noshell -sname aliter -eval "application:start(sasl), application:start(aliter)."
 
+shell: compile
+	${ERL} -sname aliter
+
 configure: compile
 	${ERL} -noshell -sname aliter -eval "config:setup(), halt()."
 
 clean:
 	@@echo "Removing compiled modules..."
-	@@rm -f priv/nif.so
-	@@rm -f ebin/*.beam
+	@@(cd lib/elixir && make clean)
+	@@(cd lib/erlang-redis && make clean)
+	rm -f priv/nif.so
+	rm -f ebin/*.beam
 
 distclean: clean
 	@@echo "Removing submodules..."
