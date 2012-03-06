@@ -1,1 +1,1 @@
-ARCHFLAGS=-flat_namespace -undefined suppress
+ARCHFLAGS=-flat_namespace -undefined suppress -arch i386
